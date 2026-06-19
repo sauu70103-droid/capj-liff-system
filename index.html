@@ -3,177 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C.A.P.J. 店務與財務後台</title>
+    <title>錦葳店務與財務系統</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { 
-            font-family: sans-serif; 
-            padding: 20px; 
-            max-width: 600px; 
-            margin: auto; 
-            background-color: #f8f9fa;
+        /* 深藍帶紫星空背景渲染 */
+        body {
+            margin: 0; padding: 20px; font-family: sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%);
+            color: #f8fafc; min-height: 100vh;
         }
-        h2 {
-            text-align: center;
-            color: #333;
+        body::before {
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 150px 70px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 90px 240px, #ffffff, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 300px 120px, #ffffff, rgba(0,0,0,0));
+            background-size: 350px 350px; opacity: 0.3; z-index: -1;
         }
-        .form-container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+        /* 介面玻璃感容器 */
+        .container { max-width: 600px; margin: 0 auto; }
+        h2 { text-align: center; color: #c4b5fd; text-shadow: 0 0 10px rgba(196,181,253,0.3); letter-spacing: 2px; }
+        
+        /* 雙子頁面切換按鈕 */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn {
+            flex: 1; padding: 15px; background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1;
+            border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px;
+            transition: all 0.3s ease;
         }
-        .form-group { margin-bottom: 15px; }
-        label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: bold; 
-            color: #555;
+        .tab-btn.active {
+            background: rgba(139, 92, 246, 0.3); color: #ddd6fe;
+            border-color: #8b5cf6; box-shadow: 0 0 15px rgba(139,92,246,0.2);
         }
-        input, select { 
-            width: 100%; 
-            padding: 10px; 
-            box-sizing: border-box; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            font-size: 16px;
+
+        /* 表單區塊 */
+        .form-section {
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08); padding: 25px;
+            border-radius: 12px; display: none;
         }
-        button { 
-            padding: 12px; 
-            background-color: #00B900; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            width: 100%; 
-            font-size: 16px; 
-            font-weight: bold;
-            cursor: pointer; 
-            margin-top: 10px;
+        .form-section.active { display: block; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; color: #cbd5e1; }
+        input, select {
+            width: 100%; padding: 12px; box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px; color: #f8fafc; font-size: 16px;
         }
-        button:disabled {
-            background-color: #cccccc;
+        input:focus, select:focus { outline: none; border-color: #8b5cf6; }
+        option { background: #1e1b4b; color: #fff; }
+        
+        /* 按鈕樣式 */
+        .btn-submit {
+            background: linear-gradient(to right, #6366f1, #8b5cf6); color: white;
+            border: none; padding: 15px; width: 100%; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
         }
-        .finance-section { 
-            border-top: 2px dashed #ccc; 
-            padding-top: 15px; 
-            margin-top: 20px; 
+        .btn-cancel-action {
+            background: rgba(239, 68, 68, 0.2); color: #fca5a5;
+            border: 1px solid #ef4444; padding: 15px; width: 100%; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
         }
+        .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 30px 0; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <h2>新增課程預約與結帳</h2>
-    <div class="form-container" id="bookingForm">
+<div class="container">
+    <h2>錦葳店務與財務系統</h2>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('bookingTab', this)">店務系統</button>
+        <button class="tab-btn" onclick="switchTab('financeTab', this)">財務系統</button>
+    </div>
+
+    <div id="bookingTab" class="form-section active">
         <div class="form-group">
             <label>顧客手機號碼</label>
-            <input type="tel" id="phone" placeholder="09xxxxxxxx" required>
+            <input type="tel" id="bookPhone" placeholder="09xxxxxxxx">
         </div>
         <div class="form-group">
             <label>顧客姓名</label>
-            <input type="text" id="name" placeholder="請輸入姓名" required>
+            <input type="text" id="bookName" placeholder="請輸入姓名">
         </div>
         <div class="form-group">
             <label>課程類型</label>
-            <select id="courseType">
+            <select id="bookCourseType">
                 <option value="傳統整復推拿">傳統整復推拿</option>
                 <option value="美容">美容</option>
                 <option value="功能性訓練">功能性訓練</option>
+                <option value="項目四">項目四 (請替換)</option>
+                <option value="項目五">項目五 (請替換)</option>
             </select>
         </div>
         <div class="form-group">
-            <label>指定負責人 (多英雄選擇)</label>
-            <input type="text" id="heroStaff" placeholder="例如：千芳" required>
+            <label>操作調理師傅</label>
+            <input type="text" id="bookHero" placeholder="例如：千芳">
         </div>
         <div class="form-group">
             <label>開始時間</label>
-            <input type="datetime-local" id="startTime" required>
+            <input type="datetime-local" id="bookStart">
         </div>
         <div class="form-group">
             <label>結束時間</label>
-            <input type="datetime-local" id="endTime" required>
+            <input type="datetime-local" id="bookEnd">
         </div>
+        <button class="btn-submit" onclick="submitData('createBooking')">確認建立預約</button>
+
+        <div class="divider"></div>
         
-        <div class="finance-section">
-            <div class="form-group">
-                <label>實收金額 (若僅預約不結帳請留空或填 0)</label>
-                <input type="number" id="amount" value="0">
-            </div>
-            <div class="form-group">
-                <label>支付方式</label>
-                <select id="paymentMethod">
-                    <option value="現金">現金</option>
-                    <option value="匯款">匯款</option>
-                </select>
-            </div>
+        <h3 style="color: #fca5a5; font-size: 16px; margin-bottom: 15px;">取消預約</h3>
+        <div class="form-group">
+            <label>請輸入原訂單編號 (用於取消)</label>
+            <input type="text" id="cancelOrderId" placeholder="例如：B173...">
         </div>
-        
-        <button id="submitBtn" onclick="submitBooking()">確認預約與結帳</button>
+        <button class="btn-cancel-action" onclick="submitData('cancelBooking')">執行取消預約</button>
     </div>
 
-    <script>
-        // ==========================================
-        // 系統變數區：已完整寫入您的專屬 ID 與 API 網址
-        // ==========================================
-        const LIFF_ID = '2010453415-nTX3Lo1L';
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz4aTW_aooGvRZ4-CHBsip-JTEUngy7HdMqOAfZl-FDtagMrqrxeXIMSEI5UsCw__kPAw/exec';
+    <div id="financeTab" class="form-section">
+        <div class="form-group">
+            <label>顧客手機號碼 (對位用)</label>
+            <input type="tel" id="finPhone" placeholder="09xxxxxxxx">
+        </div>
+        <div class="form-group">
+            <label>課程類型</label>
+            <select id="finCourseType">
+                <option value="傳統整復推拿">傳統整復推拿</option>
+                <option value="美容">美容</option>
+                <option value="功能性訓練">功能性訓練</option>
+                <option value="項目四">項目四 (請替換)</option>
+                <option value="項目五">項目五 (請替換)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>實收金額</label>
+            <input type="number" id="finAmount" placeholder="請輸入金額">
+        </div>
+        <div class="form-group">
+            <label>支付方式</label>
+            <select id="finPayment" onchange="toggleRemittance()">
+                <option value="現金">現金</option>
+                <option value="匯款">匯款</option>
+            </select>
+        </div>
+        <div class="form-group hidden" id="remittanceBox">
+            <label>匯款備註資料 (後五碼/日期等)</label>
+            <input type="text" id="finRemittanceNote" placeholder="請填寫匯款資料">
+        </div>
+        <div class="form-group">
+            <label>收款人員</label>
+            <input type="text" id="finCashier" placeholder="填寫經手收款人員">
+        </div>
+        <div class="form-group">
+            <label>操作調理師傅 (業績歸屬)</label>
+            <input type="text" id="finHero" placeholder="例如：千芳">
+        </div>
+        <button class="btn-submit" onclick="submitData('createFinance')">確認結帳入帳</button>
+    </div>
+</div>
 
-        // 初始化 LIFF
-        async function initializeLiff() {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                }
-            } catch (err) {
-                console.error('LIFF 初始化失敗', err);
-            }
-        }
-        
-        // 啟動載入
-        initializeLiff();
+<script>
+    const LIFF_ID = '2010453415-nTX3Lo1L';
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz4aTW_aooGvRZ4-CHBsip-JTEUngy7HdMqOAfZl-FDtagMrqrxeXIMSEI5UsCw__kPAw/exec';
 
-        // 執行預約與結帳邏輯
-        async function submitBooking() {
-            const btn = document.getElementById('submitBtn');
-            btn.innerText = '處理中，請稍候...';
-            btn.disabled = true;
+    liff.init({ liffId: LIFF_ID }).then(() => {
+        if (!liff.isLoggedIn()) liff.login();
+    });
 
-            const payload = {
-                action: 'createBooking',
-                orderId: 'B' + Date.now(), // 毫秒級時間戳作為訂單編號
-                phone: document.getElementById('phone').value,
-                customerName: document.getElementById('name').value,
-                courseType: document.getElementById('courseType').value,
-                heroStaff: document.getElementById('heroStaff').value,
-                startTime: document.getElementById('startTime').value,
-                endTime: document.getElementById('endTime').value,
-                amount: parseInt(document.getElementById('amount').value) || 0,
-                paymentMethod: document.getElementById('paymentMethod').value
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    function toggleRemittance() {
+        const method = document.getElementById('finPayment').value;
+        const box = document.getElementById('remittanceBox');
+        if (method === '匯款') box.classList.remove('hidden');
+        else box.classList.add('hidden');
+    }
+
+    async function submitData(actionType) {
+        let payload = { action: actionType };
+
+        if (actionType === 'createBooking') {
+            payload = {
+                ...payload,
+                orderId: 'B' + Date.now(),
+                phone: document.getElementById('bookPhone').value,
+                customerName: document.getElementById('bookName').value,
+                courseType: document.getElementById('bookCourseType').value,
+                heroStaff: document.getElementById('bookHero').value,
+                startTime: document.getElementById('bookStart').value,
+                endTime: document.getElementById('bookEnd').value
             };
-
-            try {
-                // 將資料拋轉給隱藏在後方的 GAS 保險箱
-                const response = await fetch(GAS_API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                
-                const result = await response.json();
-                
-                if(result.status === 'success') {
-                    alert('預約與財務紀錄同步成功！\n資料已傳送至後台與行事曆。');
-                    liff.closeWindow(); // 成功後直接關閉 LIFF 視窗
-                } else {
-                    alert('發生錯誤：' + result.message);
-                }
-            } catch (error) {
-                console.error('送出失敗', error);
-                alert('網路錯誤，請確認網路連線或稍後再試。');
-            } finally {
-                btn.innerText = '確認預約與結帳';
-                btn.disabled = false;
-            }
+        } else if (actionType === 'cancelBooking') {
+            payload = {
+                ...payload,
+                orderId: document.getElementById('cancelOrderId').value
+            };
+        } else if (actionType === 'createFinance') {
+            payload = {
+                ...payload,
+                orderId: 'F' + Date.now(),
+                phone: document.getElementById('finPhone').value,
+                courseType: document.getElementById('finCourseType').value,
+                amount: parseInt(document.getElementById('finAmount').value),
+                paymentMethod: document.getElementById('finPayment').value,
+                remittanceNote: document.getElementById('finRemittanceNote').value,
+                cashier: document.getElementById('finCashier').value,
+                heroStaff: document.getElementById('finHero').value,
+                startTime: new Date().toISOString() // 結帳當下時間
+            };
         }
-    </script>
+
+        try {
+            const response = await fetch(GAS_API_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if(result.status === 'success') {
+                alert('系統作業完成！');
+                liff.closeWindow();
+            } else {
+                alert('發生錯誤：' + result.message);
+            }
+        } catch (error) {
+            alert('網路連線異常。');
+        }
+    }
+</script>
 </body>
 </html>
