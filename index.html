@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C.A.P.J. 店務與財務後台</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            padding: 20px; 
+            max-width: 600px; 
+            margin: auto; 
+            background-color: #f8f9fa;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-group { margin-bottom: 15px; }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #555;
+        }
+        input, select { 
+            width: 100%; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-size: 16px;
+        }
+        button { 
+            padding: 12px; 
+            background-color: #00B900; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            width: 100%; 
+            font-size: 16px; 
+            font-weight: bold;
+            cursor: pointer; 
+            margin-top: 10px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+        }
+        .finance-section { 
+            border-top: 2px dashed #ccc; 
+            padding-top: 15px; 
+            margin-top: 20px; 
+        }
+    </style>
+</head>
+<body>
+
+    <h2>新增課程預約與結帳</h2>
+    <div class="form-container" id="bookingForm">
+        <div class="form-group">
+            <label>顧客手機號碼</label>
+            <input type="tel" id="phone" placeholder="09xxxxxxxx" required>
+        </div>
+        <div class="form-group">
+            <label>顧客姓名</label>
+            <input type="text" id="name" placeholder="請輸入姓名" required>
+        </div>
+        <div class="form-group">
+            <label>課程類型</label>
+            <select id="courseType">
+                <option value="傳統整復推拿">傳統整復推拿</option>
+                <option value="美容">美容</option>
+                <option value="功能性訓練">功能性訓練</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>指定負責人 (多英雄選擇)</label>
+            <input type="text" id="heroStaff" placeholder="例如：千芳" required>
+        </div>
+        <div class="form-group">
+            <label>開始時間</label>
+            <input type="datetime-local" id="startTime" required>
+        </div>
+        <div class="form-group">
+            <label>結束時間</label>
+            <input type="datetime-local" id="endTime" required>
+        </div>
+        
+        <div class="finance-section">
+            <div class="form-group">
+                <label>實收金額 (若僅預約不結帳請留空或填 0)</label>
+                <input type="number" id="amount" value="0">
+            </div>
+            <div class="form-group">
+                <label>支付方式</label>
+                <select id="paymentMethod">
+                    <option value="現金">現金</option>
+                    <option value="匯款">匯款</option>
+                </select>
+            </div>
+        </div>
+        
+        <button id="submitBtn" onclick="submitBooking()">確認預約與結帳</button>
+    </div>
+
+    <script>
+        // ==========================================
+        // 系統變數區：已完整寫入您的專屬 ID 與 API 網址
+        // ==========================================
+        const LIFF_ID = '2010453415-nTX3Lo1L';
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz4aTW_aooGvRZ4-CHBsip-JTEUngy7HdMqOAfZl-FDtagMrqrxeXIMSEI5UsCw__kPAw/exec';
+
+        // 初始化 LIFF
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                }
+            } catch (err) {
+                console.error('LIFF 初始化失敗', err);
+            }
+        }
+        
+        // 啟動載入
+        initializeLiff();
+
+        // 執行預約與結帳邏輯
+        async function submitBooking() {
+            const btn = document.getElementById('submitBtn');
+            btn.innerText = '處理中，請稍候...';
+            btn.disabled = true;
+
+            const payload = {
+                action: 'createBooking',
+                orderId: 'B' + Date.now(), // 毫秒級時間戳作為訂單編號
+                phone: document.getElementById('phone').value,
+                customerName: document.getElementById('name').value,
+                courseType: document.getElementById('courseType').value,
+                heroStaff: document.getElementById('heroStaff').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                amount: parseInt(document.getElementById('amount').value) || 0,
+                paymentMethod: document.getElementById('paymentMethod').value
+            };
+
+            try {
+                // 將資料拋轉給隱藏在後方的 GAS 保險箱
+                const response = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if(result.status === 'success') {
+                    alert('預約與財務紀錄同步成功！\n資料已傳送至後台與行事曆。');
+                    liff.closeWindow(); // 成功後直接關閉 LIFF 視窗
+                } else {
+                    alert('發生錯誤：' + result.message);
+                }
+            } catch (error) {
+                console.error('送出失敗', error);
+                alert('網路錯誤，請確認網路連線或稍後再試。');
+            } finally {
+                btn.innerText = '確認預約與結帳';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
