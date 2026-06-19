@@ -173,7 +173,8 @@
 
 <script>
     const LIFF_ID = '2010453415-nTX3Lo1L';
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz4aTW_aooGvRZ4-CHBsip-JTEUngy7HdMqOAfZl-FDtagMrqrxeXIMSEI5UsCw__kPAw/exec';
+    // 已更新為最新的 GAS API 網址
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxlvZh7xpUE-Ad2YhQLZerd_dSuqqyWlyePZ5rwjUxpWy5rhcqhIB6L28uM_XK20y3vbw/exec';
 
     // 課程價格對照表
     const coursePrices = {
@@ -210,7 +211,7 @@
 
         if (type !== '其他' && coursePrices[type]) {
             amountInput.value = coursePrices[type] * people;
-            amountInput.readOnly = true; // 防呆，避免選了固定課程又改價錢
+            amountInput.readOnly = true; 
             amountInput.style.opacity = '0.7';
         } else {
             amountInput.value = '';
