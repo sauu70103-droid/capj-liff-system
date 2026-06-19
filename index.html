@@ -6,7 +6,6 @@
     <title>錦葳店務與財務系統</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        /* 深藍帶紫星空背景渲染 */
         body {
             margin: 0; padding: 20px; font-family: sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%);
@@ -22,12 +21,9 @@
                 radial-gradient(1.5px 1.5px at 300px 120px, #ffffff, rgba(0,0,0,0));
             background-size: 350px 350px; opacity: 0.3; z-index: -1;
         }
-
-        /* 介面玻璃感容器 */
         .container { max-width: 600px; margin: 0 auto; }
         h2 { text-align: center; color: #c4b5fd; text-shadow: 0 0 10px rgba(196,181,253,0.3); letter-spacing: 2px; }
         
-        /* 雙子頁面切換按鈕 */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab-btn {
             flex: 1; padding: 15px; background: rgba(255, 255, 255, 0.05);
@@ -40,7 +36,6 @@
             border-color: #8b5cf6; box-shadow: 0 0 15px rgba(139,92,246,0.2);
         }
 
-        /* 表單區塊 */
         .form-section {
             background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08); padding: 25px;
@@ -57,7 +52,6 @@
         input:focus, select:focus { outline: none; border-color: #8b5cf6; }
         option { background: #1e1b4b; color: #fff; }
         
-        /* 按鈕樣式 */
         .btn-submit {
             background: linear-gradient(to right, #6366f1, #8b5cf6); color: white;
             border: none; padding: 15px; width: 100%; border-radius: 8px;
@@ -78,8 +72,8 @@
     <h2>錦葳店務與財務系統</h2>
     
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('bookingTab', this)">店務系統</button>
-        <button class="tab-btn" onclick="switchTab('financeTab', this)">財務系統</button>
+        <button class="tab-btn active" onclick="switchTab('bookingTab', this)">店務預約</button>
+        <button class="tab-btn" onclick="switchTab('financeTab', this)">財務結帳</button>
     </div>
 
     <div id="bookingTab" class="form-section active">
@@ -88,17 +82,22 @@
             <input type="tel" id="bookPhone" placeholder="09xxxxxxxx">
         </div>
         <div class="form-group">
-            <label>顧客姓名</label>
+            <label>顧客姓名 (主要預約人)</label>
             <input type="text" id="bookName" placeholder="請輸入姓名">
+        </div>
+        <div class="form-group">
+            <label>人數</label>
+            <input type="number" id="bookPeople" value="1" min="1">
         </div>
         <div class="form-group">
             <label>課程類型</label>
             <select id="bookCourseType">
-                <option value="傳統整復推拿">傳統整復推拿</option>
-                <option value="美容">美容</option>
-                <option value="功能性訓練">功能性訓練</option>
-                <option value="項目四">項目四 (請替換)</option>
-                <option value="項目五">項目五 (請替換)</option>
+                <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆(快速修復)-30分鐘</option>
+                <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆(全身修復)-90分鐘</option>
+                <option value="單部位舒緩修復(精準調理)">單部位舒緩修復(精準調理)</option>
+                <option value="全身結構養護(平衡調理)">全身結構養護(平衡調理)</option>
+                <option value="全身全方位深度修復-60分鐘">全身全方位深度修復-60分鐘</option>
+                <option value="其他">其他</option>
             </select>
         </div>
         <div class="form-group">
@@ -132,17 +131,22 @@
         </div>
         <div class="form-group">
             <label>課程類型</label>
-            <select id="finCourseType">
-                <option value="傳統整復推拿">傳統整復推拿</option>
-                <option value="美容">美容</option>
-                <option value="功能性訓練">功能性訓練</option>
-                <option value="項目四">項目四 (請替換)</option>
-                <option value="項目五">項目五 (請替換)</option>
+            <select id="finCourseType" onchange="autoCalculateAmount()">
+                <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆(快速修復)-30分鐘</option>
+                <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆(全身修復)-90分鐘</option>
+                <option value="單部位舒緩修復(精準調理)">單部位舒緩修復(精準調理)</option>
+                <option value="全身結構養護(平衡調理)">全身結構養護(平衡調理)</option>
+                <option value="全身全方位深度修復-60分鐘">全身全方位深度修復-60分鐘</option>
+                <option value="其他">其他</option>
             </select>
         </div>
         <div class="form-group">
+            <label>人數</label>
+            <input type="number" id="finPeople" value="1" min="1" onchange="autoCalculateAmount()">
+        </div>
+        <div class="form-group">
             <label>實收金額</label>
-            <input type="number" id="finAmount" placeholder="請輸入金額">
+            <input type="number" id="finAmount" placeholder="請輸入金額" value="600">
         </div>
         <div class="form-group">
             <label>支付方式</label>
@@ -171,6 +175,15 @@
     const LIFF_ID = '2010453415-nTX3Lo1L';
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz4aTW_aooGvRZ4-CHBsip-JTEUngy7HdMqOAfZl-FDtagMrqrxeXIMSEI5UsCw__kPAw/exec';
 
+    // 課程價格對照表
+    const coursePrices = {
+        "無痛滑罐放鬆(快速修復)-30分鐘": 600,
+        "全方位滑罐放鬆(全身修復)-90分鐘": 1600,
+        "單部位舒緩修復(精準調理)": 600,
+        "全身結構養護(平衡調理)": 1000,
+        "全身全方位深度修復-60分鐘": 2000
+    };
+
     liff.init({ liffId: LIFF_ID }).then(() => {
         if (!liff.isLoggedIn()) liff.login();
     });
@@ -189,8 +202,29 @@
         else box.classList.add('hidden');
     }
 
+    // 自動計算金額邏輯
+    function autoCalculateAmount() {
+        const type = document.getElementById('finCourseType').value;
+        const people = parseInt(document.getElementById('finPeople').value) || 1;
+        const amountInput = document.getElementById('finAmount');
+
+        if (type !== '其他' && coursePrices[type]) {
+            amountInput.value = coursePrices[type] * people;
+            amountInput.readOnly = true; // 防呆，避免選了固定課程又改價錢
+            amountInput.style.opacity = '0.7';
+        } else {
+            amountInput.value = '';
+            amountInput.readOnly = false;
+            amountInput.style.opacity = '1';
+        }
+    }
+
     async function submitData(actionType) {
         let payload = { action: actionType };
+        const btn = document.querySelector(`button[onclick="submitData('${actionType}')"]`);
+        const originalText = btn.innerText;
+        btn.innerText = '處理中...';
+        btn.disabled = true;
 
         if (actionType === 'createBooking') {
             payload = {
@@ -198,6 +232,7 @@
                 orderId: 'B' + Date.now(),
                 phone: document.getElementById('bookPhone').value,
                 customerName: document.getElementById('bookName').value,
+                people: document.getElementById('bookPeople').value,
                 courseType: document.getElementById('bookCourseType').value,
                 heroStaff: document.getElementById('bookHero').value,
                 startTime: document.getElementById('bookStart').value,
@@ -214,12 +249,13 @@
                 orderId: 'F' + Date.now(),
                 phone: document.getElementById('finPhone').value,
                 courseType: document.getElementById('finCourseType').value,
+                people: document.getElementById('finPeople').value,
                 amount: parseInt(document.getElementById('finAmount').value),
                 paymentMethod: document.getElementById('finPayment').value,
                 remittanceNote: document.getElementById('finRemittanceNote').value,
                 cashier: document.getElementById('finCashier').value,
                 heroStaff: document.getElementById('finHero').value,
-                startTime: new Date().toISOString() // 結帳當下時間
+                startTime: new Date().toISOString()
             };
         }
 
@@ -236,7 +272,10 @@
                 alert('發生錯誤：' + result.message);
             }
         } catch (error) {
-            alert('網路連線異常。');
+            alert('網路連線異常，請確認連線。');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
     }
 </script>
