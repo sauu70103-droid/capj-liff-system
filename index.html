@@ -52,6 +52,14 @@
         input:focus, select:focus { outline: none; border-color: #8b5cf6; }
         option { background: #1e1b4b; color: #fff; }
         
+        /* 唯讀輸入框樣式 (用在自動抓取的收款人員) */
+        input[readonly] {
+            background: rgba(255, 255, 255, 0.05);
+            color: #94a3b8;
+            cursor: not-allowed;
+            border-color: rgba(255,255,255,0.1);
+        }
+
         .btn-submit {
             background: linear-gradient(to right, #6366f1, #8b5cf6); color: white;
             border: none; padding: 15px; width: 100%; border-radius: 8px;
@@ -102,7 +110,13 @@
         </div>
         <div class="form-group">
             <label>操作調理師傅</label>
-            <input type="text" id="bookHero" placeholder="例如：千芳">
+            <select id="bookHero">
+                <option value="奎元">奎元</option>
+                <option value="千芳">千芳</option>
+                <option value="阿達">阿達</option>
+                <option value="旭哥">旭哥</option>
+                <option value="家蓁">家蓁</option>
+            </select>
         </div>
         <div class="form-group">
             <label>開始時間</label>
@@ -145,7 +159,7 @@
             <input type="number" id="finPeople" value="1" min="1" onchange="autoCalculateAmount()">
         </div>
         <div class="form-group">
-            <label>實收金額</label>
+            <label>實收金額 (或扣堂點數)</label>
             <input type="number" id="finAmount" placeholder="請輸入金額" value="600">
         </div>
         <div class="form-group">
@@ -153,6 +167,7 @@
             <select id="finPayment" onchange="toggleRemittance()">
                 <option value="現金">現金</option>
                 <option value="匯款">匯款</option>
+                <option value="扣堂">扣堂</option>
             </select>
         </div>
         <div class="form-group hidden" id="remittanceBox">
@@ -160,12 +175,18 @@
             <input type="text" id="finRemittanceNote" placeholder="請填寫匯款資料">
         </div>
         <div class="form-group">
-            <label>收款人員</label>
-            <input type="text" id="finCashier" placeholder="填寫經手收款人員">
+            <label>收款人員 (系統自動綁定 LINE 帳號)</label>
+            <input type="text" id="finCashier" placeholder="系統讀取中..." readonly>
         </div>
         <div class="form-group">
             <label>操作調理師傅 (業績歸屬)</label>
-            <input type="text" id="finHero" placeholder="例如：千芳">
+            <select id="finHero">
+                <option value="奎元">奎元</option>
+                <option value="千芳">千芳</option>
+                <option value="阿達">阿達</option>
+                <option value="旭哥">旭哥</option>
+                <option value="家蓁">家蓁</option>
+            </select>
         </div>
         <button class="btn-submit" onclick="submitData('createFinance')">確認結帳入帳</button>
     </div>
@@ -173,10 +194,8 @@
 
 <script>
     const LIFF_ID = '2010453415-nTX3Lo1L';
-    // 已更新為最新的 GAS API 網址
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxlvZh7xpUE-Ad2YhQLZerd_dSuqqyWlyePZ5rwjUxpWy5rhcqhIB6L28uM_XK20y3vbw/exec';
 
-    // 課程價格對照表
     const coursePrices = {
         "無痛滑罐放鬆(快速修復)-30分鐘": 600,
         "全方位滑罐放鬆(全身修復)-90分鐘": 1600,
@@ -185,8 +204,20 @@
         "全身全方位深度修復-60分鐘": 2000
     };
 
-    liff.init({ liffId: LIFF_ID }).then(() => {
-        if (!liff.isLoggedIn()) liff.login();
+    // 初始化與自動抓取 LINE Profile
+    liff.init({ liffId: LIFF_ID }).then(async () => {
+        if (!liff.isLoggedIn()) {
+            liff.login();
+        } else {
+            try {
+                const profile = await liff.getProfile();
+                // 將抓取到的 LINE 名稱鎖入唯讀欄位
+                document.getElementById('finCashier').value = profile.displayName;
+            } catch (err) {
+                console.error('無法取得 LINE 資料', err);
+                document.getElementById('finCashier').value = '未授權取得名稱';
+            }
+        }
     });
 
     function switchTab(tabId, btn) {
@@ -203,7 +234,6 @@
         else box.classList.add('hidden');
     }
 
-    // 自動計算金額邏輯
     function autoCalculateAmount() {
         const type = document.getElementById('finCourseType').value;
         const people = parseInt(document.getElementById('finPeople').value) || 1;
