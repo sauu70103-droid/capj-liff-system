@@ -50,6 +50,7 @@
             letter-spacing: 2px;
         }
 
+        /* 系統核心讀取遮罩 */
         #loadingOverlay {
             position: absolute;
             top: 0;
@@ -68,7 +69,7 @@
         }
 
         /* =========================================================
-           2. 導覽頁籤按鈕
+           2. 導覽頁籤按鈕 (Tabs)
            ========================================================= */
         .tabs {
             display: flex;
@@ -150,6 +151,7 @@
             color: #ffffff;
         }
 
+        /* 按鈕視覺設定 */
         .btn-submit {
             background: linear-gradient(to right, #6366f1, #8b5cf6);
             color: white;
@@ -450,7 +452,7 @@
         </div>
         
         <div class="pending-box">
-            <button class="btn-search" style="background: #8b5cf6;" onclick="loadPend()">📥 載入中台待結帳清單</button>
+            <button class="btn-search" style="background: #8b5cf6;" id="btnFetchPending" onclick="loadPend()">📥 載入中台待結帳清單</button>
             <div id="pendArea" style="margin-top: 15px;"></div>
         </div>
         
@@ -632,7 +634,6 @@
             
             if (r && r.data.length) {
                 r.data.forEach(i => {
-                    // 為了美觀，查詢結果也顯示去括號的名稱
                     const displayCourse = i.course.replace(/\(.*?\)/g, ''); 
                     
                     el('srchArea').innerHTML += `
@@ -696,7 +697,10 @@
     // 6. 財務結帳：加載中台名單
     async function loadPend() {
         const btn = el('btnFetchPending');
-        btn.innerText = '讀取中...';
+        // 加入防呆：如果按鈕不存在則不繼續處理
+        if (btn) {
+            btn.innerText = '讀取中...';
+        }
         
         try {
             const r = await apiCall('fetchPendingCheckouts', {});
@@ -728,7 +732,9 @@
         } catch(e) {
             console.error(e);
         } finally {
-            btn.innerText = '📥 載入中台待結帳清單';
+            if (btn) {
+                btn.innerText = '📥 載入中台待結帳清單';
+            }
         }
     }
 
@@ -751,7 +757,6 @@
         cart.forEach(i => {
             totalSum += Number(i.price);
             
-            // 使用 Includes 來確保下拉選單正確 Selected
             const c = i.course;
             
             el('cBody').innerHTML += `
