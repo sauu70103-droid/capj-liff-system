@@ -185,9 +185,27 @@
             font-size: 16px;
             cursor: pointer;
         }
+        
+        /* 行事曆快速跳轉按鈕 (店務預約專用) */
+        .btn-calendar {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3b82f6;
+            color: #93c5fd;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
 
         /* =========================================================
-           財務結帳模組專用 UI
+           財務結帳模組專用 UI：中台候選人與行動端購物車
            ========================================================= */
         .pending-box {
             background: rgba(139, 92, 246, 0.1);
@@ -299,7 +317,7 @@
         .btn-edit { background: #3b82f6; color: white; }
         .btn-del { background: #ef4444; color: white; }
         
-        .reschedule-box {
+        .reschedule-box, .void-box {
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px dashed rgba(255, 255, 255, 0.2);
@@ -418,8 +436,8 @@
             <input type="number" id="bkPeople" value="1" min="1">
         </div>
         <div class="form-group">
-            <label>課程類型</label>
-            <select id="bkCourse">
+            <label>課程類型 (選取後自動推算結束時間)</label>
+            <select id="bkCourse" onchange="autoCalcEndTime()">
                 <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆-30分鐘</option>
                 <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆-90分鐘</option>
                 <option value="單部位舒緩修復(精準調理)">單部位舒緩修復</option>
@@ -435,12 +453,17 @@
                 <option value="千芳">千芳</option>
             </select>
         </div>
+        
+        <button type="button" class="btn-calendar" onclick="window.open('https://calendar.google.com/calendar/r/week', '_blank')">
+            📅 點此開啟 Google 行事曆查看空檔
+        </button>
+
         <div class="form-group">
             <label>開始時間</label>
-            <input type="datetime-local" id="bkStart">
+            <input type="datetime-local" id="bkStart" onchange="autoCalcEndTime()">
         </div>
         <div class="form-group">
-            <label>結束時間</label>
+            <label>結束時間 (可手動微調)</label>
             <input type="datetime-local" id="bkEnd">
         </div>
         <button class="btn-submit" onclick="submitBookingData()">確認建立預約排程</button>
@@ -506,13 +529,15 @@
     </div>
 
     <div id="adjustTab" class="form-section">
-        <h3 style="color: #fca5a5;">⚠️ 財務帳務異動修正 (作廢)</h3>
-        <p style="font-size: 14px; color: #94a3b8;">調閱當月入帳流水明細，一鍵執行作廢退費歸零。</p>
+        <h3 style="color: #fca5a5;">⚠️ 財務帳務異動調整</h3>
+        <p style="font-size: 14px; color: #94a3b8;">預設顯示近 48 小時入帳明細，若需調閱更早資料請手動搜尋。</p>
+        
         <div class="form-group">
             <input type="text" id="adjKw" placeholder="請輸入顧客姓名或手機">
         </div>
-        <button class="btn-search" id="btnSearchFinance" style="border-color: #ef4444; color: #fca5a5;" onclick="searchFin()">查詢當月財務紀錄</button>
-        <div id="adjArea"></div>
+        <button class="btn-search" id="btnSearchFinance" style="border-color: #ef4444; color: #fca5a5;" onclick="searchFin()">手動搜尋歷史財務紀錄</button>
+        
+        <div id="adjArea" style="margin-top: 20px;"></div>
     </div>
 </div>
 
@@ -598,7 +623,6 @@
                 
                 const response = await fetch(API, {
                     method: 'POST', 
-                    // BUG FIX: 不要覆寫 orderId，只傳純粹的指令！
                     body: JSON.stringify({ action: 'checkAuth', userName: profile.displayName })
                 });
                 
@@ -631,6 +655,11 @@
         });
         el(id).style.display = 'block';
         btn.classList.add('active');
+        
+        // 若點擊的是財務異動，自動載入近兩日的明細
+        if (id === 'adjustTab') {
+            loadRecentFinanceRecords();
+        }
     }
     
     // 3. 匯款備註顯示控制
@@ -642,15 +671,15 @@
         }
     }
 
-    // 4. API 通訊打包元件 (🚨 已徹底修復「自動覆寫訂單號」的致命 Bug)
+    // 4. API 通訊打包元件
     async function apiCall(action, payload, msg) {
         try {
             const response = await fetch(API, {
                 method: 'POST', 
-                // BUG FIX: 只發送 payload 中準備好的 orderId，不再強行加上 'B' + Date.now()！
                 body: JSON.stringify({ 
                     action: action, 
-                    ...payload
+                    ...payload, 
+                    orderId: 'B' + Date.now() 
                 })
             });
             const r = await response.json();
@@ -671,10 +700,42 @@
         }
     }
 
+    // ==========================================
+    // 💡 深度優化神級功能：自動推算結束時間
+    // ==========================================
+    function autoCalcEndTime() {
+        const startVal = v('bkStart');
+        const courseVal = v('bkCourse');
+        
+        if (!startVal || !courseVal) return; // 如果沒填寫時間或課程，不動作
+        
+        let addMinutes = 60; // 預設保守抓 60 分鐘
+        
+        // 智慧萃取課程字串中的分鐘數
+        const matchMins = courseVal.match(/(\d+)分鐘/);
+        if (matchMins) {
+            addMinutes = parseInt(matchMins[1]);
+        } else if (courseVal.includes('單部位')) {
+            addMinutes = 30; // 單部位預設 30 分鐘
+        } else if (courseVal.includes('全身結構')) {
+            addMinutes = 60; // 結構調理預設 60 分鐘
+        }
+        
+        // 進行時間物件加法運算
+        const startDateObj = new Date(startVal);
+        startDateObj.setMinutes(startDateObj.getMinutes() + addMinutes);
+        
+        // 轉換回 datetime-local 接受的格式 (YYYY-MM-DDTHH:mm) 並考量時區偏移
+        const tzOffset = startDateObj.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(startDateObj - tzOffset)).toISOString().slice(0, 16);
+        
+        // 自動填入結束時間欄位
+        el('bkEnd').value = localISOTime;
+    }
+
     // 5. 店務預約核心：建立預約
     async function submitBookingData() {
         const payload = {
-            orderId: 'B' + Date.now(), // 預約的單號 (B 開頭) 在這裡自己產生！
             phone: v('bkPhone'),
             customerName: v('bkName'),
             people: v('bkPeople'),
@@ -683,6 +744,11 @@
             startTime: v('bkStart'),
             endTime: v('bkEnd')
         };
+        
+        if(!payload.startTime || !payload.endTime) {
+            return alert('請完整填寫開始與結束時間');
+        }
+        
         await apiCall('createBooking', payload, '預約排程寫入成功！');
     }
 
@@ -872,7 +938,7 @@
         el('cSum').innerText = '$' + totalSum;
     }
 
-    // 9. 財務結帳：執行合併結帳與彈出圖檔下載 Modal
+    // 9. 財務結帳：執行合併結帳
     async function processCart() {
         if (cart.length === 0) {
             return alert('結帳核對清單內無資料！');
@@ -882,7 +948,7 @@
         btn.innerText = '處理中，請稍候...';
         btn.disabled = true;
         
-        const fid = 'F' + Date.now(); // 財務的單號 (F 開頭) 在這裡自己產生！
+        const fid = 'F' + Date.now();
         el('rId').innerText = fid;
         el('rTm').innerText = new Date().toLocaleString();
         el('rMth').innerText = v('fPay');
@@ -927,7 +993,7 @@
             const base64Data = canvas.toDataURL('image/png');
             
             const payload = {
-                orderId: fid, // 將 F 單號傳給後端
+                orderId: fid,
                 paymentMethod: v('fPay'),
                 remittanceNote: remVal,
                 cashier: v('fCash'),
@@ -937,34 +1003,39 @@
                 receiptImageBase64: base64Data
             };
             
-            // 呼叫後端 API，這時絕對不會被 B 單號覆寫了！
-            const r = await fetch(API, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: 'createFinance', ...payload }) 
-            }).then(x => x.json());
-            
-            btn.innerText = '確認合併結帳並產生收據明細';
-            btn.disabled = false;
-            
-            if (r && r.status === 'success') {
-                // 將生成的圖片放入 Modal 中並顯示 (解決 LINE 無法自動下載的問題)
-                el('finalReceiptImage').src = base64Data;
-                el('receiptSaveModal').style.display = 'flex';
+            // 將訂單送到後端處理 (不依賴 apiCall 防止單號被覆寫)
+            try {
+                const response = await fetch(API, {
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'createFinance', ...payload })
+                });
+                const r = await response.json();
                 
-                try {
-                    const a = document.createElement('a');
-                    a.href = base64Data;
-                    a.download = `錦葳健康美學中心_結帳明細_${fid}.png`;
-                    a.click();
-                } catch(e) {}
+                btn.innerText = '確認合併結帳並產生收據明細';
+                btn.disabled = false;
                 
-            } else {
-                alert('結帳存檔失敗：' + r.message);
+                if (r && r.status === 'success') {
+                    el('finalReceiptImage').src = base64Data;
+                    el('receiptSaveModal').style.display = 'flex';
+                    
+                    try {
+                        const a = document.createElement('a');
+                        a.href = base64Data;
+                        a.download = `錦葳健康美學中心_結帳明細_${fid}.png`;
+                        a.click();
+                    } catch(e) {}
+                    
+                } else {
+                    alert('結帳存檔失敗：' + r.message);
+                }
+            } catch(e) {
+                btn.innerText = '確認合併結帳並產生收據明細';
+                btn.disabled = false;
+                alert('網路異常，結帳失敗');
             }
         });
     }
 
-    // 關閉明細下載 Modal，並清理購物車
     function closeReceiptModal() {
         el('receiptSaveModal').style.display = 'none';
         cart = [];
@@ -985,7 +1056,22 @@
         }
     }
     
-    // 11. 財務異動紀錄查詢與作廢 (單號 Bug 已徹底排除)
+    // 11. 財務異動紀錄查詢與調整 (溫和用語版)
+    
+    async function loadRecentFinanceRecords() {
+        el('adjArea').innerHTML = '<p style="text-align:center; color:#94a3b8;">載入近期紀錄中...</p>';
+        try {
+            const response = await fetch(API, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: 'fetchRecentFinanceRecords' }) 
+            });
+            const r = await response.json();
+            renderFinanceRecords(r.data, 'adjArea');
+        } catch(e) {
+            el('adjArea').innerHTML = '<p style="text-align:center; color:#fca5a5;">自動載入近期紀錄失敗</p>';
+        }
+    }
+    
     async function searchFin() {
         const k = v('adjKw');
         if (!k) {
@@ -996,29 +1082,99 @@
         btn.innerText = '調閱中...';
         
         try {
-            const r = await apiCall('searchFinanceRecords', { keyword: k });
-            el('adjArea').innerHTML = '';
-            
-            if (r && r.data.length > 0) {
-                r.data.forEach(i => {
-                    const displayCourse = i.course.replace(/\(.*?\)/g, '');
-                    
-                    el('adjArea').innerHTML += `
-                        <div class="result-card" style="border-left-color:#ef4444;" id="f-${i.orderId}">
-                            <strong>單號：${i.orderId}</strong> (${i.date})<br>
-                            客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>
-                            項目：${displayCourse}<br>
-                            備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br>
-                            <button class="btn-small btn-del" style="background:#dc2626;margin-top:10px;" onclick="if(confirm('確定要將此款項執行作廢歸零嗎？這將扣除本日與本月營收！')) apiCall('voidFinanceRecord',{rowIndex:${i.rowIndex},orderId:'${i.orderId}'}).then((res)=>{if(res && res.status==='success'){el('f-${i.orderId}').style.opacity=0.3; el('f-${i.orderId}').innerHTML='<p style=\\'color:#ef4444;text-align:center;font-weight:bold;\\'>[此項紀錄已完成作廢歸零]</p>';} else {alert('作廢失敗：' + res.message)}})">執行財務作廢歸零</button>
-                        </div>`;
-                });
-            } else {
-                el('adjArea').innerHTML = '<p style="text-align:center;color:#fca5a5;">當月查無此筆入帳財務紀錄</p>';
-            }
+            const response = await fetch(API, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: 'searchFinanceRecords', keyword: k }) 
+            });
+            const r = await response.json();
+            renderFinanceRecords(r.data, 'adjArea');
         } catch(e) {
             console.error(e);
         } finally {
-            btn.innerText = '查詢當月財務紀錄';
+            btn.innerText = '手動搜尋歷史財務紀錄';
+        }
+    }
+
+    function renderFinanceRecords(dataArray, targetElId) {
+        const area = el(targetElId);
+        area.innerHTML = '';
+        
+        if (dataArray && dataArray.length > 0) {
+            dataArray.forEach(i => {
+                const displayCourse = i.course.replace(/\(.*?\)/g, '');
+                
+                area.innerHTML += `
+                    <div class="result-card" style="border-left-color:#f59e0b;" id="f-${i.orderId}">
+                        <strong>單號：${i.orderId}</strong> (${i.date})<br>
+                        客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>
+                        項目：${displayCourse}<br>
+                        備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br>
+                        
+                        <div class="result-actions" style="margin-top:10px;">
+                            <button class="btn-small btn-del" style="background:#f59e0b;" onclick="toggleVoidForm('${i.orderId}')">進行財務項目異動</button>
+                        </div>
+                        
+                        <div id="voidForm-${i.orderId}" class="void-box">
+                            <label style="font-size:12px;">常規異動原因</label>
+                            <select id="voidReason-${i.orderId}" style="margin-bottom:12px; padding:6px; font-size:14px;">
+                                <option value="金額調整/退還">金額調整/退還</option>
+                                <option value="課程項目變更">課程項目變更</option>
+                                <option value="重複結帳修正">重複結帳修正</option>
+                                <option value="其他行政異動">其他行政異動</option>
+                            </select>
+                            
+                            <label style="font-size:12px;">異動備註細節</label>
+                            <input type="text" id="voidNote-${i.orderId}" placeholder="輸入詳細調整原因 (選填)..." style="margin-bottom:12px; padding:6px; font-size:14px;">
+                            
+                            <button class="btn-submit" style="background:#f59e0b; color: white;" onclick="submitVoid('${i.rowIndex}', '${i.orderId}')">確認執行財務金額歸零</button>
+                        </div>
+                    </div>`;
+            });
+        } else {
+            area.innerHTML = '<p style="text-align:center;color:#fca5a5;">查無符合的財務紀錄</p>';
+        }
+    }
+
+    function toggleVoidForm(id) {
+        const box = el(`voidForm-${id}`);
+        if (box.style.display === 'block') {
+            box.style.display = 'none';
+        } else {
+            box.style.display = 'block';
+        }
+    }
+
+    async function submitVoid(rowIndex, orderId) {
+        if (!confirm(`警告：確定要將單號 ${orderId} 進行財務調整歸零嗎？此動作將扣除當日/當月營收累計！`)) {
+            return;
+        }
+        
+        const reason = v(`voidReason-${orderId}`);
+        const note = v(`voidNote-${orderId}`);
+        
+        try {
+            const response = await fetch(API, { 
+                method: 'POST', 
+                body: JSON.stringify({ 
+                    action: 'voidFinanceRecord', 
+                    rowIndex: rowIndex, 
+                    orderId: orderId,
+                    reason: reason,
+                    note: note
+                }) 
+            });
+            const r = await response.json();
+            
+            if (r.status === 'success') {
+                alert('該筆款項已成功執行異動歸零！');
+                const rowEl = el(`f-${orderId}`);
+                rowEl.style.opacity = '0.4';
+                rowEl.innerHTML = '<p style="color:#f59e0b;text-align:center;font-weight:bold;margin-top:10px;">[此項紀錄已完成財務異動歸零]</p>';
+            } else {
+                alert('異動失敗：' + r.message);
+            }
+        } catch(e) {
+            alert('執行異動時發生網路錯誤');
         }
     }
 </script>
