@@ -10,10 +10,17 @@
         #loadingOverlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.9);z-index:10;border-radius:12px;display:flex;justify-content:center;align-items:center;font-size:18px;color:#2dd4bf;font-weight:bold;}
         .tabs{display:flex;gap:8px;margin-bottom:20px;} .tab-btn{flex:1;padding:15px 5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#cbd5e1;border-radius:8px;cursor:pointer;font-weight:bold;font-size:15px;} .tab-btn.active{background:rgba(139,92,246,0.3);color:#ddd6fe;border-color:#8b5cf6;box-shadow:0 0 10px rgba(139,92,246,0.2);}
         .form-section{background:rgba(15,23,42,0.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);padding:25px;border-radius:12px;display:none;} .form-section.active{display:block;}
-        .form-group{margin-bottom:18px;} label{display:block;margin-bottom:8px;font-size:14px;color:#cbd5e1;} input,select{width:100%;padding:12px;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#f8fafc;font-size:16px;} input[readonly]{background:rgba(255,255,255,0.05);color:#94a3b8;} option{background:#1e1b4b;color:#fff;}
+        .form-group{margin-bottom:18px;} label{display:block;margin-bottom:8px;font-size:14px;color:#cbd5e1;} input,select,textarea{width:100%;padding:12px;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#f8fafc;font-size:16px;} input[readonly]{background:rgba(255,255,255,0.05);color:#94a3b8;} option{background:#1e1b4b;color:#fff;}
         .btn-submit{background:linear-gradient(to right,#6366f1,#8b5cf6);color:#fff;border:none;padding:15px;width:100%;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px;} .btn-cancel-action{background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid #ef4444;padding:15px;width:100%;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;} .btn-search{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:12px;width:100%;border-radius:8px;font-size:16px;cursor:pointer;}
         .pending-box{background:rgba(139,92,246,0.1);border:1px solid #8b5cf6;padding:15px;border-radius:8px;margin-bottom:20px;} .pending-item{display:inline-block;background:#4c1d95;color:#fff;padding:8px 12px;border-radius:20px;margin:5px;font-size:14px;cursor:pointer;border:1px solid #6d28d9;}
-        .cart-box{background:rgba(0,0,0,0.4);border:1px solid #4ade80;border-radius:8px;padding:15px;margin-bottom:20px;} .cart-title{font-weight:bold;color:#4ade80;margin-bottom:10px;display:flex;justify-content:space-between;} .cart-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;} .cart-table th{text-align:left;padding:6px;border-bottom:1px solid rgba(255,255,255,0.2);color:#a7f3d0;} .cart-table td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,0.1);} .cart-remove{color:#fca5a5;cursor:pointer;font-weight:bold;}
+        
+        /* 手機版優化：購物車卡片式佈局 */
+        .cart-box{background:rgba(0,0,0,0.4);border:1px solid #4ade80;border-radius:8px;padding:15px;margin-bottom:20px;} .cart-title{font-weight:bold;color:#4ade80;margin-bottom:10px;display:flex;justify-content:space-between;}
+        .cart-item-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; margin-bottom: 10px; position: relative; }
+        .cart-item-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .cart-item-row > div { flex: 1; }
+        .cart-item-del { position: absolute; right: 10px; top: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold;}
+        
         .result-card{background:rgba(0,0,0,0.4);border-left:4px solid #8b5cf6;padding:15px;border-radius:6px;margin-top:15px;} .result-info{font-size:14px;line-height:1.6;margin-bottom:15px;color:#e2e8f0;} .result-actions{display:flex;gap:10px;} .btn-small{flex:1;padding:10px;border-radius:6px;border:none;font-weight:bold;cursor:pointer;} .btn-edit{background:#3b82f6;color:#fff;} .btn-del{background:#ef4444;color:#fff;} .reschedule-box{margin-top:15px;padding-top:15px;border-top:1px dashed rgba(255,255,255,0.2);display:none;}
         #summaryDashboard{background:rgba(45,212,191,0.1);border:1px solid #2dd4bf;padding:15px;border-radius:8px;margin-bottom:20px;text-align:center;} .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;} .summary-item{background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;} .summary-val{display:block;font-size:20px;font-weight:bold;color:#2dd4bf;margin-top:5px;}
         #receiptCaptureArea{position:absolute;left:-9999px;top:0;width:450px;background:#fff;color:#1e293b;padding:30px;font-family:sans-serif;} .receipt-header{text-align:center;border-bottom:2px dashed #cbd5e1;padding-bottom:15px;margin-bottom:15px;} .receipt-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:15px;}
@@ -52,12 +59,30 @@
     <div id="financeTab" class="form-section">
         <div id="summaryDashboard" class="hidden"><button class="btn-cancel-action" style="color:#2dd4bf;border-color:#2dd4bf;" onclick="fetchSum()">📊 載入高階營收</button>
             <div class="summary-grid hidden" id="sumData"><div class="summary-item">本日<span class="summary-val" id="vD">$0</span></div><div class="summary-item">本週<span class="summary-val" id="vW">$0</span></div><div class="summary-item">本月<span class="summary-val" id="vM">$0</span></div></div></div>
+        
         <div class="pending-box"><button class="btn-search" style="background:#8b5cf6;" onclick="loadPend()">📥 載入中台待結帳</button><div id="pendArea" style="margin-top:15px;"></div></div>
-        <div class="cart-box"><div class="cart-title"><span>🛒 結帳核對 (多選)</span><span id="cSum">$0</span></div>
-            <table class="cart-table"><thead><tr><th>姓名</th><th>項目</th><th>師傅</th><th>金額</th><th>刪</th></tr></thead><tbody id="cBody"></tbody></table></div>
-        <div class="form-group"><label>支付方式</label><select id="fPay" onchange="document.getElementById('remBox').style.display=(this.value==='匯款'?'block':'none')"><option value="現金">現金</option><option value="匯款">匯款</option><option value="扣堂">扣堂</option></select></div>
-        <div class="form-group hidden" id="remBox"><label>匯款備註</label><input type="text" id="fRem"></div>
+        
+        <div class="cart-box">
+            <div class="cart-title"><span>🛒 結帳核對 (多選)</span><span id="cSum">$0</span></div>
+            <div id="cBody">
+                </div>
+        </div>
+        
+        <div class="form-group"><label>支付方式</label>
+            <select id="fPay" onchange="toggleRem()">
+                <option value="現金">現金</option>
+                <option value="匯款">匯款</option>
+                <option value="扣堂">扣堂</option>
+            </select>
+        </div>
+        <div class="form-group hidden" id="remBox"><label>匯款備註</label><input type="text" id="fRem" placeholder="例如: 後五碼或匯款日期"></div>
         <div class="form-group"><label>經手人</label><input type="text" id="fCash" readonly></div>
+        
+        <div class="form-group">
+            <label>整體結帳備註 (會印在明細上)</label>
+            <textarea id="fGenNote" placeholder="例如：開立發票統編、或是其他整體交代事項..." style="resize:vertical;"></textarea>
+        </div>
+        
         <button class="btn-submit" style="background:linear-gradient(to right,#10b981,#059669);" onclick="processCart()">合併結帳產圖</button>
     </div>
 
@@ -67,10 +92,26 @@
     </div>
 </div>
 
-<div id="receiptCaptureArea"><div class="receipt-header"><h3 style="margin:0;">錦葳養生館</h3><p style="margin:5px 0 0;color:#64748b;">電子結帳明細</p></div>
-    <div class="receipt-row"><span>單號：</span><span id="rId"></span></div><div class="receipt-row"><span>時間：</span><span id="rTm"></span></div><div class="receipt-row"><span>方式：</span><span id="rMth"></span></div><div class="receipt-row"><span>人員：</span><span id="rCsh"></span></div>
-    <div style="border-bottom:1px dashed #cbd5e1;margin:15px 0;"></div><div id="rItems"></div><div style="border-bottom:2px solid #1e293b;margin:15px 0;"></div>
-    <div class="receipt-row" style="font-weight:bold;"><span>加總：</span><span id="rSum"></span></div><p style="text-align:center;font-size:12px;margin-top:25px;">感謝您的光臨，期待再次為您服務。</p>
+<div id="receiptCaptureArea">
+    <div class="receipt-header"><h3 style="margin:0;">錦葳養生館</h3><p style="margin:5px 0 0;color:#64748b;">電子結帳明細</p></div>
+    <div class="receipt-row"><span>單號：</span><span id="rId"></span></div>
+    <div class="receipt-row"><span>時間：</span><span id="rTm"></span></div>
+    <div class="receipt-row"><span>方式：</span><span id="rMth"></span></div>
+    <div class="receipt-row"><span>人員：</span><span id="rCsh"></span></div>
+    
+    <div class="receipt-row" id="rRemRow" style="display:none; color:#10b981;"><span>匯款資料：</span><span id="rRemNote"></span></div>
+    
+    <div style="border-bottom:1px dashed #cbd5e1;margin:15px 0;"></div>
+    <div id="rItems"></div>
+    <div style="border-bottom:2px solid #1e293b;margin:15px 0;"></div>
+    
+    <div class="receipt-row" style="font-weight:bold;font-size:18px;"><span>加總：</span><span id="rSum"></span></div>
+    
+    <div id="rGenNoteBox" style="display:none; font-size:13px; color:#475569; margin-top:15px; border-top:1px dashed #cbd5e1; padding-top:10px;">
+        <strong>整體備註：</strong><br><span id="rGenNote"></span>
+    </div>
+    
+    <p style="text-align:center;font-size:12px;margin-top:25px;color:#94a3b8;">感謝您的光臨，期待再次為您服務。</p>
 </div>
 
 <script>
@@ -81,15 +122,25 @@
     liff.init({liffId:'2010453415-nTX3Lo1L'}).then(async () => {
         if(!liff.isLoggedIn()) liff.login();
         else {
-            try { const p = await liff.getProfile(); el('fCash').value = p.displayName;
+            try { 
+                const p = await liff.getProfile(); el('fCash').value = p.displayName;
                 const r = await fetch(API, {method:'POST', body:JSON.stringify({action:'checkAuth', userName:p.displayName})}).then(x=>x.json());
                 el('loadingOverlay').style.display='none';
-                if(r.status==='success') { if(r.permissions.canAccessFinance){ el('btnTabFinance').classList.remove('hidden'); el('btnTabAdjust').classList.remove('hidden'); } if(r.permissions.canViewSummary) el('summaryDashboard').classList.remove('hidden'); }
+                if(r.status==='success') { 
+                    if(r.permissions.canAccessFinance){ el('btnTabFinance').classList.remove('hidden'); el('btnTabAdjust').classList.remove('hidden'); } 
+                    if(r.permissions.canViewSummary) el('summaryDashboard').classList.remove('hidden'); 
+                }
             } catch(e) { el('loadingOverlay').innerText = '驗證錯誤'; }
         }
     });
 
     function switchTab(id, btn) { document.querySelectorAll('.form-section').forEach(x=>x.style.display='none'); document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active')); el(id).style.display='block'; btn.classList.add('active'); }
+    
+    function toggleRem() {
+        if(v('fPay') === '匯款') el('remBox').classList.remove('hidden');
+        else el('remBox').classList.add('hidden');
+    }
+
     async function apiCall(action, payload, msg) { try { const r = await fetch(API, {method:'POST', body:JSON.stringify({action, ...payload, orderId:'B'+Date.now()})}).then(x=>x.json()); if(r.status==='success'){ if(msg) alert(msg); if(action==='createBooking') liff.closeWindow(); return r; } else alert('失敗: '+r.message); } catch(e){ alert('網路錯誤'); } }
 
     async function searchBks() {
@@ -104,19 +155,57 @@
 
     function renderCart() {
         el('cBody').innerHTML=''; let s=0; window.uc = (id,f,val) => { const i=cart.find(x=>x.id===id); if(i){ i[f]=val; if(f==='course') i.price=prices[val]||0; renderCart(); } };
-        cart.forEach(i=>{ s+=Number(i.price); el('cBody').innerHTML+=`<tr><td><input value="${i.name}" onchange="uc('${i.id}','name',this.value)" style="padding:4px"></td><td><select onchange="uc('${i.id}','course',this.value)" style="padding:4px"><option value="無痛滑罐放鬆(快速修復)-30分鐘" ${i.course.includes('30分鐘')?'selected':''}>30分</option><option value="全方位滑罐放鬆(全身修復)-90分鐘" ${i.course.includes('90分鐘')?'selected':''}>90分</option><option value="單部位舒緩修復(精準調理)" ${i.course.includes('單部位')?'selected':''}>單部位</option><option value="全身結構養護(平衡調理)" ${i.course.includes('全身')?'selected':''}>全身</option><option value="全身全方位深度修復-60分鐘" ${i.course.includes('60分鐘')?'selected':''}>深度60分</option><option value="其他" ${i.course==='其他'?'selected':''}>其他</option></select></td><td><select onchange="uc('${i.id}','hero',this.value)" style="padding:4px"><option value="千芳" ${i.hero==='千芳'?'selected':''}>千芳</option><option value="奎元" ${i.hero==='奎元'?'selected':''}>奎元</option></select></td><td><input type="number" value="${i.price}" onchange="uc('${i.id}','price',this.value)" style="padding:4px;width:60px"></td><td class="cart-remove" onclick="cart=cart.filter(x=>x.id!=='${i.id}');renderCart()">X</td></tr><tr><td colspan="5"><input value="${i.note}" placeholder="備註..." onchange="uc('${i.id}','note',this.value)" style="padding:4px"></td></tr>`; }); el('cSum').innerText='$'+s;
+        cart.forEach(i=>{
+            s+=Number(i.price);
+            el('cBody').innerHTML+=`
+            <div class="cart-item-card">
+                <button class="cart-item-del" onclick="cart=cart.filter(x=>x.id!=='${i.id}');renderCart()">✕</button>
+                <div class="cart-item-row" style="padding-right: 30px;">
+                    <div><label style="font-size:12px;margin-bottom:2px;">姓名</label><input value="${i.name}" onchange="uc('${i.id}','name',this.value)" style="padding:6px;font-size:14px;"></div>
+                    <div><label style="font-size:12px;margin-bottom:2px;">師傅</label><select onchange="uc('${i.id}','hero',this.value)" style="padding:6px;font-size:14px;"><option value="千芳" ${i.hero==='千芳'?'selected':''}>千芳</option><option value="奎元" ${i.hero==='奎元'?'selected':''}>奎元</option></select></div>
+                </div>
+                <div class="cart-item-row">
+                    <div style="flex:2;"><label style="font-size:12px;margin-bottom:2px;">課程</label><select onchange="uc('${i.id}','course',this.value)" style="padding:6px;font-size:14px;"><option value="無痛滑罐放鬆(快速修復)-30分鐘" ${i.course.includes('30分鐘')?'selected':''}>無痛30分</option><option value="全方位滑罐放鬆(全身修復)-90分鐘" ${i.course.includes('90分鐘')?'selected':''}>全方位90分</option><option value="單部位舒緩修復(精準調理)" ${i.course.includes('單部位')?'selected':''}>單部位</option><option value="全身結構養護(平衡調理)" ${i.course.includes('全身')?'selected':''}>全身</option><option value="全身全方位深度修復-60分鐘" ${i.course.includes('60分鐘')?'selected':''}>深度60分</option><option value="其他" ${i.course==='其他'?'selected':''}>其他</option></select></div>
+                    <div style="flex:1;"><label style="font-size:12px;margin-bottom:2px;">金額</label><input type="number" value="${i.price}" onchange="uc('${i.id}','price',this.value)" style="padding:6px;font-size:14px;"></div>
+                </div>
+                <div><input value="${i.note}" placeholder="個人專屬備註 (選填)..." onchange="uc('${i.id}','note',this.value)" style="padding:6px;font-size:13px;background:rgba(0,0,0,0.1);"></div>
+            </div>`;
+        }); 
+        el('cSum').innerText='$'+s;
     }
 
     async function processCart() {
-        if(!cart.length) return alert('空購物車'); const id='F'+Date.now(); el('rId').innerText=id; el('rTm').innerText=new Date().toLocaleString(); el('rMth').innerText=v('fPay'); el('rCsh').innerText=v('fCash'); el('rItems').innerHTML=''; let s=0;
-        cart.forEach(i=>{ s+=Number(i.price); el('rItems').innerHTML+=`<div class="receipt-row"><span>${i.name}(${i.hero})</span><span>$${i.price}</span></div><div style="font-size:12px">項目:${i.course} ${i.note?'備註:'+i.note:''}</div>`; }); el('rSum').innerText='$'+s;
+        if(!cart.length) return alert('空購物車'); 
+        const id='F'+Date.now(); 
+        el('rId').innerText=id; 
+        el('rTm').innerText=new Date().toLocaleString(); 
+        el('rMth').innerText=v('fPay'); 
+        el('rCsh').innerText=v('fCash'); 
+        
+        // 匯款顯示邏輯
+        const remVal = v('fRem');
+        if(v('fPay') === '匯款' && remVal) { el('rRemRow').style.display='flex'; el('rRemNote').innerText=remVal; } else { el('rRemRow').style.display='none'; }
+        
+        // 整體備註顯示邏輯
+        const genNote = v('fGenNote');
+        if(genNote) { el('rGenNoteBox').style.display='block'; el('rGenNote').innerText=genNote; } else { el('rGenNoteBox').style.display='none'; }
+
+        el('rItems').innerHTML=''; let s=0;
+        cart.forEach(i=>{ 
+            s+=Number(i.price); 
+            el('rItems').innerHTML+=`<div class="receipt-row"><span>${i.name}(${i.hero})</span><span>$${i.price}</span></div><div style="font-size:12px">項目:${i.course} ${i.note?'備註:'+i.note:''}</div>`; 
+        }); 
+        el('rSum').innerText='$'+s;
+        
         html2canvas(el('receiptCaptureArea'), {scale:2}).then(async c=>{
-            const b64=c.toDataURL('image/png'); const a=document.createElement('a'); a.href=b64; a.download=`明細_${id}.png`; a.click();
-            await apiCall('createFinance',{orderId:id,paymentMethod:v('fPay'),remittanceNote:v('fRem'),cashier:v('fCash'),startTime:new Date().toISOString(),cartItems:cart,receiptImageBase64:b64}, '結帳成功!'); cart=[]; renderCart(); liff.closeWindow();
+            const b64=c.toDataURL('image/png'); const a=document.createElement('a'); a.href=b64; a.download=`錦葳明細_${id}.png`; a.click();
+            await apiCall('createFinance',{orderId:id, paymentMethod:v('fPay'), remittanceNote:remVal, cashier:v('fCash'), startTime:new Date().toISOString(), cartItems:cart, generalNote:genNote, receiptImageBase64:b64}, '結帳與明細存檔成功!'); 
+            cart=[]; renderCart(); v('fGenNote', ''); v('fRem', ''); liff.closeWindow();
         });
     }
 
     async function fetchSum() { el('sumData').classList.remove('hidden'); const r = await apiCall('getSummary',{}); if(r) { el('vD').innerText='$'+r.summary.daily; el('vW').innerText='$'+r.summary.weekly; el('vM').innerText='$'+r.summary.monthly; } }
+    
     async function searchFin() {
         const k=v('adjKw'); if(!k) return alert('輸入關鍵字'); const r = await apiCall('searchFinanceRecords',{keyword:k}); el('adjArea').innerHTML='';
         if(r && r.data.length){ r.data.forEach(i=>{ el('adjArea').innerHTML+=`<div class="result-card" id="f-${i.rowIndex}">單號:${i.orderId}<br>${i.name} - $${i.amount}<br><button class="btn-small btn-del" onclick="if(confirm('作廢退費?'))apiCall('voidFinanceRecord',{rowIndex:${i.rowIndex},orderId:'${i.orderId}'}).then(()=>el('f-${i.rowIndex}').style.opacity=0.3)">作廢歸零</button></div>`; }); } else el('adjArea').innerHTML='<p>無紀錄</p>';
