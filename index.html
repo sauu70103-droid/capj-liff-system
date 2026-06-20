@@ -6,56 +6,272 @@
     <title>錦葳店務與財務系統</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { margin: 0; padding: 20px; font-family: sans-serif; background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%); color: #f8fafc; min-height: 100vh; }
-        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)), radial-gradient(2px 2px at 150px 70px, #ffffff, rgba(0,0,0,0)), radial-gradient(2px 2px at 50px 160px, #ffffff, rgba(0,0,0,0)); background-size: 350px 350px; opacity: 0.3; z-index: -1; }
-        .container { max-width: 600px; margin: 0 auto; position: relative; }
-        h2 { text-align: center; color: #c4b5fd; text-shadow: 0 0 10px rgba(196,181,253,0.3); letter-spacing: 2px; }
+        /* 基礎背景與玻璃透視設計 */
+        body {
+            margin: 0; 
+            padding: 20px; 
+            font-family: sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%);
+            color: #f8fafc; 
+            min-height: 100vh;
+        }
+        body::before {
+            content: ""; 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)), 
+                radial-gradient(2px 2px at 150px 70px, #ffffff, rgba(0,0,0,0)), 
+                radial-gradient(2px 2px at 50px 160px, #ffffff, rgba(0,0,0,0));
+            background-size: 350px 350px; 
+            opacity: 0.3; 
+            z-index: -1;
+        }
         
-        #loadingOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.9); z-index: 10; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 18px; color: #2dd4bf; font-weight: bold; }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            position: relative; 
+        }
         
-        /* 頁籤導航 */
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 12px 5px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; }
-        .tab-btn.active { background: rgba(139, 92, 246, 0.3); color: #ddd6fe; border-color: #8b5cf6; }
+        h2 { 
+            text-align: center; 
+            color: #c4b5fd; 
+            text-shadow: 0 0 10px rgba(196,181,253,0.3); 
+            letter-spacing: 2px; 
+        }
+        
+        /* 權限讀取遮罩 */
+        #loadingOverlay {
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            background: rgba(15,23,42,0.9); 
+            z-index: 10; 
+            border-radius: 12px;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            font-size: 18px; 
+            color: #2dd4bf; 
+            font-weight: bold;
+        }
 
-        .form-section { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); padding: 25px; border-radius: 12px; display: none; }
-        .form-section.active { display: block; }
-        .form-group { margin-bottom: 18px; }
-        label { display: block; margin-bottom: 8px; font-size: 14px; color: #cbd5e1; }
-        input, select { width: 100%; padding: 12px; box-sizing: border-box; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; color: #f8fafc; font-size: 16px; }
-        input[readonly] { background: rgba(255, 255, 255, 0.05); color: #94a3b8; cursor: not-allowed; }
-        option { background: #1e1b4b; color: #fff; }
+        /* 頁籤切換按鈕 */
+        .tabs { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+        }
         
-        .btn-submit { background: linear-gradient(to right, #6366f1, #8b5cf6); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-cancel-action { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; padding: 15px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-search { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 12px; width: 100%; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .tab-btn { 
+            flex: 1; 
+            padding: 15px; 
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            color: #cbd5e1; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 16px; 
+        }
         
-        /* 中台聯動面板 */
-        .mo-panel { border: 1px solid #8b5cf6; background: rgba(139, 92, 246, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .tab-btn.active { 
+            background: rgba(139, 92, 246, 0.3); 
+            color: #ddd6fe; 
+            border-color: #8b5cf6; 
+        }
+
+        /* 表單區域 */
+        .form-section { 
+            background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            padding: 25px; 
+            border-radius: 12px; 
+            display: none; 
+        }
+        
+        .form-section.active { 
+            display: block; 
+        }
+        
+        .form-group { 
+            margin-bottom: 18px; 
+        }
+        
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-size: 14px; 
+            color: #cbd5e1; 
+        }
+        
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            box-sizing: border-box; 
+            background: rgba(0, 0, 0, 0.3); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            border-radius: 6px; 
+            color: #f8fafc; 
+            font-size: 16px; 
+        }
+        
+        input[readonly] { 
+            background: rgba(255, 255, 255, 0.05); 
+            color: #94a3b8; 
+            cursor: not-allowed; 
+        }
+        
+        option { 
+            background: #1e1b4b; 
+            color: #fff; 
+        }
+        
+        /* 動作按鈕 */
+        .btn-submit { 
+            background: linear-gradient(to right, #6366f1, #8b5cf6); 
+            color: white; 
+            border: none; 
+            padding: 15px; 
+            width: 100%; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+        }
+        
+        .btn-cancel-action { 
+            background: rgba(239, 68, 68, 0.2); 
+            color: #fca5a5; 
+            border: 1px solid #ef4444; 
+            padding: 15px; 
+            width: 100%; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        
+        .btn-search { 
+            background: rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.3); 
+            color: white; 
+            padding: 12px; 
+            width: 100%; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            cursor: pointer; 
+        }
         
         /* 查詢結果卡片 */
-        .result-card { background: rgba(0,0,0,0.4); border-left: 4px solid #8b5cf6; padding: 15px; border-radius: 6px; margin-top: 15px; cursor: pointer; transition: 0.3s; }
-        .result-card:hover { background: rgba(139, 92, 246, 0.2); }
-        .result-info { font-size: 14px; line-height: 1.6; color: #e2e8f0; margin-bottom: 10px; }
-        .result-actions { display: flex; gap: 10px; }
-        .btn-small { flex: 1; padding: 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
+        .result-card { 
+            background: rgba(0,0,0,0.4); 
+            border-left: 4px solid #8b5cf6; 
+            padding: 15px; 
+            border-radius: 6px; 
+            margin-top: 15px; 
+        }
+        
+        .result-info { 
+            font-size: 14px; 
+            line-height: 1.6; 
+            margin-bottom: 15px; 
+            color: #e2e8f0; 
+        }
+        
+        .result-actions { 
+            display: flex; 
+            gap: 10px; 
+        }
+        
+        .btn-small { 
+            flex: 1; 
+            padding: 10px; 
+            border-radius: 6px; 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        
         .btn-edit { background: #3b82f6; color: white; }
         .btn-del { background: #ef4444; color: white; }
-        .reschedule-box { margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2); display: none; }
+        
+        .reschedule-box { 
+            margin-top: 15px; 
+            padding-top: 15px; 
+            border-top: 1px dashed rgba(255,255,255,0.2); 
+            display: none; 
+        }
 
-        /* 稽核紀錄卡片與表單 */
-        .audit-card { background: rgba(255, 255, 255, 0.05); border: 1px solid #fcd34d; padding: 15px; border-radius: 8px; margin-top: 10px; cursor: pointer; }
-        .audit-val { color: #fcd34d; font-weight: bold; }
-        .edit-form-box { background: rgba(0,0,0,0.5); padding: 20px; border-radius: 12px; margin-top: 20px; border: 1px solid #6366f1; }
+        /* 高階財務儀表板 */
+        #summaryDashboard { 
+            background: rgba(45, 212, 191, 0.1); 
+            border: 1px solid #2dd4bf; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            text-align: center; 
+        }
+        
+        .summary-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 10px; 
+            margin-top: 10px; 
+        }
+        
+        .summary-item { 
+            background: rgba(0,0,0,0.3); 
+            padding: 10px; 
+            border-radius: 6px; 
+        }
+        
+        .summary-val { 
+            display: block; 
+            font-size: 20px; 
+            font-weight: bold; 
+            color: #2dd4bf; 
+            margin-top: 5px; 
+        }
 
-        /* 營收儀表板 */
-        #summaryDashboard { background: rgba(45, 212, 191, 0.1); border: 1px solid #2dd4bf; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
-        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
-        .summary-item { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; }
-        .summary-val { display: block; font-size: 20px; font-weight: bold; color: #2dd4bf; margin-top: 5px; }
+        /* 待結帳抓取區塊 */
+        .pending-box { 
+            background: rgba(139, 92, 246, 0.1); 
+            border: 1px solid #8b5cf6; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+        }
+        
+        .pending-item { 
+            display: inline-block; 
+            background: #4c1d95; 
+            color: white; 
+            padding: 8px 12px; 
+            border-radius: 20px; 
+            margin: 5px; 
+            font-size: 14px; 
+            cursor: pointer; 
+            transition: 0.2s; 
+        }
+        
+        .pending-item:hover { 
+            background: #6d28d9; 
+        }
 
-        .divider { height: 1px; background: rgba(255,255,255,0.1); margin: 30px 0; }
-        .hidden { display: none !important; }
+        .divider { 
+            height: 1px; 
+            background: rgba(255,255,255,0.1); 
+            margin: 30px 0; 
+        }
+        
+        .hidden { 
+            display: none !important; 
+        }
     </style>
 </head>
 <body>
@@ -67,13 +283,21 @@
     <div class="tabs">
         <button class="tab-btn active" id="btnTabBooking" onclick="switchTab('bookingTab', this)">店務預約</button>
         <button class="tab-btn hidden" id="btnTabFinance" onclick="switchTab('financeTab', this)">財務結帳</button>
-        <button class="tab-btn hidden" id="btnTabAudit" onclick="switchTab('auditTab', this)">異動管理</button>
     </div>
 
     <div id="bookingTab" class="form-section active">
-        <div class="form-group"><label>顧客手機號碼</label><input type="tel" id="bookPhone"></div>
-        <div class="form-group"><label>顧客姓名</label><input type="text" id="bookName"></div>
-        <div class="form-group"><label>人數</label><input type="number" id="bookPeople" value="1"></div>
+        <div class="form-group">
+            <label>顧客手機號碼</label>
+            <input type="tel" id="bookPhone">
+        </div>
+        <div class="form-group">
+            <label>顧客姓名</label>
+            <input type="text" id="bookName">
+        </div>
+        <div class="form-group">
+            <label>人數</label>
+            <input type="number" id="bookPeople" value="1">
+        </div>
         <div class="form-group">
             <label>課程類型</label>
             <select id="bookCourseType">
@@ -88,17 +312,26 @@
         <div class="form-group">
             <label>操作調理師傅</label>
             <select id="bookHero">
-                <option value="奎元">奎元</option><option value="千芳">千芳</option><option value="阿達">阿達</option><option value="旭哥">旭哥</option><option value="家蓁">家蓁</option>
+                <option value="奎元">奎元</option>
+                <option value="千芳">千芳</option>
             </select>
         </div>
-        <div class="form-group"><label>開始時間</label><input type="datetime-local" id="bookStart"></div>
-        <div class="form-group"><label>結束時間</label><input type="datetime-local" id="bookEnd"></div>
+        <div class="form-group">
+            <label>開始時間</label>
+            <input type="datetime-local" id="bookStart">
+        </div>
+        <div class="form-group">
+            <label>結束時間</label>
+            <input type="datetime-local" id="bookEnd">
+        </div>
         <button class="btn-submit" onclick="submitData('createBooking')">確認建立預約</button>
         
         <div class="divider"></div>
         
         <h3 style="color: #cbd5e1; font-size: 16px; margin-bottom: 15px;">🔍 查詢、改期與取消</h3>
-        <div class="form-group"><input type="text" id="searchKeyword" placeholder="輸入顧客姓名或手機查詢"></div>
+        <div class="form-group">
+            <input type="text" id="searchKeyword" placeholder="請輸入顧客姓名或手機進行查詢">
+        </div>
         <button class="btn-search" id="btnSearch" onclick="searchBookings()">搜尋目前預約紀錄</button>
         <div id="searchResultsArea"></div>
     </div>
@@ -114,14 +347,19 @@
             </div>
         </div>
 
-        <div class="mo-panel">
-            <button class="btn-search" style="background: rgba(139, 92, 246, 0.4); border-color: #8b5cf6;" onclick="loadPendingCheckouts()">📥 載入師傅待結帳清單</button>
-            <div id="pendingArea"></div>
+        <div class="pending-box">
+            <button class="btn-search" style="background: #8b5cf6; border-color: #8b5cf6;" id="btnFetchPending" onclick="loadPendingCheckouts()">📥 載入中台待結帳清單</button>
+            <div id="pendingListArea" style="margin-top: 15px;"></div>
         </div>
-        <input type="hidden" id="moOrderId" value="">
 
-        <div class="form-group"><label>顧客手機號碼 (對位用)</label><input type="tel" id="finPhone"></div>
-        <div class="form-group"><label>顧客姓名</label><input type="text" id="finName" placeholder="請輸入姓名"></div>
+        <div class="form-group">
+            <label>顧客姓名</label>
+            <input type="text" id="finName">
+        </div>
+        <div class="form-group">
+            <label>顧客手機號碼 (對位用)</label>
+            <input type="tel" id="finPhone">
+        </div>
         <div class="form-group">
             <label>課程類型</label>
             <select id="finCourseType" onchange="autoCalculateAmount()">
@@ -133,286 +371,370 @@
                 <option value="其他">其他</option>
             </select>
         </div>
-        <div class="form-group"><label>人數</label><input type="number" id="finPeople" value="1" onchange="autoCalculateAmount()"></div>
-        <div class="form-group"><label>實收金額 (或扣堂點數)</label><input type="number" id="finAmount" value="600"></div>
+        <div class="form-group">
+            <label>人數</label>
+            <input type="number" id="finPeople" value="1" onchange="autoCalculateAmount()">
+        </div>
+        <div class="form-group">
+            <label>實收金額 (或扣堂點數)</label>
+            <input type="number" id="finAmount" value="600">
+        </div>
         <div class="form-group">
             <label>支付方式</label>
-            <select id="finPayment" onchange="toggleRemittance('finPayment', 'remittanceBox')">
-                <option value="現金">現金</option><option value="匯款">匯款</option><option value="扣堂">扣堂</option>
+            <select id="finPayment" onchange="toggleRemittance()">
+                <option value="現金">現金</option>
+                <option value="匯款">匯款</option>
+                <option value="扣堂">扣堂</option>
             </select>
         </div>
-        <div class="form-group hidden" id="remittanceBox"><label>匯款備註資料</label><input type="text" id="finRemittanceNote"></div>
-        <div class="form-group"><label>收款人員 (系統自動綁定)</label><input type="text" id="finCashier" readonly></div>
+        <div class="form-group hidden" id="remittanceBox">
+            <label>匯款備註資料</label>
+            <input type="text" id="finRemittanceNote">
+        </div>
         <div class="form-group">
-            <label>操作調理師傅 (業績歸屬)</label>
+            <label>收款人員 (系統自動綁定 LINE 帳號)</label>
+            <input type="text" id="finCashier" readonly>
+        </div>
+        <div class="form-group">
+            <label>操作調理師傅</label>
             <select id="finHero">
-                <option value="奎元">奎元</option><option value="千芳">千芳</option><option value="阿達">阿達</option><option value="旭哥">旭哥</option><option value="家蓁">家蓁</option>
+                <option value="奎元">奎元</option>
+                <option value="千芳">千芳</option>
             </select>
         </div>
         <button class="btn-submit" onclick="submitData('createFinance')">確認結帳入帳</button>
     </div>
-
-    <div id="auditTab" class="form-section">
-        <h3 style="color: #fcd34d; font-size: 16px;">🔍 帳單異動稽核 (依權限開放)</h3>
-        <div class="form-group"><input type="text" id="auditSearchKeyword" placeholder="搜尋顧客姓名或單號"></div>
-        <button class="btn-search" onclick="searchFinanceHistory()">搜尋歷史結帳紀錄</button>
-        
-        <div id="auditListArea"></div>
-
-        <div id="editFormArea" class="edit-form-box hidden">
-            <h4 id="editingTxTitle" style="margin-top:0; color:#c4b5fd;">正在修改...</h4>
-            <input type="hidden" id="editTxId">
-            
-            <div class="form-group">
-                <label>課程類型</label>
-                <select id="editCourse">
-                    <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆(快速修復)-30分鐘</option>
-                    <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆(全身修復)-90分鐘</option>
-                    <option value="單部位舒緩修復(精準調理)">單部位舒緩修復(精準調理)</option>
-                    <option value="全身結構養護(平衡調理)">全身結構養護(平衡調理)</option>
-                    <option value="全身全方位深度修復-60分鐘">全身全方位深度修復-60分鐘</option>
-                    <option value="其他">其他</option>
-                </select>
-            </div>
-            <div class="form-group"><label>人數</label><input type="number" id="editPeople"></div>
-            <div class="form-group"><label>實收金額</label><input type="number" id="editAmount"></div>
-            <div class="form-group">
-                <label>支付方式</label>
-                <select id="editPayment" onchange="toggleRemittance('editPayment', 'editRemBox')">
-                    <option value="現金">現金</option><option value="匯款">匯款</option><option value="扣堂">扣堂</option>
-                </select>
-            </div>
-            <div class="form-group hidden" id="editRemBox"><label>匯款備註</label><input type="text" id="editRemNote"></div>
-            <div class="form-group">
-                <label>業績歸屬師傅</label>
-                <select id="editHero">
-                    <option value="奎元">奎元</option><option value="千芳">千芳</option><option value="阿達">阿達</option><option value="旭哥">旭哥</option><option value="家蓁">家蓁</option>
-                </select>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="form-group">
-                <label style="color: #fca5a5;">變更原因 (影子帳本存證)</label>
-                <select id="changeReason" onchange="toggleAuditNote()">
-                    <option value="操作失誤 (按錯金額/項目)">操作失誤 (按錯金額/項目)</option>
-                    <option value="客人要求更改支付方式">客人要求更改支付方式</option>
-                    <option value="算錯人數/折扣">算錯人數/折扣</option>
-                    <option value="退補差價">退補差價</option>
-                    <option value="其他">其他 (需說明)</option>
-                </select>
-            </div>
-            <div id="auditNoteBox" class="form-group hidden">
-                <label>請輸入其他原因說明</label>
-                <input type="text" id="auditNote" placeholder="請務必輸入異動原因">
-            </div>
-            <button class="btn-submit" style="background: #f59e0b;" onclick="submitFinanceUpdate()">確認執行異動覆蓋</button>
-        </div>
-    </div>
 </div>
 
 <script>
+    // ==========================================
+    // 系統變數初始化區
+    // ==========================================
     const LIFF_ID = '2010453415-nTX3Lo1L';
-    // 🚨 這是你最新的 GAS 通道網址
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec'; 
 
-    const coursePrices = { "無痛滑罐放鬆(快速修復)-30分鐘": 600, "全方位滑罐放鬆(全身修復)-90分鐘": 1600, "單部位舒緩修復(精準調理)": 600, "全身結構養護(平衡調理)": 1000, "全身全方位深度修復-60分鐘": 2000 };
-    let userPermissions = {};
+    const coursePrices = { 
+        "無痛滑罐放鬆(快速修復)-30分鐘": 600, 
+        "全方位滑罐放鬆(全身修復)-90分鐘": 1600, 
+        "單部位舒緩修復(精準調理)": 600, 
+        "全身結構養護(平衡調理)": 1000, 
+        "全身全方位深度修復-60分鐘": 2000 
+    };
 
-    // 系統初始化與授權
+    // ==========================================
+    // LIFF 登入與權限驗證流程
+    // ==========================================
     liff.init({ liffId: LIFF_ID }).then(async () => {
-        if (!liff.isLoggedIn()) { liff.login(); } else {
+        if (!liff.isLoggedIn()) {
+            liff.login();
+        } else {
             try {
                 const profile = await liff.getProfile();
                 document.getElementById('finCashier').value = profile.displayName;
                 
-                const authRes = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'checkAuth', userName: profile.displayName }) });
+                const authRes = await fetch(GAS_API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ 
+                        action: 'checkAuth', 
+                        userName: profile.displayName 
+                    }) 
+                });
+                
                 const authData = await authRes.json();
                 
+                // 關閉系統連線遮罩
                 document.getElementById('loadingOverlay').style.display = 'none';
+                
                 if (authData.status === 'success') {
-                    userPermissions = authData.permissions;
-                    if (userPermissions.canAccessFinance) {
+                    if (authData.permissions.canAccessFinance) {
                         document.getElementById('btnTabFinance').classList.remove('hidden');
-                        document.getElementById('btnTabAudit').classList.remove('hidden');
                     }
-                    if (userPermissions.canViewSummary) document.getElementById('summaryDashboard').classList.remove('hidden');
-                } else {
-                    document.getElementById('loadingOverlay').innerText = authData.message;
-                    document.getElementById('loadingOverlay').style.display = 'flex';
+                    if (authData.permissions.canViewSummary) {
+                        document.getElementById('summaryDashboard').classList.remove('hidden');
+                    }
                 }
-            } catch (err) { document.getElementById('loadingOverlay').innerText = '連線異常，請重新載入'; }
+            } catch (err) {
+                document.getElementById('loadingOverlay').innerText = '連線異常，請重整畫面';
+            }
         }
     });
 
-    // 介面與表單輔助邏輯
+    // ==========================================
+    // 介面互動輔助函數
+    // ==========================================
     function switchTab(tabId, btn) {
         document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active'); btn.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+        btn.classList.add('active');
     }
 
-    function toggleRemittance(selectId, boxId) {
-        const box = document.getElementById(boxId);
-        if (document.getElementById(selectId).value === '匯款') box.classList.remove('hidden'); else box.classList.add('hidden');
+    function toggleRemittance() {
+        const method = document.getElementById('finPayment').value;
+        const box = document.getElementById('remittanceBox');
+        if (method === '匯款') {
+            box.classList.remove('hidden'); 
+        } else {
+            box.classList.add('hidden');
+        }
     }
 
     function autoCalculateAmount() {
         const type = document.getElementById('finCourseType').value;
         const people = parseInt(document.getElementById('finPeople').value) || 1;
         const amountInput = document.getElementById('finAmount');
+        
         if (type !== '其他' && coursePrices[type]) {
-            amountInput.value = coursePrices[type] * people; amountInput.readOnly = true; amountInput.style.opacity = '0.7';
-        } else { amountInput.value = ''; amountInput.readOnly = false; amountInput.style.opacity = '1'; }
-    }
-
-    function toggleAuditNote() {
-        const reason = document.getElementById('changeReason').value;
-        const box = document.getElementById('auditNoteBox');
-        if(reason === '其他') box.classList.remove('hidden'); else box.classList.add('hidden');
-    }
-
-    // 中台載入邏輯
-    async function loadPendingCheckouts() {
-        const area = document.getElementById('pendingArea');
-        area.innerHTML = '<div style="margin-top:10px; color:#c4b5fd;">連線中台讀取中...</div>';
-        try {
-            const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'getPendingCheckouts' }) });
-            const result = await res.json();
-            area.innerHTML = '';
-            if(result.status === 'success' && result.records && result.records.length > 0) {
-                result.records.forEach(item => {
-                    area.innerHTML += `<div class="result-card" onclick="fillFinanceForm('${item.client}', '${item.operator}', '${item.courseItem}', '${item.orderId || ''}')">
-                        <div class="result-info"><strong>💳 待結帳：${item.client}</strong><br>時間：${item.time} | 師傅：${item.operator}<br>項目：${item.courseItem}</div></div>`;
-                });
-            } else area.innerHTML = '<div style="margin-top:10px; color:#2dd4bf;">目前沒有待結帳的顧客喔！</div>';
-        } catch (e) { area.innerHTML = '<div style="margin-top:10px; color:#fca5a5;">無法連接中台系統</div>'; }
-    }
-
-    function fillFinanceForm(client, operator, courseStr, orderId) {
-        document.getElementById('finName').value = client; document.getElementById('moOrderId').value = orderId;
-        const heroSelect = document.getElementById('finHero');
-        for (let i = 0; i < heroSelect.options.length; i++) if (operator.includes(heroSelect.options[i].value)) heroSelect.selectedIndex = i;
-        const courseSelect = document.getElementById('finCourseType');
-        let matched = false;
-        for (let i = 0; i < courseSelect.options.length; i++) {
-            if (courseStr.includes(courseSelect.options[i].value)) { courseSelect.selectedIndex = i; matched = true; break; }
+            amountInput.value = coursePrices[type] * people; 
+            amountInput.readOnly = true; 
+            amountInput.style.opacity = '0.7';
+        } else { 
+            amountInput.value = ''; 
+            amountInput.readOnly = false; 
+            amountInput.style.opacity = '1'; 
         }
-        if (!matched) courseSelect.value = '其他';
-        autoCalculateAmount();
-        alert(`已載入 ${client} 的結帳資料，請確認金額與收款方式。`);
     }
 
-    // 儀表板與店務查詢
+    // ==========================================
+    // 財務：抓取中台待結帳名單
+    // ==========================================
+    async function loadPendingCheckouts() {
+        const btn = document.getElementById('btnFetchPending');
+        btn.innerText = '讀取中...';
+        
+        try {
+            const res = await fetch(GAS_API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: 'fetchPendingCheckouts' }) 
+            });
+            const result = await res.json();
+            const area = document.getElementById('pendingListArea');
+            area.innerHTML = '';
+            
+            if (result.status === 'success' && result.data.length > 0) {
+                area.innerHTML = '<span style="color:#cbd5e1; font-size:14px; display:block; margin-bottom:10px;">點擊姓名自動帶入資料：</span>';
+                
+                result.data.forEach(item => {
+                    const tag = document.createElement('div');
+                    tag.className = 'pending-item';
+                    tag.innerText = item.name + (item.course ? ` (${item.course})` : '');
+                    
+                    tag.onclick = () => {
+                        document.getElementById('finName').value = item.name;
+                        document.getElementById('finPhone').value = item.phone || '';
+                        
+                        if (item.course && Array.from(document.getElementById('finCourseType').options).some(o => o.value === item.course)) {
+                            document.getElementById('finCourseType').value = item.course;
+                            autoCalculateAmount();
+                        }
+                    };
+                    area.appendChild(tag);
+                });
+            } else {
+                area.innerHTML = '<span style="color:#94a3b8; font-size:14px;">目前沒有待結帳紀錄</span>';
+            }
+        } catch (e) {
+            alert('無法連線至中台系統');
+        } finally {
+            btn.innerText = '📥 載入中台待結帳清單';
+        }
+    }
+
+    // ==========================================
+    // 財務：抓取高階營收報表
+    // ==========================================
     async function fetchSummary() {
         document.getElementById('summaryData').classList.remove('hidden');
+        
         try {
-            const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'getSummary' }) });
+            const res = await fetch(GAS_API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: 'getSummary' }) 
+            });
             const result = await res.json();
-            if (result.status === 'success') { document.getElementById('valDaily').innerText = '$' + result.summary.daily; document.getElementById('valWeekly').innerText = '$' + result.summary.weekly; document.getElementById('valMonthly').innerText = '$' + result.summary.monthly; }
-        } catch (error) { alert('數據讀取失敗'); }
+            
+            if (result.status === 'success') {
+                document.getElementById('valDaily').innerText = '$' + result.summary.daily;
+                document.getElementById('valWeekly').innerText = '$' + result.summary.weekly;
+                document.getElementById('valMonthly').innerText = '$' + result.summary.monthly;
+            }
+        } catch (error) { 
+            alert('數據讀取失敗'); 
+        }
     }
 
+    // ==========================================
+    // 店務：搜尋與異動預約
+    // ==========================================
     async function searchBookings() {
         const keyword = document.getElementById('searchKeyword').value;
-        if(!keyword) return alert('請輸入搜尋關鍵字');
-        const btn = document.getElementById('btnSearch'); btn.innerText = '搜尋中...';
+        if (!keyword) {
+            return alert('請輸入搜尋關鍵字');
+        }
+        
+        const btn = document.getElementById('btnSearch');
+        btn.innerText = '搜尋中...';
+        
         try {
-            const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'searchBookings', keyword: keyword }) });
+            const res = await fetch(GAS_API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ 
+                    action: 'searchBookings', 
+                    keyword: keyword 
+                }) 
+            });
             const result = await res.json();
-            const area = document.getElementById('searchResultsArea'); area.innerHTML = ''; 
-            if(result.status === 'success' && result.data.length > 0) {
+            const area = document.getElementById('searchResultsArea');
+            area.innerHTML = ''; 
+            
+            if (result.status === 'success' && result.data.length > 0) {
                 result.data.forEach(item => {
-                    area.innerHTML += `<div class="result-card" id="card-${item.orderId}">
-                        <div class="result-info"><strong>${item.name}</strong> 預約<br>時間：${item.startTime} | 師傅：${item.hero}<br>項目：${item.course}</div>
-                        <div class="result-actions"><button class="btn-small btn-edit" onclick="toggleReschedule('${item.orderId}')">改期</button><button class="btn-small btn-del" onclick="confirmCancel('${item.orderId}')">取消</button></div>
-                        <div class="reschedule-box" id="resched-${item.orderId}"><div class="form-group"><label>新開始時間</label><input type="datetime-local" id="newStart-${item.orderId}"></div><div class="form-group"><label>新結束時間</label><input type="datetime-local" id="newEnd-${item.orderId}"></div><button class="btn-submit" onclick="submitReschedule('${item.orderId}')">確認改期</button></div></div>`;
+                    area.innerHTML += `
+                        <div class="result-card" id="card-${item.orderId}">
+                            <div class="result-info">
+                                <strong>${item.name}</strong> 的課程預約<br>
+                                時間：${item.startTime}<br>
+                                師傅：${item.hero}<br>
+                                項目：${item.course}
+                            </div>
+                            <div class="result-actions">
+                                <button class="btn-small btn-edit" onclick="toggleReschedule('${item.orderId}')">改期</button>
+                                <button class="btn-small btn-del" onclick="confirmCancel('${item.orderId}')">取消</button>
+                            </div>
+                            <div class="reschedule-box" id="resched-${item.orderId}">
+                                <div class="form-group">
+                                    <label>新開始時間</label>
+                                    <input type="datetime-local" id="newStart-${item.orderId}">
+                                </div>
+                                <div class="form-group">
+                                    <label>新結束時間</label>
+                                    <input type="datetime-local" id="newEnd-${item.orderId}">
+                                </div>
+                                <button class="btn-submit" onclick="submitReschedule('${item.orderId}')">確認改期</button>
+                            </div>
+                        </div>
+                    `;
                 });
-            } else area.innerHTML = '<div style="color:#fca5a5; margin-top:15px; text-align:center;">找不到符合的紀錄</div>';
-        } catch (e) { alert('搜尋失敗'); } finally { btn.innerText = '搜尋目前預約紀錄'; }
+            } else {
+                area.innerHTML = '<div style="color:#fca5a5; margin-top:15px; text-align:center;">找不到符合的預約紀錄</div>';
+            }
+        } catch (e) { 
+            alert('搜尋失敗，請檢查網路。'); 
+        } finally { 
+            btn.innerText = '搜尋目前預約紀錄'; 
+        }
     }
 
-    function toggleReschedule(orderId) { const box = document.getElementById(`resched-${orderId}`); box.style.display = box.style.display === 'block' ? 'none' : 'block'; }
-
+    function toggleReschedule(orderId) { 
+        const box = document.getElementById(`resched-${orderId}`); 
+        box.style.display = box.style.display === 'block' ? 'none' : 'block'; 
+    }
+    
     async function confirmCancel(orderId) {
-        if(!confirm("確定要取消此預約嗎？")) return;
-        const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'cancelBooking', orderId: orderId }) });
-        const result = await res.json();
-        if(result.status === 'success') { alert('取消成功！'); document.getElementById(`card-${orderId}`).style.display = 'none'; } else alert(result.message);
+        if (!confirm("確定要取消此預約並從行事曆移除嗎？")) return;
+        
+        try {
+            const res = await fetch(GAS_API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ 
+                    action: 'cancelBooking', 
+                    orderId: orderId 
+                }) 
+            });
+            const result = await res.json();
+            
+            if (result.status === 'success') { 
+                alert('預約已成功取消！'); 
+                document.getElementById(`card-${orderId}`).style.display = 'none'; 
+            } else {
+                alert(result.message);
+            }
+        } catch(e) { 
+            alert('取消失敗。'); 
+        }
     }
 
     async function submitReschedule(orderId) {
-        const start = document.getElementById(`newStart-${orderId}`).value; const end = document.getElementById(`newEnd-${orderId}`).value;
-        if(!start || !end) return alert('請選擇新的時間');
-        const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'rescheduleBooking', orderId: orderId, newStartTime: start, newEndTime: end }) });
-        const result = await res.json();
-        if(result.status === 'success') { alert('改期成功！'); searchBookings(); } else alert(result.message);
+        const start = document.getElementById(`newStart-${orderId}`).value; 
+        const end = document.getElementById(`newEnd-${orderId}`).value;
+        
+        if (!start || !end) {
+            return alert('請選擇新的時間');
+        }
+        
+        try {
+            const res = await fetch(GAS_API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ 
+                    action: 'rescheduleBooking', 
+                    orderId: orderId, 
+                    newStartTime: start, 
+                    newEndTime: end 
+                }) 
+            });
+            const result = await res.json();
+            
+            if (result.status === 'success') { 
+                alert('預約已成功改期！'); 
+                searchBookings(); 
+            } else {
+                alert(result.message);
+            }
+        } catch(e) { 
+            alert('改期失敗。'); 
+        }
     }
 
-    // 稽核管理邏輯
-    async function searchFinanceHistory() {
-        const keyword = document.getElementById('auditSearchKeyword').value;
-        const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'getFinanceHistory', keyword: keyword, canViewSummary: userPermissions.canViewSummary }) });
-        const result = await res.json();
-        const area = document.getElementById('auditListArea'); area.innerHTML = '';
-        if(result.data.length === 0) return area.innerHTML = '<div style="color:#fcd34d; margin-top:15px; text-align:center;">找不到可異動的帳單</div>';
-        result.data.forEach(item => {
-            area.innerHTML += `<div class="audit-card" onclick='openEditForm(${JSON.stringify(item)})'>
-                [${item.date}] <strong>${item.name}</strong> - <span class="audit-val">$${item.amount}</span><br>項目：${item.course} | 人數：${item.people} | ID：${item.txId}</div>`;
-        });
-    }
-
-    function openEditForm(item) {
-        document.getElementById('editFormArea').classList.remove('hidden');
-        document.getElementById('editTxId').value = item.txId;
-        document.getElementById('editingTxTitle').innerText = `正在修改：${item.name} ($${item.amount})`;
-        document.getElementById('editCourse').value = item.course || '其他';
-        document.getElementById('editPeople').value = item.people || 1;
-        document.getElementById('editAmount').value = item.amount || 0;
-        document.getElementById('editPayment').value = item.payment || '現金';
-        toggleRemittance('editPayment', 'editRemBox');
-        document.getElementById('editRemNote').value = item.remittance || '';
-        document.getElementById('editHero').value = item.hero || '奎元';
-        window.scrollTo({ top: document.getElementById('editFormArea').offsetTop, behavior: 'smooth' });
-    }
-
-    async function submitFinanceUpdate() {
-        const reason = document.getElementById('changeReason').value;
-        const note = document.getElementById('auditNote').value;
-        if (reason === '其他' && !note) return alert('選取「其他」時必須填寫原因說明！');
-        if (!confirm('執行此動作將會覆蓋原始帳單，並存入影子帳本供查驗，確定嗎？')) return;
-
-        const payload = {
-            action: 'updateFinanceAudit', txId: document.getElementById('editTxId').value,
-            courseType: document.getElementById('editCourse').value, people: document.getElementById('editPeople').value,
-            amount: document.getElementById('editAmount').value, paymentMethod: document.getElementById('editPayment').value,
-            remittanceNote: document.getElementById('editRemNote').value, heroStaff: document.getElementById('editHero').value,
-            executor: document.getElementById('finCashier').value, reason: reason, auditNote: note
-        };
-
-        const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
-        const result = await res.json();
-        if(result.status === 'success') { alert('帳單覆蓋成功！稽核紀錄已存檔。'); document.getElementById('editFormArea').classList.add('hidden'); searchFinanceHistory(); }
-    }
-
-    // 新增結帳與預約
+    // ==========================================
+    // 資料送出邏輯 (預約與結帳)
+    // ==========================================
     async function submitData(actionType) {
         let payload = { action: actionType };
+        
         if (actionType === 'createBooking') {
-            payload = { ...payload, orderId: 'B' + Date.now(), phone: document.getElementById('bookPhone').value, customerName: document.getElementById('bookName').value, people: document.getElementById('bookPeople').value, courseType: document.getElementById('bookCourseType').value, heroStaff: document.getElementById('bookHero').value, startTime: document.getElementById('bookStart').value, endTime: document.getElementById('bookEnd').value };
+            payload = { 
+                ...payload, 
+                orderId: 'B' + Date.now(), 
+                phone: document.getElementById('bookPhone').value, 
+                customerName: document.getElementById('bookName').value, 
+                people: document.getElementById('bookPeople').value, 
+                courseType: document.getElementById('bookCourseType').value, 
+                heroStaff: document.getElementById('bookHero').value, 
+                startTime: document.getElementById('bookStart').value, 
+                endTime: document.getElementById('bookEnd').value 
+            };
         } else if (actionType === 'createFinance') {
-            payload = { ...payload, orderId: 'F' + Date.now(), moOrderId: document.getElementById('moOrderId').value, phone: document.getElementById('finPhone').value, customerName: document.getElementById('finName').value, courseType: document.getElementById('finCourseType').value, people: document.getElementById('finPeople').value, amount: parseInt(document.getElementById('finAmount').value), paymentMethod: document.getElementById('finPayment').value, remittanceNote: document.getElementById('finRemittanceNote').value, cashier: document.getElementById('finCashier').value, heroStaff: document.getElementById('finHero').value, startTime: new Date().toISOString() };
+            payload = { 
+                ...payload, 
+                orderId: 'F' + Date.now(), 
+                customerName: document.getElementById('finName').value, 
+                phone: document.getElementById('finPhone').value, 
+                courseType: document.getElementById('finCourseType').value, 
+                people: document.getElementById('finPeople').value, 
+                amount: parseInt(document.getElementById('finAmount').value), 
+                paymentMethod: document.getElementById('finPayment').value, 
+                remittanceNote: document.getElementById('finRemittanceNote').value, 
+                cashier: document.getElementById('finCashier').value, 
+                heroStaff: document.getElementById('finHero').value, 
+                startTime: new Date().toISOString() 
+            };
         }
 
-        const btn = document.querySelector(`button[onclick="submitData('${actionType}')"]`);
-        btn.innerText = '處理中...'; btn.disabled = true;
-
         try {
-            const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const response = await fetch(GAS_API_URL, { 
+                method: 'POST', 
+                body: JSON.stringify(payload) 
+            });
             const result = await response.json();
-            if(result.status === 'success') { alert('作業完成！'); liff.closeWindow(); } else { alert('發生錯誤：' + result.message); }
-        } catch (error) { alert('網路連線異常。'); } finally {
-            btn.innerText = '確認送出'; btn.disabled = false;
+            
+            if (result.status === 'success') { 
+                alert('作業完成！'); 
+                liff.closeWindow(); 
+            } else { 
+                alert('發生錯誤：' + result.message); 
+            }
+        } catch (error) { 
+            alert('網路連線異常。'); 
         }
     }
 </script>
