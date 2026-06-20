@@ -153,7 +153,8 @@
 
 <script>
     const LIFF_ID = '2010453415-nTX3Lo1L';
-    const GAS_API_URL = 'https://script.google.com/macros/s/你的最新GAS網址/exec'; // 🚨 這裡務必填入新部署的網址
+    // 已更新為您最新的 GAS API 網址
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
 
     const coursePrices = { "無痛滑罐放鬆(快速修復)-30分鐘": 600, "全方位滑罐放鬆(全身修復)-90分鐘": 1600, "單部位舒緩修復(精準調理)": 600, "全身結構養護(平衡調理)": 1000, "全身全方位深度修復-60分鐘": 2000 };
 
@@ -214,7 +215,6 @@
         } catch (error) { alert('數據讀取失敗'); }
     }
 
-    // --- 新增：搜尋預約邏輯 ---
     async function searchBookings() {
         const keyword = document.getElementById('searchKeyword').value;
         if(!keyword) return alert('請輸入搜尋關鍵字');
@@ -226,7 +226,7 @@
             const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'searchBookings', keyword: keyword }) });
             const result = await res.json();
             const area = document.getElementById('searchResultsArea');
-            area.innerHTML = ''; // 清空舊結果
+            area.innerHTML = ''; 
             
             if(result.status === 'success' && result.data.length > 0) {
                 result.data.forEach(item => {
@@ -240,7 +240,7 @@
                             </div>
                             <div class="result-actions">
                                 <button class="btn-small btn-edit" onclick="toggleReschedule('${item.orderId}')">改期</button>
-                                <button class="btn-small btn-del" onclick="confirmCancel('${item.orderId}')">取消預約</button>
+                                <button class="btn-small btn-del" onclick="confirmCancel('${item.orderId}')">取消</button>
                             </div>
                             <div class="reschedule-box" id="resched-${item.orderId}">
                                 <div class="form-group"><label>新開始時間</label><input type="datetime-local" id="newStart-${item.orderId}"></div>
@@ -273,7 +273,7 @@
             const result = await res.json();
             if(result.status === 'success') {
                 alert('預約已成功取消！');
-                document.getElementById(`card-${orderId}`).style.display = 'none'; // 隱藏卡片
+                document.getElementById(`card-${orderId}`).style.display = 'none';
             } else alert(result.message);
         } catch(e) { alert('取消失敗。'); }
     }
@@ -291,7 +291,7 @@
             const result = await res.json();
             if(result.status === 'success') {
                 alert('預約已成功改期！');
-                searchBookings(); // 重新整理畫面
+                searchBookings(); 
             } else alert(result.message);
         } catch(e) { alert('改期失敗。'); }
     }
