@@ -68,6 +68,41 @@
         }
 
         /* =========================================================
+           明細預覽專用視窗 (Modal)
+           ========================================================= */
+        #previewOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+        }
+
+        #previewImage {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* =========================================================
            導覽頁籤與輸入欄位
            ========================================================= */
         .tabs {
@@ -487,7 +522,7 @@
             <textarea id="fGenNote" placeholder="例如：開發票統編、或是整批客人的特殊交代項目..." style="resize: vertical; height: 80px;"></textarea>
         </div>
         
-        <button class="btn-submit" style="background: linear-gradient(to right, #10b981, #059669);" onclick="processCart()">確認合併結帳並產生收據明細</button>
+        <button id="btnProcessCart" class="btn-submit" style="background: linear-gradient(to right, #10b981, #059669);" onclick="previewAndProcessCart()">產生電子明細預覽</button>
     </div>
 
     <div id="adjustTab" class="form-section">
@@ -498,6 +533,15 @@
         </div>
         <button class="btn-search" id="btnSearchFinance" style="border-color: #ef4444; color: #fca5a5;" onclick="searchFin()">查詢當月財務紀錄</button>
         <div id="adjArea"></div>
+    </div>
+</div>
+
+<div id="previewOverlay">
+    <h3 style="color: #4ade80; margin-top: 0;">請確認結帳明細無誤</h3>
+    <img id="previewImage" src="" alt="明細預覽">
+    <div class="preview-actions">
+        <button class="btn-cancel-action" onclick="cancelCheckout()">返回修改</button>
+        <button class="btn-submit" style="margin-top: 0; background: linear-gradient(to right, #10b981, #059669);" onclick="confirmCheckout()">確認下載並完成結帳</button>
     </div>
 </div>
 
@@ -560,6 +604,8 @@
     };
     
     let cart = [];
+    let pendingCheckoutPayload = null; // 暫存結帳資料
+    let pendingBase64 = null;          // 暫存圖片Base64
     
     const v = id => document.getElementById(id).value;
     const el = id => document.getElementById(id);
@@ -635,9 +681,8 @@
                 if (msg) {
                     alert(msg);
                 }
-                if (action === 'createBooking') {
-                    liff.closeWindow();
-                }
+                // 【修改要求：不再關閉視窗，讓行政人員持續使用】
+                // 移除了 liff.closeWindow()
                 return r;
             } else {
                 alert('作業失敗：' + r.message);
@@ -659,6 +704,11 @@
             endTime: v('bkEnd')
         };
         await apiCall('createBooking', payload, '預約排程寫入成功！');
+        // 自動清空輸入框，方便下一位顧客建立
+        el('bkPhone').value = '';
+        el('bkName').value = '';
+        el('bkStart').value = '';
+        el('bkEnd').value = '';
     }
 
     // 6. 店務預約核心：搜尋與修改
@@ -677,7 +727,6 @@
             
             if (r && r.data.length > 0) {
                 r.data.forEach(i => {
-                    // 將括號隱藏，方便介面乾淨閱讀
                     const displayCourse = i.course.replace(/\(.*?\)/g, ''); 
                     
                     el('srchArea').innerHTML += `
@@ -754,7 +803,6 @@
                     const d = document.createElement('div');
                     d.className = 'pending-item';
                     
-                    // 去除括號以保持按鈕簡潔，並加上日期標記
                     const displayCourse = (i.course || '未定').replace(/\(.*?\)/g, '');
                     const dateLabel = i.dateStr ? ` [${i.dateStr}]` : '';
                     
@@ -805,8 +853,6 @@
         
         cart.forEach(i => {
             totalSum += Number(i.price);
-            
-            // 下拉選單顯示修復，提供完整無括號的名稱
             const c = i.course;
             
             el('cBody').innerHTML += `
@@ -851,11 +897,14 @@
         el('cSum').innerText = '$' + totalSum;
     }
 
-    // 9. 財務結帳：執行合併結帳
-    async function processCart() {
+    // 9. 財務結帳：預覽畫面與準備資料
+    function previewAndProcessCart() {
         if (cart.length === 0) {
             return alert('結帳核對清單內無資料！');
         }
+        
+        const btn = el('btnProcessCart');
+        btn.innerText = '明細生成中...';
         
         const fid = 'F' + Date.now();
         el('rId').innerText = fid;
@@ -898,15 +947,12 @@
         
         el('rSum').innerText = '$' + grandTotal;
         
-        html2canvas(el('receiptCaptureArea'), { scale: 2 }).then(async canvas => {
-            const base64Data = canvas.toDataURL('image/png');
+        // 呼叫 html2canvas 生成預覽圖片
+        html2canvas(el('receiptCaptureArea'), { scale: 2 }).then(canvas => {
+            pendingBase64 = canvas.toDataURL('image/png');
             
-            const a = document.createElement('a');
-            a.href = base64Data;
-            a.download = `錦葳結帳明細_${fid}.png`;
-            a.click();
-            
-            const payload = {
+            pendingCheckoutPayload = {
+                action: 'createFinance', // 確保加上 action 供 API 使用
                 orderId: fid,
                 paymentMethod: v('fPay'),
                 remittanceNote: remVal,
@@ -914,22 +960,69 @@
                 startTime: new Date().toISOString(),
                 cartItems: cart,
                 generalNote: genNote,
-                receiptImageBase64: base64Data
+                receiptImageBase64: pendingBase64
             };
             
-            const r = await apiCall('createFinance', payload, '款項結帳成功！電子核對明細已自動儲存至雲端與本機。');
+            // 顯示預覽畫面
+            el('previewImage').src = pendingBase64;
+            el('previewOverlay').style.display = 'flex';
             
-            if (r && r.status === 'success') {
+            btn.innerText = '產生電子明細預覽';
+        });
+    }
+
+    // 10. 財務結帳：取消預覽 (返回修改)
+    function cancelCheckout() {
+        el('previewOverlay').style.display = 'none';
+        pendingCheckoutPayload = null;
+        pendingBase64 = null;
+    }
+
+    // 11. 財務結帳：確認結帳並下載明細 (保留在系統不關閉)
+    async function confirmCheckout() {
+        if (!pendingCheckoutPayload) return;
+        
+        // 執行下載
+        const a = document.createElement('a');
+        a.href = pendingBase64;
+        a.download = `錦葳結帳明細_${pendingCheckoutPayload.orderId}.png`;
+        a.click();
+        
+        // 隱藏預覽畫面
+        el('previewOverlay').style.display = 'none';
+        
+        // 送出資料至後端 GAS
+        try {
+            const response = await fetch(API, {
+                method: 'POST', 
+                body: JSON.stringify(pendingCheckoutPayload)
+            });
+            const r = await response.json();
+            
+            if (r.status === 'success') {
+                alert('款項結帳成功！電子核對明細已自動儲存至雲端與本機。');
+                
+                // 清空購物車與表單
                 cart = [];
                 renderCart();
                 el('fGenNote').value = '';
                 el('fRem').value = '';
-                liff.closeWindow();
+                
+                // 清理暫存資料
+                pendingCheckoutPayload = null;
+                pendingBase64 = null;
+                
+                // 重點：不再呼叫 liff.closeWindow()，讓畫面留在結帳頁準備迎接下一位客人
+                
+            } else {
+                alert('結帳存檔失敗：' + r.message);
             }
-        });
+        } catch(e) {
+            alert('結帳時發生網路錯誤，請確認網路連線。');
+        }
     }
 
-    // 10. 財務摘要儀表板
+    // 12. 財務摘要儀表板
     async function fetchSum() {
         el('sumData').classList.remove('hidden');
         const r = await apiCall('getSummary', {});
@@ -940,7 +1033,7 @@
         }
     }
     
-    // 11. 財務異動紀錄查詢與作廢
+    // 13. 財務異動紀錄查詢與作廢
     async function searchFin() {
         const k = v('adjKw');
         if (!k) {
