@@ -50,7 +50,6 @@
             letter-spacing: 2px;
         }
 
-        /* 系統核心讀取遮罩 */
         #loadingOverlay {
             position: absolute;
             top: 0;
@@ -69,7 +68,7 @@
         }
 
         /* =========================================================
-           2. 導覽頁籤按鈕 (Tabs)
+           2. 導覽頁籤按鈕
            ========================================================= */
         .tabs {
             display: flex;
@@ -151,7 +150,6 @@
             color: #ffffff;
         }
 
-        /* 按鈕視覺設定 */
         .btn-submit {
             background: linear-gradient(to right, #6366f1, #8b5cf6);
             color: white;
@@ -233,7 +231,6 @@
             font-size: 16px;
         }
 
-        /* 重點優化：行動端購物車卡片化，拒絕擠壓 */
         .cart-item-card {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -407,10 +404,10 @@
         <div class="form-group">
             <label>課程類型</label>
             <select id="bkCourse">
-                <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆(快速修復)-30分鐘</option>
-                <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆(全身修復)-90分鐘</option>
-                <option value="單部位舒緩修復(精準調理)">單部位舒緩修復(精準調理)</option>
-                <option value="全身結構養護(平衡調理)">全身結構養護(平衡調理)</option>
+                <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆-30分鐘</option>
+                <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆-90分鐘</option>
+                <option value="單部位舒緩修復(精準調理)">單部位舒緩修復</option>
+                <option value="全身結構養護(平衡調理)">全身結構養護</option>
                 <option value="全身全方位深度修復-60分鐘">全身全方位深度修復-60分鐘</option>
                 <option value="其他">其他</option>
             </select>
@@ -535,8 +532,8 @@
 </div>
 
 <script>
-    // 系統常數配置
     const API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
+    
     const prices = {
         "無痛滑罐放鬆(快速修復)-30分鐘": 600, 
         "全方位滑罐放鬆(全身修復)-90分鐘": 1600, 
@@ -547,7 +544,6 @@
     
     let cart = [];
     
-    // 快捷選取器工具
     const v = id => document.getElementById(id).value;
     const el = id => document.getElementById(id);
 
@@ -560,13 +556,14 @@
                 const p = await liff.getProfile();
                 el('fCash').value = p.displayName;
                 
-                // 向後端保險箱索取權限比對
-                const r = await fetch(API, {
+                const response = await fetch(API, {
                     method: 'POST', 
                     body: JSON.stringify({ action: 'checkAuth', userName: p.displayName })
-                }).then(x => x.json());
+                });
                 
-                el('loadingOverlay').style.display = 'none'; // 解除連線遮罩
+                const r = await response.json();
+                
+                el('loadingOverlay').style.display = 'none';
                 
                 if (r.status === 'success') {
                     if (r.permissions.canAccessFinance) {
@@ -603,10 +600,11 @@
     // 4. API 通訊打包元件
     async function apiCall(action, payload, msg) {
         try {
-            const r = await fetch(API, {
+            const response = await fetch(API, {
                 method: 'POST', 
                 body: JSON.stringify({ action, ...payload, orderId: 'B' + Date.now() })
-            }).then(x => x.json());
+            });
+            const r = await response.json();
             
             if (r.status === 'success') {
                 if (msg) alert(msg);
@@ -625,71 +623,120 @@
         const k = v('srchKw');
         if (!k) return alert('請輸入姓名或手機查詢');
         
-        const r = await apiCall('searchBookings', { keyword: k });
-        el('srchArea').innerHTML = '';
+        const btn = el('btnSearch');
+        btn.innerText = '搜尋中...';
         
-        if (r && r.data.length) {
-            r.data.forEach(i => {
-                el('srchArea').innerHTML += `
-                    <div class="result-card" id="bk-${i.orderId}">
-                        <div class="result-info">
-                            <strong>${i.name}</strong> - ${i.course}<br>
-                            時間：${i.startTime} | 師傅：${i.hero}
-                        </div>
-                        <div class="result-actions">
-                            <button class="btn-small btn-edit" onclick="el('rBx-${i.orderId}').style.display='block'">改期</button>
-                            <button class="btn-small btn-del" onclick="if(confirm('確定要取消此預約排程嗎？')) apiCall('cancelBooking',{orderId:'${i.orderId}'}).then(()=>el('bk-${i.orderId}').style.display='none')">取消預約</button>
-                        </div>
-                        <div class="reschedule-box" id="rBx-${i.orderId}">
-                            <label style="font-size:12px;">新開始時間</label>
-                            <input type="datetime-local" id="ns-${i.orderId}" style="margin-bottom:8px;">
-                            <label style="font-size:12px;">新結束時間</label>
-                            <input type="datetime-local" id="ne-${i.orderId}">
-                            <button class="btn-submit" onclick="apiCall('rescheduleBooking',{orderId:'${i.orderId}',newStartTime:v('ns-${i.orderId}'),newEndTime:v('ne-${i.orderId}')}).then(searchBks)">儲存變更</button>
-                        </div>
-                    </div>`;
-            });
+        try {
+            const r = await apiCall('searchBookings', { keyword: k });
+            el('srchArea').innerHTML = '';
+            
+            if (r && r.data.length) {
+                r.data.forEach(i => {
+                    // 為了美觀，查詢結果也顯示去括號的名稱
+                    const displayCourse = i.course.replace(/\(.*?\)/g, ''); 
+                    
+                    el('srchArea').innerHTML += `
+                        <div class="result-card" id="bk-${i.orderId}">
+                            <div class="result-info">
+                                <strong>${i.name}</strong> - ${displayCourse}<br>
+                                時間：${i.startTime} | 師傅：${i.hero}
+                            </div>
+                            <div class="result-actions">
+                                <button class="btn-small btn-edit" onclick="toggleReschedule('${i.orderId}')">改期</button>
+                                <button class="btn-small btn-del" onclick="if(confirm('確定要取消此預約排程嗎？')) apiCall('cancelBooking',{orderId:'${i.orderId}'}).then(()=>el('bk-${i.orderId}').style.display='none')">取消預約</button>
+                            </div>
+                            <div class="reschedule-box" id="rBx-${i.orderId}">
+                                <label style="font-size:12px;">新開始時間</label>
+                                <input type="datetime-local" id="ns-${i.orderId}" style="margin-bottom:8px;">
+                                <label style="font-size:12px;">新結束時間</label>
+                                <input type="datetime-local" id="ne-${i.orderId}">
+                                <button class="btn-submit" onclick="submitReschedule('${i.orderId}')">儲存變更</button>
+                            </div>
+                        </div>`;
+                });
+            } else {
+                el('srchArea').innerHTML = '<p style="text-align:center;color:#fca5a5;">查無目前生效的預約紀錄</p>';
+            }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            btn.innerText = '搜尋目前預約紀錄';
+        }
+    }
+
+    function toggleReschedule(id) { 
+        const box = el(`rBx-${id}`); 
+        if (box.style.display === 'block') {
+            box.style.display = 'none';
         } else {
-            el('srchArea').innerHTML = '<p style="text-align:center;color:#fca5a5;">查無目前生效的預約紀錄</p>';
+            box.style.display = 'block';
+        }
+    }
+
+    async function submitReschedule(id) {
+        const start = v(`ns-${id}`);
+        const end = v(`ne-${id}`);
+        
+        if (!start || !end) {
+            return alert('請完整選擇新的時間');
+        }
+        
+        const r = await apiCall('rescheduleBooking', { 
+            orderId: id, 
+            newStartTime: start, 
+            newEndTime: end 
+        });
+        
+        if (r && r.status === 'success') { 
+            alert('改期完成'); 
+            searchBks(); 
         }
     }
 
     // 6. 財務結帳：加載中台名單
     async function loadPend() {
-        const r = await apiCall('fetchPendingCheckouts', {});
-        el('pendArea').innerHTML = '';
+        const btn = el('btnFetchPending');
+        btn.innerText = '讀取中...';
         
-        if (r && r.data.length) {
-            r.data.forEach(i => {
-                const d = document.createElement('div');
-                d.className = 'pending-item';
-                d.innerText = `+ ${i.name}`;
-                d.onclick = () => {
-                    // 多選機制：點選即推入購物車
-                    cart.push({
-                        id: 'i' + Date.now() + Math.random().toString(36).substr(2,3),
-                        name: i.name,
-                        phone: i.phone,
-                        course: i.course || '無痛滑罐放鬆(快速修復)-30分鐘',
-                        hero: i.hero || '千芳',
-                        price: prices[i.course] || 600,
-                        note: ''
-                    });
-                    renderCart();
-                };
-                el('pendArea').appendChild(d);
-            });
-        } else {
-            el('pendArea').innerText = '目前中台沒有待結帳的顧客。';
+        try {
+            const r = await apiCall('fetchPendingCheckouts', {});
+            el('pendArea').innerHTML = '';
+            
+            if (r && r.data.length) {
+                r.data.forEach(i => {
+                    const d = document.createElement('div');
+                    d.className = 'pending-item';
+                    const displayCourse = (i.course || '未定').replace(/\(.*?\)/g, '');
+                    d.innerText = `+ ${i.name} [${displayCourse}]`;
+                    d.onclick = () => {
+                        cart.push({
+                            id: 'i' + Date.now() + Math.random().toString(36).substr(2,3),
+                            name: i.name,
+                            phone: i.phone,
+                            course: i.course || '無痛滑罐放鬆(快速修復)-30分鐘',
+                            hero: i.hero || '千芳',
+                            price: prices[i.course] || 600,
+                            note: ''
+                        });
+                        renderCart();
+                    };
+                    el('pendArea').appendChild(d);
+                });
+            } else {
+                el('pendArea').innerText = '目前中台沒有待結帳的顧客。';
+            }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            btn.innerText = '📥 載入中台待結帳清單';
         }
     }
 
-    // 7. 財務結帳：購物車卡片化渲染引擎
+    // 7. 財務結帳：購物車卡片化渲染
     function renderCart() {
         el('cBody').innerHTML = '';
         let totalSum = 0;
         
-        // 全域動態值更新綁定
         window.uc = (id, field, val) => {
             const item = cart.find(x => x.id === id);
             if (item) {
@@ -703,24 +750,53 @@
         
         cart.forEach(i => {
             totalSum += Number(i.price);
+            
+            // 使用 Includes 來確保下拉選單正確 Selected
+            const c = i.course;
+            
             el('cBody').innerHTML += `
             <div class="cart-item-card">
                 <button class="cart-item-del" onclick="cart=cart.filter(x=>x.id!=='${i.id}');renderCart()">✕</button>
                 <div class="cart-item-row" style="padding-right: 35px;">
-                    <div><label style="font-size:12px;margin-bottom:2px;">顧客姓名</label><input value="${i.name}" onchange="uc('${i.id}','name',this.value)" style="padding:6px;font-size:14px;"></div>
-                    <div><label style="font-size:12px;margin-bottom:2px;">調理師傅</label><select onchange="uc('${i.id}','hero',this.value)" style="padding:6px;font-size:14px;"><option value="千芳" ${i.hero==='千芳'?'selected':''}>千芳</option><option value="奎元" ${i.hero==='奎元'?'selected':''}>奎元</option></select></div>
+                    <div>
+                        <label style="font-size:12px;margin-bottom:2px;">顧客姓名</label>
+                        <input value="${i.name}" onchange="uc('${i.id}','name',this.value)" style="padding:6px;font-size:14px;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px;margin-bottom:2px;">調理師傅</label>
+                        <select onchange="uc('${i.id}','hero',this.value)" style="padding:6px;font-size:14px;">
+                            <option value="千芳" ${i.hero === '千芳' ? 'selected' : ''}>千芳</option>
+                            <option value="奎元" ${i.hero === '奎元' ? 'selected' : ''}>奎元</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="cart-item-row">
-                    <div style="flex:2;"><label style="font-size:12px;margin-bottom:2px;">調理項目</label><select onchange="uc('${i.id}','course',this.value)" style="padding:6px;font-size:14px;"><option value="無痛滑罐放鬆(快速修復)-30分鐘" ${i.course.includes('30分鐘')?'selected':''}>無痛30分</option><option value="全方位滑罐放鬆(全身修復)-90分鐘" ${i.course.includes('90分鐘')?'selected':''}>全方位90分</option><option value="單部位舒緩修復(精準調理)" ${i.course.includes('單部位')?'selected':''}>單部位舒緩</option><option value="全身結構養護(平衡調理)" ${i.course.includes('全身')?'selected':''}>全身結構</option><option value="全身全方位深度修復-60分鐘" ${i.course.includes('60分鐘')?'selected':''}>深度修復60分</option><option value="其他" ${i.course==='其他'?'selected':''}>其他</option></select></div>
-                    <div style="flex:1;"><label style="font-size:12px;margin-bottom:2px;">實收金額</label><input type="number" value="${i.price}" onchange="uc('${i.id}','price',this.value)" style="padding:6px;font-size:14px;"></div>
+                    <div style="flex:2;">
+                        <label style="font-size:12px;margin-bottom:2px;">調理項目</label>
+                        <select onchange="uc('${i.id}','course',this.value)" style="padding:6px;font-size:14px;">
+                            <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${c.includes('無痛') ? 'selected' : ''}>無痛滑罐放鬆-30分鐘</option>
+                            <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${c.includes('全方位') ? 'selected' : ''}>全方位滑罐放鬆-90分鐘</option>
+                            <option value="單部位舒緩修復(精準調理)" ${c.includes('單部位') ? 'selected' : ''}>單部位舒緩修復</option>
+                            <option value="全身結構養護(平衡調理)" ${c.includes('結構') || c.includes('平衡') ? 'selected' : ''}>全身結構養護</option>
+                            <option value="全身全方位深度修復-60分鐘" ${c.includes('深度') ? 'selected' : ''}>全身全方位深度修復-60分鐘</option>
+                            <option value="其他" ${c === '其他' ? 'selected' : ''}>其他</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:12px;margin-bottom:2px;">實收金額</label>
+                        <input type="number" value="${i.price}" onchange="uc('${i.id}','price',this.value)" style="padding:6px;font-size:14px;">
+                    </div>
                 </div>
-                <div><input value="${i.note}" placeholder="調理細節個別備註 (選填)..." onchange="uc('${i.id}','note',this.value)" style="padding:6px;font-size:13px;background:rgba(0,0,0,0.1);"></div>
+                <div>
+                    <input value="${i.note}" placeholder="調理細節個別備註 (選填)..." onchange="uc('${i.id}','note',this.value)" style="padding:6px;font-size:13px;background:rgba(0,0,0,0.1);">
+                </div>
             </div>`;
         });
+        
         el('cSum').innerText = '$' + totalSum;
     }
 
-    // 8. 財務結帳：執行合併結帳、 html2canvas 產圖與上傳存檔
+    // 8. 財務結帳：執行合併結帳
     async function processCart() {
         if (!cart.length) return alert('結帳核對清單內無資料！');
         
@@ -751,28 +827,29 @@
         
         cart.forEach(i => {
             grandTotal += Number(i.price);
+            const displayCourse = i.course.replace(/\(.*?\)/g, '');
+            
             el('rItems').innerHTML += `
                 <div class="receipt-row" style="font-weight:bold;margin-top:8px;">
-                    <span>${i.name} (${i.hero})</span><span>$${i.price}</span>
+                    <span>${i.name} (${i.hero})</span>
+                    <span>$${i.price}</span>
                 </div>
                 <div style="font-size:13px;color:#475569;padding-left:10px;margin-bottom:4px;">
-                    項目：${i.course} ${i.note ? ' / 備註：' + i.note : ''}
+                    項目：${displayCourse} ${i.note ? ' / 備註：' + i.note : ''}
                 </div>`;
         });
+        
         el('rSum').innerText = '$' + grandTotal;
         
-        // 核心產圖引擎
         html2canvas(el('receiptCaptureArea'), { scale: 2 }).then(async canvas => {
             const base64Data = canvas.toDataURL('image/png');
             
-            // 本機自動下載
             const a = document.createElement('a');
             a.href = base64Data;
             a.download = `錦葳結帳明細_${fid}.png`;
             a.click();
             
-            // 將所有數據連同圖檔發往後端保險箱
-            await apiCall('createFinance', {
+            const r = await apiCall('createFinance', {
                 orderId: fid,
                 paymentMethod: v('fPay'),
                 remittanceNote: remVal,
@@ -783,47 +860,59 @@
                 receiptImageBase64: base64Data
             }, '款項結帳成功！電子核對明細已自動儲存至雲端與本機。');
             
-            // 清空初始化
-            cart = [];
-            renderCart();
-            el('fGenNote').value = '';
-            el('fRem').value = '';
-            liff.closeWindow();
+            if (r && r.status === 'success') {
+                cart = [];
+                renderCart();
+                el('fGenNote').value = '';
+                el('fRem').value = '';
+                liff.closeWindow();
+            }
         });
     }
 
-    // 9. 財務摘要：加載日、週、月累計
+    // 9. 財務摘要
     async function fetchSum() {
         el('sumData').classList.remove('hidden');
         const r = await apiCall('getSummary', {});
-        if (r) {
+        if (r && r.status === 'success') {
             el('vD').innerText = '$' + r.summary.daily;
             el('vW').innerText = '$' + r.summary.weekly;
             el('vM').innerText = '$' + r.summary.monthly;
         }
     }
     
-    // 10. 財務異動：搜尋與款項作廢歸零修正
+    // 10. 財務異動
     async function searchFin() {
         const k = v('adjKw');
         if (!k) return alert('請輸入客戶姓名或手機查詢');
         
-        const r = await apiCall('searchFinanceRecords', { keyword: k });
-        el('adjArea').innerHTML = '';
+        const btn = el('btnSearchFinance');
+        btn.innerText = '調閱中...';
         
-        if (r && r.data.length) {
-            r.data.forEach(i => {
-                el('adjArea').innerHTML += `
-                    <div class="result-card" style="border-left-color:#ef4444;" id="f-${i.rowIndex}">
-                        <strong>單號：${i.orderId}</strong> (${i.date})<br>
-                        客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>
-                        項目：${i.course}<br>
-                        備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br>
-                        <button class="btn-small btn-del" style="background:#dc2626;margin-top:10px;" onclick="if(confirm('確定要將此款項執行作廢歸零嗎？此動作將扣除當日/當月營收！')) apiCall('voidFinanceRecord',{rowIndex:${i.rowIndex},orderId:'${i.orderId}'}).then(()=>el('f-${i.rowIndex}').style.opacity=0.3)">執行財務作廢歸零</button>
-                    </div>`;
-            });
-        } else {
-            el('adjArea').innerHTML = '<p style="text-align:center;color:#fca5a5;">當月查無此筆入帳財務纪录</p>';
+        try {
+            const r = await apiCall('searchFinanceRecords', { keyword: k });
+            el('adjArea').innerHTML = '';
+            
+            if (r && r.data.length > 0) {
+                r.data.forEach(i => {
+                    const displayCourse = i.course.replace(/\(.*?\)/g, '');
+                    
+                    el('adjArea').innerHTML += `
+                        <div class="result-card" style="border-left-color:#ef4444;" id="f-${i.rowIndex}">
+                            <strong>單號：${i.orderId}</strong> (${i.date})<br>
+                            客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>
+                            項目：${displayCourse}<br>
+                            備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br>
+                            <button class="btn-small btn-del" style="background:#dc2626;margin-top:10px;" onclick="if(confirm('確定要將此款項執行作廢歸零嗎？')) apiCall('voidFinanceRecord',{rowIndex:${i.rowIndex},orderId:'${i.orderId}'}).then(()=>el('f-${i.rowIndex}').style.opacity=0.3)">執行財務作廢歸零</button>
+                        </div>`;
+                });
+            } else {
+                el('adjArea').innerHTML = '<p style="text-align:center;color:#fca5a5;">當月查無此筆入帳財務紀錄</p>';
+            }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            btn.innerText = '查詢當月財務紀錄';
         }
     }
 </script>
