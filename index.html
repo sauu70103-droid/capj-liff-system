@@ -187,7 +187,7 @@
         }
 
         /* =========================================================
-           財務結帳模組專用 UI：中台候選人與行動端購物車
+           財務結帳模組專用 UI
            ========================================================= */
         .pending-box {
             background: rgba(139, 92, 246, 0.1);
@@ -374,7 +374,6 @@
             display: none !important;
         }
 
-        /* 專門用來在手機端顯示圖片供長按儲存的滿版視窗 */
         #receiptSaveModal {
             position: fixed;
             top: 0;
@@ -383,7 +382,7 @@
             height: 100%;
             background: rgba(15, 23, 42, 0.95);
             z-index: 9999;
-            display: none; /* 預設隱藏 */
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -599,6 +598,7 @@
                 
                 const response = await fetch(API, {
                     method: 'POST', 
+                    // BUG FIX: 不要覆寫 orderId，只傳純粹的指令！
                     body: JSON.stringify({ action: 'checkAuth', userName: profile.displayName })
                 });
                 
@@ -642,15 +642,15 @@
         }
     }
 
-    // 4. API 通訊打包元件
+    // 4. API 通訊打包元件 (🚨 已徹底修復「自動覆寫訂單號」的致命 Bug)
     async function apiCall(action, payload, msg) {
         try {
             const response = await fetch(API, {
                 method: 'POST', 
+                // BUG FIX: 只發送 payload 中準備好的 orderId，不再強行加上 'B' + Date.now()！
                 body: JSON.stringify({ 
                     action: action, 
-                    ...payload, 
-                    orderId: 'B' + Date.now() 
+                    ...payload
                 })
             });
             const r = await response.json();
@@ -674,6 +674,7 @@
     // 5. 店務預約核心：建立預約
     async function submitBookingData() {
         const payload = {
+            orderId: 'B' + Date.now(), // 預約的單號 (B 開頭) 在這裡自己產生！
             phone: v('bkPhone'),
             customerName: v('bkName'),
             people: v('bkPeople'),
@@ -776,6 +777,7 @@
                 r.data.forEach(i => {
                     const d = document.createElement('div');
                     d.className = 'pending-item';
+                    
                     const displayCourse = (i.course || '未定').replace(/\(.*?\)/g, '');
                     const dateLabel = i.dateStr ? ` [${i.dateStr}]` : '';
                     
@@ -880,7 +882,7 @@
         btn.innerText = '處理中，請稍候...';
         btn.disabled = true;
         
-        const fid = 'F' + Date.now();
+        const fid = 'F' + Date.now(); // 財務的單號 (F 開頭) 在這裡自己產生！
         el('rId').innerText = fid;
         el('rTm').innerText = new Date().toLocaleString();
         el('rMth').innerText = v('fPay');
@@ -925,7 +927,7 @@
             const base64Data = canvas.toDataURL('image/png');
             
             const payload = {
-                orderId: fid,
+                orderId: fid, // 將 F 單號傳給後端
                 paymentMethod: v('fPay'),
                 remittanceNote: remVal,
                 cashier: v('fCash'),
@@ -935,7 +937,7 @@
                 receiptImageBase64: base64Data
             };
             
-            // 打包傳送給後端 GAS 寫入資料庫並上傳到雲端
+            // 呼叫後端 API，這時絕對不會被 B 單號覆寫了！
             const r = await fetch(API, { 
                 method: 'POST', 
                 body: JSON.stringify({ action: 'createFinance', ...payload }) 
@@ -945,11 +947,10 @@
             btn.disabled = false;
             
             if (r && r.status === 'success') {
-                // 將生成的圖片放入 Modal 中並顯示
+                // 將生成的圖片放入 Modal 中並顯示 (解決 LINE 無法自動下載的問題)
                 el('finalReceiptImage').src = base64Data;
                 el('receiptSaveModal').style.display = 'flex';
                 
-                // 嘗試觸發電腦端自動下載 (若在手機 LINE 中會被阻擋，則依賴 Modal 手動長按)
                 try {
                     const a = document.createElement('a');
                     a.href = base64Data;
@@ -984,7 +985,7 @@
         }
     }
     
-    // 11. 財務異動紀錄查詢與作廢 (絕對單號對位修復版)
+    // 11. 財務異動紀錄查詢與作廢 (單號 Bug 已徹底排除)
     async function searchFin() {
         const k = v('adjKw');
         if (!k) {
