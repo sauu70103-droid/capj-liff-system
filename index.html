@@ -337,7 +337,7 @@
         }
 
         /* =========================================================
-           實體收據圖渲染區
+           實體收據圖渲染區 (不破壞 LIFF 畫面，隱藏在螢幕外)
            ========================================================= */
         #receiptCaptureArea {
             position: absolute;
@@ -548,6 +548,7 @@
 </div>
 
 <script>
+    // 專屬 API 通道
     const API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
     
     const prices = {
@@ -676,6 +677,7 @@
             
             if (r && r.data.length > 0) {
                 r.data.forEach(i => {
+                    // 將括號隱藏，方便介面乾淨閱讀
                     const displayCourse = i.course.replace(/\(.*?\)/g, ''); 
                     
                     el('srchArea').innerHTML += `
@@ -752,7 +754,7 @@
                     const d = document.createElement('div');
                     d.className = 'pending-item';
                     
-                    // 顯示時隱藏括號，並加上從後端傳來的日期字串
+                    // 去除括號以保持按鈕簡潔，並加上日期標記
                     const displayCourse = (i.course || '未定').replace(/\(.*?\)/g, '');
                     const dateLabel = i.dateStr ? ` [${i.dateStr}]` : '';
                     
@@ -803,6 +805,8 @@
         
         cart.forEach(i => {
             totalSum += Number(i.price);
+            
+            // 下拉選單顯示修復，提供完整無括號的名稱
             const c = i.course;
             
             el('cBody').innerHTML += `
