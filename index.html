@@ -380,7 +380,7 @@
         }
 
         /* =========================================================
-           實體收據圖渲染區 (重新設計為奶茶色明細)
+           實體收據圖渲染區 (奶茶色明細)
            ========================================================= */
         #receiptCaptureArea {
             position: absolute;
@@ -406,7 +406,7 @@
             height: auto;
         }
 
-        /* 如果沒上傳 Logo，會有一個備用的文字 Logo */
+        /* 如果沒上傳 Logo 或路徑錯誤，會有一個備用的文字 Logo */
         .fallback-logo-text {
             display: none;
             font-size: 26px;
@@ -583,7 +583,7 @@
 <div id="receiptCaptureArea">
     
     <div class="receipt-logo-container">
-        <img src="logo.jpg" alt="錦葳Logo" onerror="this.style.display='none'; document.getElementById('fallbackLogoText').style.display='block';">
+        <img src="logo.png" alt="錦葳Logo" onerror="this.style.display='none'; document.getElementById('fallbackLogoText').style.display='block';">
         <h1 id="fallbackLogoText" class="fallback-logo-text">錦葳養生館</h1>
     </div>
 
@@ -850,7 +850,6 @@
                     d.innerText = `+ ${i.name}${dateLabel} [${displayCourse}]`;
                     
                     d.onclick = () => {
-                        // 紀錄原本從中台來的分頁與列數
                         cart.push({
                             id: 'i' + Date.now() + Math.random().toString(36).substr(2,3),
                             sheetName: i.sheetName,
@@ -868,7 +867,7 @@
                     el('pendArea').appendChild(d);
                 });
             } else {
-                el('pendArea').innerText = '目前中台沒有符合的待結帳顧客。';
+                el('pendArea').innerText = '目前中台沒有待結帳的顧客。';
             }
         } catch(e) {
             console.error(e);
@@ -991,7 +990,6 @@
         
         el('rSum').innerText = '$' + grandTotal;
         
-        // 延遲一點點，確保 DOM 更新完成再繪圖
         setTimeout(() => {
             html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true }).then(canvas => {
                 pendingBase64 = canvas.toDataURL('image/png');
@@ -1008,7 +1006,6 @@
                     receiptImageBase64: pendingBase64
                 };
                 
-                // 顯示預覽畫面
                 el('previewImage').src = pendingBase64;
                 el('previewOverlay').style.display = 'flex';
                 
@@ -1028,7 +1025,6 @@
     async function confirmCheckout() {
         if (!pendingCheckoutPayload) return;
         
-        // 隱藏預覽畫面
         el('previewOverlay').style.display = 'none';
         
         try {
@@ -1041,17 +1037,14 @@
             if (r.status === 'success') {
                 alert('結帳存檔成功！已同步上傳至雲端並更新中台進度。');
                 
-                // 清空購物車與表單
                 cart = [];
                 renderCart();
                 el('fGenNote').value = '';
                 el('fRem').value = '';
                 
-                // 清理暫存資料
                 pendingCheckoutPayload = null;
                 pendingBase64 = null;
                 
-                // 重新載入中台清單，確認已結帳的人消失
                 loadPend();
                 
             } else {
