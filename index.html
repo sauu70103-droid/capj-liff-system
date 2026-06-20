@@ -1,1063 +1,124 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>錦葳店務與財務系統</title>
-    
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>錦葳店務與財務系統</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* ==========================================
-           基礎背景與玻璃透視設計
-           ========================================== */
-        body { 
-            margin: 0; 
-            padding: 20px; 
-            font-family: sans-serif; 
-            background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%); 
-            color: #f8fafc; 
-            min-height: 100vh; 
-        }
-
-        body::before { 
-            content: ""; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background-image: 
-                radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)), 
-                radial-gradient(2px 2px at 150px 70px, #ffffff, rgba(0,0,0,0)), 
-                radial-gradient(2px 2px at 50px 160px, #ffffff, rgba(0,0,0,0)); 
-            background-size: 350px 350px; 
-            opacity: 0.3; 
-            z-index: -1; 
-        }
-
-        .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            position: relative; 
-        }
-
-        h2 { 
-            text-align: center; 
-            color: #c4b5fd; 
-            text-shadow: 0 0 10px rgba(196,181,253,0.3); 
-            letter-spacing: 2px; 
-        }
-        
-        /* 權限讀取遮罩 */
-        #loadingOverlay { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(15, 23, 42, 0.9); 
-            z-index: 10; 
-            border-radius: 12px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-size: 18px; 
-            color: #2dd4bf; 
-            font-weight: bold; 
-        }
-
-        /* ==========================================
-           頁籤切換按鈕
-           ========================================== */
-        .tabs { 
-            display: flex; 
-            gap: 8px; 
-            margin-bottom: 20px; 
-        }
-
-        .tab-btn { 
-            flex: 1; 
-            padding: 15px 5px; 
-            background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            color: #cbd5e1; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            font-size: 15px; 
-            text-align: center; 
-        }
-
-        .tab-btn.active { 
-            background: rgba(139, 92, 246, 0.3); 
-            color: #ddd6fe; 
-            border-color: #8b5cf6; 
-            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2); 
-        }
-
-        /* ==========================================
-           表單與輸入框共用樣式
-           ========================================== */
-        .form-section { 
-            background: rgba(15, 23, 42, 0.6); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            padding: 25px; 
-            border-radius: 12px; 
-            display: none; 
-        }
-
-        .form-section.active { 
-            display: block; 
-        }
-
-        .form-group { 
-            margin-bottom: 18px; 
-        }
-
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            font-size: 14px; 
-            color: #cbd5e1; 
-        }
-
-        input, select { 
-            width: 100%; 
-            padding: 12px; 
-            box-sizing: border-box; 
-            background: rgba(0, 0, 0, 0.3); 
-            border: 1px solid rgba(255, 255, 255, 0.2); 
-            border-radius: 6px; 
-            color: #f8fafc; 
-            font-size: 16px; 
-        }
-
-        input[readonly] { 
-            background: rgba(255, 255, 255, 0.05); 
-            color: #94a3b8; 
-            cursor: not-allowed; 
-        }
-
-        option { 
-            background: #1e1b4b; 
-            color: #fff; 
-        }
-        
-        /* ==========================================
-           動作按鈕樣式
-           ========================================== */
-        .btn-submit { 
-            background: linear-gradient(to right, #6366f1, #8b5cf6); 
-            color: white; 
-            border: none; 
-            padding: 15px; 
-            width: 100%; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 10px; 
-        }
-
-        .btn-cancel-action { 
-            background: rgba(239, 68, 68, 0.2); 
-            color: #fca5a5; 
-            border: 1px solid #ef4444; 
-            padding: 15px; 
-            width: 100%; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-        }
-
-        .btn-search { 
-            background: rgba(255, 255, 255, 0.1); 
-            border: 1px solid rgba(255, 255, 255, 0.3); 
-            color: white; 
-            padding: 12px; 
-            width: 100%; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            cursor: pointer; 
-        }
-
-        /* ==========================================
-           購物車與待結帳 UI
-           ========================================== */
-        .pending-box { 
-            background: rgba(139, 92, 246, 0.1); 
-            border: 1px solid #8b5cf6; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 20px; 
-        }
-
-        .pending-item { 
-            display: inline-block; 
-            background: #4c1d95; 
-            color: white; 
-            padding: 8px 12px; 
-            border-radius: 20px; 
-            margin: 5px; 
-            font-size: 14px; 
-            cursor: pointer; 
-            transition: 0.2s; 
-            border: 1px solid #6d28d9; 
-        }
-
-        .pending-item:hover { 
-            background: #6d28d9; 
-        }
-        
-        .cart-box { 
-            background: rgba(0, 0, 0, 0.4); 
-            border: 1px solid #4ade80; 
-            border-radius: 8px; 
-            padding: 15px; 
-            margin-bottom: 20px; 
-        }
-
-        .cart-title { 
-            font-weight: bold; 
-            color: #4ade80; 
-            margin-bottom: 10px; 
-            display: flex; 
-            justify-content: space-between; 
-        }
-
-        .cart-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px; 
-            font-size: 14px; 
-        }
-
-        .cart-table th { 
-            text-align: left; 
-            padding: 6px; 
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2); 
-            color: #a7f3d0; 
-        }
-
-        .cart-table td { 
-            padding: 8px 6px; 
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
-        }
-
-        .cart-remove { 
-            color: #fca5a5; 
-            cursor: pointer; 
-            font-weight: bold; 
-        }
-        
-        /* ==========================================
-           查詢結果卡片樣式
-           ========================================== */
-        .result-card { 
-            background: rgba(0, 0, 0, 0.4); 
-            border-left: 4px solid #8b5cf6; 
-            padding: 15px; 
-            border-radius: 6px; 
-            margin-top: 15px; 
-        }
-
-        .result-info { 
-            font-size: 14px; 
-            line-height: 1.6; 
-            margin-bottom: 15px; 
-            color: #e2e8f0; 
-        }
-
-        .result-actions { 
-            display: flex; 
-            gap: 10px; 
-        }
-
-        .btn-small { 
-            flex: 1; 
-            padding: 10px; 
-            border-radius: 6px; 
-            border: none; 
-            font-weight: bold; 
-            cursor: pointer; 
-        }
-
-        .btn-edit { background: #3b82f6; color: white; }
-        .btn-del { background: #ef4444; color: white; }
-        
-        .reschedule-box { 
-            margin-top: 15px; 
-            padding-top: 15px; 
-            border-top: 1px dashed rgba(255, 255, 255, 0.2); 
-            display: none; 
-        }
-
-        /* ==========================================
-           高階財務儀表板
-           ========================================== */
-        #summaryDashboard { 
-            background: rgba(45, 212, 191, 0.1); 
-            border: 1px solid #2dd4bf; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 20px; 
-            text-align: center; 
-        }
-
-        .summary-grid { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 10px; 
-            margin-top: 10px; 
-        }
-
-        .summary-item { 
-            background: rgba(0, 0, 0, 0.3); 
-            padding: 10px; 
-            border-radius: 6px; 
-        }
-
-        .summary-val { 
-            display: block; 
-            font-size: 20px; 
-            font-weight: bold; 
-            color: #2dd4bf; 
-            margin-top: 5px; 
-        }
-
-        /* ==========================================
-           電子明細隱藏生成區 (給 html2canvas 繪圖用)
-           ========================================== */
-        #receiptCaptureArea { 
-            position: absolute; 
-            left: -9999px; 
-            top: 0; 
-            width: 450px; 
-            background: #ffffff; 
-            color: #1e293b; 
-            padding: 30px; 
-            border-radius: 0; 
-            font-family: sans-serif; 
-        }
-
-        .receipt-header { 
-            text-align: center; 
-            border-bottom: 2px dashed #cbd5e1; 
-            padding-bottom: 15px; 
-            margin-bottom: 15px; 
-        }
-
-        .receipt-row { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 10px; 
-            font-size: 15px; 
-        }
-        
-        .divider { 
-            height: 1px; 
-            background: rgba(255, 255, 255, 0.1); 
-            margin: 30px 0; 
-        }
-
-        .hidden { 
-            display: none !important; 
-        }
+        body{margin:0;padding:20px;font-family:sans-serif;background:linear-gradient(135deg,#0f172a 0%,#2e1065 100%);color:#f8fafc;min-height:100vh;}
+        body::before{content:"";position:fixed;top:0;left:0;width:100%;height:100%;background-image:radial-gradient(2px 2px at 20px 30px,#fff,transparent),radial-gradient(2px 2px at 150px 70px,#fff,transparent),radial-gradient(2px 2px at 50px 160px,#fff,transparent);background-size:350px 350px;opacity:0.3;z-index:-1;}
+        .container{max-width:600px;margin:0 auto;position:relative;} h2{text-align:center;color:#c4b5fd;text-shadow:0 0 10px rgba(196,181,253,0.3);letter-spacing:2px;}
+        #loadingOverlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.9);z-index:10;border-radius:12px;display:flex;justify-content:center;align-items:center;font-size:18px;color:#2dd4bf;font-weight:bold;}
+        .tabs{display:flex;gap:8px;margin-bottom:20px;} .tab-btn{flex:1;padding:15px 5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#cbd5e1;border-radius:8px;cursor:pointer;font-weight:bold;font-size:15px;} .tab-btn.active{background:rgba(139,92,246,0.3);color:#ddd6fe;border-color:#8b5cf6;box-shadow:0 0 10px rgba(139,92,246,0.2);}
+        .form-section{background:rgba(15,23,42,0.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);padding:25px;border-radius:12px;display:none;} .form-section.active{display:block;}
+        .form-group{margin-bottom:18px;} label{display:block;margin-bottom:8px;font-size:14px;color:#cbd5e1;} input,select{width:100%;padding:12px;box-sizing:border-box;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#f8fafc;font-size:16px;} input[readonly]{background:rgba(255,255,255,0.05);color:#94a3b8;} option{background:#1e1b4b;color:#fff;}
+        .btn-submit{background:linear-gradient(to right,#6366f1,#8b5cf6);color:#fff;border:none;padding:15px;width:100%;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px;} .btn-cancel-action{background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid #ef4444;padding:15px;width:100%;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;} .btn-search{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:12px;width:100%;border-radius:8px;font-size:16px;cursor:pointer;}
+        .pending-box{background:rgba(139,92,246,0.1);border:1px solid #8b5cf6;padding:15px;border-radius:8px;margin-bottom:20px;} .pending-item{display:inline-block;background:#4c1d95;color:#fff;padding:8px 12px;border-radius:20px;margin:5px;font-size:14px;cursor:pointer;border:1px solid #6d28d9;}
+        .cart-box{background:rgba(0,0,0,0.4);border:1px solid #4ade80;border-radius:8px;padding:15px;margin-bottom:20px;} .cart-title{font-weight:bold;color:#4ade80;margin-bottom:10px;display:flex;justify-content:space-between;} .cart-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;} .cart-table th{text-align:left;padding:6px;border-bottom:1px solid rgba(255,255,255,0.2);color:#a7f3d0;} .cart-table td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,0.1);} .cart-remove{color:#fca5a5;cursor:pointer;font-weight:bold;}
+        .result-card{background:rgba(0,0,0,0.4);border-left:4px solid #8b5cf6;padding:15px;border-radius:6px;margin-top:15px;} .result-info{font-size:14px;line-height:1.6;margin-bottom:15px;color:#e2e8f0;} .result-actions{display:flex;gap:10px;} .btn-small{flex:1;padding:10px;border-radius:6px;border:none;font-weight:bold;cursor:pointer;} .btn-edit{background:#3b82f6;color:#fff;} .btn-del{background:#ef4444;color:#fff;} .reschedule-box{margin-top:15px;padding-top:15px;border-top:1px dashed rgba(255,255,255,0.2);display:none;}
+        #summaryDashboard{background:rgba(45,212,191,0.1);border:1px solid #2dd4bf;padding:15px;border-radius:8px;margin-bottom:20px;text-align:center;} .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;} .summary-item{background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;} .summary-val{display:block;font-size:20px;font-weight:bold;color:#2dd4bf;margin-top:5px;}
+        #receiptCaptureArea{position:absolute;left:-9999px;top:0;width:450px;background:#fff;color:#1e293b;padding:30px;font-family:sans-serif;} .receipt-header{text-align:center;border-bottom:2px dashed #cbd5e1;padding-bottom:15px;margin-bottom:15px;} .receipt-row{display:flex;justify-content:space-between;margin-bottom:10px;font-size:15px;}
+        .divider{height:1px;background:rgba(255,255,255,0.1);margin:30px 0;} .hidden{display:none !important;}
     </style>
 </head>
 <body>
-
 <div class="container">
-    <div id="loadingOverlay">系統授權連線中...</div>
-    
-    <h2>錦葳店務與財務系統</h2>
-    
+    <div id="loadingOverlay">系統連線中...</div><h2>錦葳店務與財務系統</h2>
     <div class="tabs">
-        <button class="tab-btn active" id="btnTabBooking" onclick="switchTab('bookingTab', this)">店務預約</button>
-        <button class="tab-btn hidden" id="btnTabFinance" onclick="switchTab('financeTab', this)">財務結帳</button>
-        <button class="tab-btn hidden" id="btnTabAdjust" onclick="switchTab('adjustTab', this)">財務異動</button>
+        <button class="tab-btn active" id="btnTabBooking" onclick="switchTab('bookingTab',this)">店務預約</button>
+        <button class="tab-btn hidden" id="btnTabFinance" onclick="switchTab('financeTab',this)">財務結帳</button>
+        <button class="tab-btn hidden" id="btnTabAdjust" onclick="switchTab('adjustTab',this)">財務異動</button>
     </div>
 
     <div id="bookingTab" class="form-section active">
-        <div class="form-group">
-            <label>顧客手機號碼</label>
-            <input type="tel" id="bookPhone">
-        </div>
-        <div class="form-group">
-            <label>顧客姓名</label>
-            <input type="text" id="bookName">
-        </div>
-        <div class="form-group">
-            <label>人數</label>
-            <input type="number" id="bookPeople" value="1" min="1">
-        </div>
-        <div class="form-group">
-            <label>課程類型</label>
-            <select id="bookCourseType">
-                <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆(快速修復)-30分鐘</option>
-                <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆(全身修復)-90分鐘</option>
-                <option value="單部位舒緩修復(精準調理)">單部位舒緩修復(精準調理)</option>
-                <option value="全身結構養護(平衡調理)">全身結構養護(平衡調理)</option>
-                <option value="全身全方位深度修復-60分鐘">全身全方位深度修復-60分鐘</option>
-                <option value="其他">其他</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>操作調理師傅</label>
-            <select id="bookHero">
-                <option value="奎元">奎元</option>
-                <option value="千芳">千芳</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>開始時間</label>
-            <input type="datetime-local" id="bookStart">
-        </div>
-        <div class="form-group">
-            <label>結束時間</label>
-            <input type="datetime-local" id="bookEnd">
-        </div>
-        <button class="btn-submit" onclick="submitBookingData()">確認建立預約</button>
-        
-        <div class="divider"></div>
-        
-        <h3 style="color: #cbd5e1; font-size: 16px; margin-bottom: 15px;">🔍 查詢、改期與取消預約</h3>
-        <div class="form-group">
-            <input type="text" id="searchKeyword" placeholder="請輸入顧客姓名或手機進行查詢">
-        </div>
-        <button class="btn-search" id="btnSearch" onclick="searchBookings()">搜尋目前預約紀錄</button>
-        
-        <div id="searchResultsArea"></div>
+        <div class="form-group"><label>手機號碼</label><input type="tel" id="bkPhone"></div>
+        <div class="form-group"><label>顧客姓名</label><input type="text" id="bkName"></div>
+        <div class="form-group"><label>人數</label><input type="number" id="bkPeople" value="1" min="1"></div>
+        <div class="form-group"><label>課程類型</label><select id="bkCourse">
+            <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆(快速修復)-30分鐘</option>
+            <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆(全身修復)-90分鐘</option>
+            <option value="單部位舒緩修復(精準調理)">單部位舒緩修復(精準調理)</option>
+            <option value="全身結構養護(平衡調理)">全身結構養護(平衡調理)</option>
+            <option value="全身全方位深度修復-60分鐘">全身全方位深度修復-60分鐘</option>
+            <option value="其他">其他</option></select></div>
+        <div class="form-group"><label>師傅</label><select id="bkHero"><option value="奎元">奎元</option><option value="千芳">千芳</option></select></div>
+        <div class="form-group"><label>開始時間</label><input type="datetime-local" id="bkStart"></div>
+        <div class="form-group"><label>結束時間</label><input type="datetime-local" id="bkEnd"></div>
+        <button class="btn-submit" onclick="apiCall('createBooking',{phone:v('bkPhone'),customerName:v('bkName'),people:v('bkPeople'),courseType:v('bkCourse'),heroStaff:v('bkHero'),startTime:v('bkStart'),endTime:v('bkEnd')}, '預約成功！')">確認建立</button>
+        <div class="divider"></div><h3 style="color:#cbd5e1;font-size:16px;">🔍 查詢、改期與取消</h3>
+        <div class="form-group"><input type="text" id="srchKw" placeholder="輸入姓名或手機"></div>
+        <button class="btn-search" onclick="searchBks()">搜尋預約紀錄</button><div id="srchArea"></div>
     </div>
 
     <div id="financeTab" class="form-section">
-        
-        <div id="summaryDashboard" class="hidden">
-            <button class="btn-cancel-action" style="color: #2dd4bf; border-color: #2dd4bf;" onclick="fetchSummary()">📊 載入高階營收數據</button>
-            <div class="summary-grid hidden" id="summaryData">
-                <div class="summary-item">本日<span class="summary-val" id="valDaily">$0</span></div>
-                <div class="summary-item">本週<span class="summary-val" id="valWeekly">$0</span></div>
-                <div class="summary-item">本月<span class="summary-val" id="valMonthly">$0</span></div>
-            </div>
-        </div>
-
-        <div class="pending-box">
-            <button class="btn-search" style="background: #8b5cf6; border-color: #8b5cf6;" id="btnFetchPending" onclick="loadPendingCheckouts()">📥 載入中台待結帳清單</button>
-            <div id="pendingListArea" style="margin-top: 15px;"></div>
-        </div>
-
-        <div class="cart-box">
-            <div class="cart-title">
-                <span>🛒 結帳核對清單 (多選購物車)</span>
-                <span id="cartTotalSum">$0</span>
-            </div>
-            <table class="cart-table">
-                <thead>
-                    <tr>
-                        <th>姓名</th>
-                        <th>項目</th>
-                        <th>師傅</th>
-                        <th>金額</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="cartTableBody">
-                    </tbody>
-            </table>
-        </div>
-
-        <div class="form-group">
-            <label>支付方式</label>
-            <select id="finPayment" onchange="toggleRemittance()">
-                <option value="現金">現金</option>
-                <option value="匯款">匯款</option>
-                <option value="扣堂">扣堂</option>
-            </select>
-        </div>
-        <div class="form-group hidden" id="remittanceBox">
-            <label>匯款備註資料</label>
-            <input type="text" id="finRemittanceNote" placeholder="例如：後五碼或匯款日期">
-        </div>
-        <div class="form-group">
-            <label>結帳經手人員</label>
-            <input type="text" id="finCashier" readonly>
-        </div>
-        <button class="btn-submit" style="background: linear-gradient(to right, #10b981, #059669);" onclick="processCartCheckout()">確認合併結帳並產出明細</button>
+        <div id="summaryDashboard" class="hidden"><button class="btn-cancel-action" style="color:#2dd4bf;border-color:#2dd4bf;" onclick="fetchSum()">📊 載入高階營收</button>
+            <div class="summary-grid hidden" id="sumData"><div class="summary-item">本日<span class="summary-val" id="vD">$0</span></div><div class="summary-item">本週<span class="summary-val" id="vW">$0</span></div><div class="summary-item">本月<span class="summary-val" id="vM">$0</span></div></div></div>
+        <div class="pending-box"><button class="btn-search" style="background:#8b5cf6;" onclick="loadPend()">📥 載入中台待結帳</button><div id="pendArea" style="margin-top:15px;"></div></div>
+        <div class="cart-box"><div class="cart-title"><span>🛒 結帳核對 (多選)</span><span id="cSum">$0</span></div>
+            <table class="cart-table"><thead><tr><th>姓名</th><th>項目</th><th>師傅</th><th>金額</th><th>刪</th></tr></thead><tbody id="cBody"></tbody></table></div>
+        <div class="form-group"><label>支付方式</label><select id="fPay" onchange="document.getElementById('remBox').style.display=(this.value==='匯款'?'block':'none')"><option value="現金">現金</option><option value="匯款">匯款</option><option value="扣堂">扣堂</option></select></div>
+        <div class="form-group hidden" id="remBox"><label>匯款備註</label><input type="text" id="fRem"></div>
+        <div class="form-group"><label>經手人</label><input type="text" id="fCash" readonly></div>
+        <button class="btn-submit" style="background:linear-gradient(to right,#10b981,#059669);" onclick="processCart()">合併結帳產圖</button>
     </div>
 
-    <div id="adjustTab" class="form-section">
-        <h3 style="color: #fca5a5; font-size: 16px; margin-bottom: 10px;">⚠️ 當月入帳異動修正 (退費/作廢)</h3>
-        <p style="font-size: 14px; color: #94a3b8; margin-bottom: 15px;">請輸入客戶姓名或手機，查詢當月入帳明細進行金額異動作廢。</p>
-        
-        <div class="form-group">
-            <input type="text" id="adjustSearchKeyword" placeholder="請輸入顧客姓名或手機">
-        </div>
-        <button class="btn-search" style="border-color: #ef4444; color: #fca5a5;" id="btnSearchFinance" onclick="searchFinanceRecords()">查詢當月財務紀錄</button>
-        
-        <div id="financeSearchResultsArea"></div>
+    <div id="adjustTab" class="form-section"><h3 style="color:#fca5a5;">⚠️ 異動修正 (作廢)</h3><p style="font-size:14px;color:#94a3b8;">查詢當月明細作廢。</p>
+        <div class="form-group"><input type="text" id="adjKw" placeholder="輸入姓名或手機"></div>
+        <button class="btn-search" style="border-color:#ef4444;color:#fca5a5;" onclick="searchFin()">查詢財務紀錄</button><div id="adjArea"></div>
     </div>
 </div>
 
-<div id="receiptCaptureArea">
-    <div class="receipt-header">
-        <h3 style="margin:0; font-size:22px;">錦葳養生館</h3>
-        <p style="margin:5px 0 0 0; font-size:14px; color:#64748b;">電子結帳核對明細</p>
-    </div>
-    <div class="receipt-row">
-        <span>單號：</span>
-        <span id="recOrderId"></span>
-    </div>
-    <div class="receipt-row">
-        <span>結帳時間：</span>
-        <span id="recTime"></span>
-    </div>
-    <div class="receipt-row">
-        <span>支付方式：</span>
-        <span id="recMethod"></span>
-    </div>
-    <div class="receipt-row">
-        <span>經手人員：</span>
-        <span id="recCashier"></span>
-    </div>
-    
-    <div style="border-bottom:1px dashed #cbd5e1; margin:15px 0;"></div>
-    
-    <div id="receiptItemsList">
-        </div>
-    
-    <div style="border-bottom:2px solid #1e293b; margin:15px 0;"></div>
-    
-    <div class="receipt-row" style="font-size:18px; font-weight:bold;">
-        <span>加總調理金額：</span>
-        <span id="recTotalSum"></span>
-    </div>
-    
-    <p style="text-align:center; font-size:12px; color:#94a3b8; margin-top:25px;">
-        感謝您的光臨，期待再次為您服務。
-    </p>
+<div id="receiptCaptureArea"><div class="receipt-header"><h3 style="margin:0;">錦葳養生館</h3><p style="margin:5px 0 0;color:#64748b;">電子結帳明細</p></div>
+    <div class="receipt-row"><span>單號：</span><span id="rId"></span></div><div class="receipt-row"><span>時間：</span><span id="rTm"></span></div><div class="receipt-row"><span>方式：</span><span id="rMth"></span></div><div class="receipt-row"><span>人員：</span><span id="rCsh"></span></div>
+    <div style="border-bottom:1px dashed #cbd5e1;margin:15px 0;"></div><div id="rItems"></div><div style="border-bottom:2px solid #1e293b;margin:15px 0;"></div>
+    <div class="receipt-row" style="font-weight:bold;"><span>加總：</span><span id="rSum"></span></div><p style="text-align:center;font-size:12px;margin-top:25px;">感謝您的光臨，期待再次為您服務。</p>
 </div>
 
 <script>
-    // 您的專屬 GAS API 通道網址
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
+    const API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
+    const prices = {"無痛滑罐放鬆(快速修復)-30分鐘":600, "全方位滑罐放鬆(全身修復)-90分鐘":1600, "單部位舒緩修復(精準調理)":600, "全身結構養護(平衡調理)":1000, "全身全方位深度修復-60分鐘":2000};
+    let cart = []; const v = id => document.getElementById(id).value; const el = id => document.getElementById(id);
 
-    // 錦葳課程價格表對照
-    const coursePrices = { 
-        "無痛滑罐放鬆(快速修復)-30分鐘": 600, 
-        "全方位滑罐放鬆(全身修復)-90分鐘": 1600, 
-        "單部位舒緩修復(精準調理)": 600, 
-        "全身結構養護(平衡調理)": 1000, 
-        "全身全方位深度修復-60分鐘": 2000 
-    };
-
-    // 全域購物車陣列
-    let checkoutCart = [];
-
-    // ==========================================
-    // 1. 系統初始化與權限驗證
-    // ==========================================
-    liff.init({ liffId: '2010453415-nTX3Lo1L' }).then(async () => {
-        if (!liff.isLoggedIn()) {
-            liff.login();
-        } else {
-            try {
-                const profile = await liff.getProfile();
-                document.getElementById('finCashier').value = profile.displayName;
-                
-                const response = await fetch(GAS_API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ 
-                        action: 'checkAuth', 
-                        userName: profile.displayName 
-                    })
-                });
-                
-                const auth = await response.json();
-                
-                // 關閉等待遮罩
-                document.getElementById('loadingOverlay').style.display = 'none';
-                
-                if (auth.status === 'success') {
-                    if (auth.permissions.canAccessFinance) {
-                        document.getElementById('btnTabFinance').classList.remove('hidden');
-                        document.getElementById('btnTabAdjust').classList.remove('hidden');
-                    }
-                }
-            } catch (err) {
-                document.getElementById('loadingOverlay').innerText = '系統驗證錯誤，請聯繫技術人員。';
-            }
+    liff.init({liffId:'2010453415-nTX3Lo1L'}).then(async () => {
+        if(!liff.isLoggedIn()) liff.login();
+        else {
+            try { const p = await liff.getProfile(); el('fCash').value = p.displayName;
+                const r = await fetch(API, {method:'POST', body:JSON.stringify({action:'checkAuth', userName:p.displayName})}).then(x=>x.json());
+                el('loadingOverlay').style.display='none';
+                if(r.status==='success') { if(r.permissions.canAccessFinance){ el('btnTabFinance').classList.remove('hidden'); el('btnTabAdjust').classList.remove('hidden'); } if(r.permissions.canViewSummary) el('summaryDashboard').classList.remove('hidden'); }
+            } catch(e) { el('loadingOverlay').innerText = '驗證錯誤'; }
         }
     });
 
-    // ==========================================
-    // 2. 介面互動與分頁切換
-    // ==========================================
-    function switchTab(tabId, btn) {
-        document.querySelectorAll('.form-section').forEach(el => {
-            el.style.display = 'none';
-        });
-        document.querySelectorAll('.tab-btn').forEach(el => {
-            el.classList.remove('active');
-        });
-        document.getElementById(tabId).style.display = 'block';
-        btn.classList.add('active');
+    function switchTab(id, btn) { document.querySelectorAll('.form-section').forEach(x=>x.style.display='none'); document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active')); el(id).style.display='block'; btn.classList.add('active'); }
+    async function apiCall(action, payload, msg) { try { const r = await fetch(API, {method:'POST', body:JSON.stringify({action, ...payload, orderId:'B'+Date.now()})}).then(x=>x.json()); if(r.status==='success'){ if(msg) alert(msg); if(action==='createBooking') liff.closeWindow(); return r; } else alert('失敗: '+r.message); } catch(e){ alert('網路錯誤'); } }
+
+    async function searchBks() {
+        const k=v('srchKw'); if(!k) return alert('輸入關鍵字'); const r = await apiCall('searchBookings', {keyword:k}); el('srchArea').innerHTML='';
+        if(r && r.data.length){ r.data.forEach(i=>{ el('srchArea').innerHTML += `<div class="result-card" id="bk-${i.orderId}"><div class="result-info">${i.name} - ${i.course}<br>${i.startTime} | ${i.hero}</div><div class="result-actions"><button class="btn-small btn-edit" onclick="el('rBx-${i.orderId}').style.display='block'">改期</button><button class="btn-small btn-del" onclick="if(confirm('確定取消?'))apiCall('cancelBooking',{orderId:'${i.orderId}'}).then(()=>el('bk-${i.orderId}').style.display='none')">取消</button></div><div class="reschedule-box" id="rBx-${i.orderId}"><input type="datetime-local" id="ns-${i.orderId}" style="margin-bottom:5px;"><input type="datetime-local" id="ne-${i.orderId}"><button class="btn-submit" onclick="apiCall('rescheduleBooking',{orderId:'${i.orderId}',newStartTime:v('ns-${i.orderId}'),newEndTime:v('ne-${i.orderId}')}).then(searchBks)">儲存</button></div></div>`; }); } else el('srchArea').innerHTML='<p>無紀錄</p>';
     }
 
-    function toggleRemittance() {
-        const method = document.getElementById('finPayment').value;
-        const box = document.getElementById('remittanceBox');
-        if (method === '匯款') {
-            box.classList.remove('hidden');
-        } else {
-            box.classList.add('hidden');
-        }
-    }
-
-    // ==========================================
-    // 3. 店務預約核心功能
-    // ==========================================
-    async function submitBookingData() {
-        const payload = {
-            action: 'createBooking',
-            orderId: 'B' + Date.now(),
-            phone: document.getElementById('bookPhone').value,
-            customerName: document.getElementById('bookName').value,
-            people: document.getElementById('bookPeople').value,
-            courseType: document.getElementById('bookCourseType').value,
-            heroStaff: document.getElementById('bookHero').value,
-            startTime: document.getElementById('bookStart').value,
-            endTime: document.getElementById('bookEnd').value
-        };
-        
-        try {
-            const res = await fetch(GAS_API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify(payload) 
-            });
-            const r = await res.json();
-            
-            if (r.status === 'success') { 
-                alert('預約排程已成功寫入！'); 
-                liff.closeWindow(); 
-            } else {
-                alert('寫入失敗：' + r.message);
-            }
-        } catch(e) { 
-            alert('網路連線錯誤，寫入失敗'); 
-        }
-    }
-
-    async function searchBookings() {
-        const keyword = document.getElementById('searchKeyword').value;
-        if (!keyword) {
-            return alert('請輸入搜尋關鍵字');
-        }
-        
-        const btn = document.getElementById('btnSearch');
-        btn.innerText = '搜尋中...';
-        
-        try {
-            const res = await fetch(GAS_API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ 
-                    action: 'searchBookings', 
-                    keyword: keyword 
-                }) 
-            });
-            const result = await res.json();
-            const area = document.getElementById('searchResultsArea');
-            area.innerHTML = '';
-            
-            if (result.status === 'success' && result.data.length > 0) {
-                result.data.forEach(item => {
-                    area.innerHTML += `
-                        <div class="result-card" id="card-${item.orderId}">
-                            <div class="result-info">
-                                <strong>${item.name}</strong> - ${item.course}<br>
-                                時間：${item.startTime}<br>
-                                師傅：${item.hero}
-                            </div>
-                            <div class="result-actions">
-                                <button class="btn-small btn-edit" onclick="toggleReschedule('${item.orderId}')">改期</button>
-                                <button class="btn-small btn-del" onclick="confirmCancel('${item.orderId}')">取消</button>
-                            </div>
-                            <div class="reschedule-box" id="resched-${item.orderId}">
-                                <div class="form-group">
-                                    <label>新開始時間</label>
-                                    <input type="datetime-local" id="newStart-${item.orderId}">
-                                </div>
-                                <div class="form-group">
-                                    <label>新結束時間</label>
-                                    <input type="datetime-local" id="newEnd-${item.orderId}">
-                                </div>
-                                <button class="btn-submit" onclick="submitReschedule('${item.orderId}')">確認變更時間</button>
-                            </div>
-                        </div>`;
-                });
-            } else { 
-                area.innerHTML = '<p style="text-align:center;">無此項目預約</p>'; 
-            }
-        } catch(e) { 
-            alert('查詢錯誤，請確認網路連線'); 
-        } finally { 
-            btn.innerText = '搜尋目前預約紀錄'; 
-        }
-    }
-
-    function toggleReschedule(id) { 
-        const el = document.getElementById(`resched-${id}`); 
-        if (el.style.display === 'block') {
-            el.style.display = 'none';
-        } else {
-            el.style.display = 'block';
-        }
-    }
-
-    async function confirmCancel(id) {
-        if (!confirm("確定要取消此預約嗎？")) return;
-        
-        try {
-            const res = await fetch(GAS_API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ 
-                    action: 'cancelBooking', 
-                    orderId: id 
-                }) 
-            });
-            const r = await res.json();
-            
-            if(r.status === 'success') { 
-                alert('已成功取消'); 
-                document.getElementById(`card-${id}`).style.display = 'none'; 
-            } else {
-                alert('取消失敗：' + r.message);
-            }
-        } catch(e) {
-            alert('執行取消時發生網路錯誤');
-        }
-    }
-
-    async function submitReschedule(id) {
-        const start = document.getElementById(`newStart-${id}`).value;
-        const end = document.getElementById(`newEnd-${id}`).value;
-        
-        if (!start || !end) {
-            return alert('請完整選擇新的時間');
-        }
-        
-        try {
-            const res = await fetch(GAS_API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ 
-                    action: 'rescheduleBooking', 
-                    orderId: id, 
-                    newStartTime: start, 
-                    newEndTime: end 
-                }) 
-            });
-            const r = await res.json();
-            
-            if(r.status === 'success') { 
-                alert('改期完成'); 
-                searchBookings(); // 重新整理清單
-            } else {
-                alert('改期失敗：' + r.message);
-            }
-        } catch(e) {
-            alert('執行改期時發生網路錯誤');
-        }
-    }
-
-    // ==========================================
-    // 4. 財務結帳：多人購物車與產圖核心
-    // ==========================================
-    async function loadPendingCheckouts() {
-        const btn = document.getElementById('btnFetchPending');
-        btn.innerText = '讀取中...';
-        
-        try {
-            const res = await fetch(GAS_API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: 'fetchPendingCheckouts' }) 
-            });
-            const r = await res.json();
-            const area = document.getElementById('pendingListArea');
-            area.innerHTML = '';
-            
-            if (r.status === 'success' && r.data.length > 0) {
-                r.data.forEach((item) => {
-                    const el = document.createElement('div');
-                    el.className = 'pending-item';
-                    el.innerText = `＋ ${item.name} [${item.course || '未定'}]`;
-                    el.onclick = () => { 
-                        addProductToCart(item); 
-                    };
-                    area.appendChild(el);
-                });
-            } else { 
-                area.innerHTML = '<span style="font-size:14px;color:#94a3b8;">當前無未結帳顧客</span>'; 
-            }
-        } catch(e) { 
-            alert('載入中台名單失敗'); 
-        } finally { 
-            btn.innerText = '📥 載入中台待結帳清單'; 
-        }
-    }
-
-    function addProductToCart(item) {
-        const defaultPrice = coursePrices[item.course] || 0;
-        const cartItem = {
-            id: 'item_' + Date.now() + Math.random().toString(36).substr(2, 5),
-            name: item.name,
-            phone: item.phone,
-            course: item.course || '無痛滑罐放鬆(快速修復)-30分鐘',
-            hero: item.hero || '千芳',
-            price: defaultPrice,
-            note: ''
-        };
-        checkoutCart.push(cartItem);
-        renderCart();
-    }
-
-    function removeCartItem(id) {
-        checkoutCart = checkoutCart.filter(i => i.id !== id);
-        renderCart();
-    }
-
-    function updateCartItemValue(id, field, value) {
-        const item = checkoutCart.find(i => i.id === id);
-        if (item) {
-            item[field] = value;
-            // 若更改了課程，自動更新金額
-            if (field === 'course') {
-                item.price = coursePrices[value] || 0;
-            }
-            renderCart();
-        }
+    async function loadPend() {
+        const r = await apiCall('fetchPendingCheckouts', {}); el('pendArea').innerHTML='';
+        if(r && r.data.length){ r.data.forEach(i=>{ const d=document.createElement('div'); d.className='pending-item'; d.innerText=`+ ${i.name}`; d.onclick=()=>{ cart.push({id:'i'+Date.now(), name:i.name, phone:i.phone, course:i.course||'無痛滑罐放鬆(快速修復)-30分鐘', hero:i.hero||'千芳', price:prices[i.course]||0, note:''}); renderCart(); }; el('pendArea').appendChild(d); }); } else el('pendArea').innerText='無待結帳';
     }
 
     function renderCart() {
-        const tbody = document.getElementById('cartTableBody');
-        tbody.innerHTML = '';
-        let total = 0;
-        
-        checkoutCart.forEach(item => {
-            total += parseInt(item.price) || 0;
-            
-            tbody.innerHTML += `
-                <tr>
-                    <td>
-                        <input type="text" value="${item.name}" style="padding:6px; font-size:14px;" onchange="updateCartItemValue('${item.id}', 'name', this.value)">
-                    </td>
-                    <td>
-                        <select style="padding:6px; font-size:14px;" onchange="updateCartItemValue('${item.id}', 'course', this.value)">
-                            <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${item.course.includes('30分鐘') ? 'selected' : ''}>無痛30分</option>
-                            <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${item.course.includes('90分鐘') ? 'selected' : ''}>全方位90分</option>
-                            <option value="單部位舒緩修復(精準調理)" ${item.course.includes('單部位') ? 'selected' : ''}>單部位舒緩</option>
-                            <option value="全身結構養護(平衡調理)" ${item.course.includes('全身結構') ? 'selected' : ''}>全身結構</option>
-                            <option value="全身全方位深度修復-60分鐘" ${item.course.includes('60分鐘') ? 'selected' : ''}>深度修復60分</option>
-                            <option value="其他" ${item.course === '其他' ? 'selected' : ''}>其他</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select style="padding:6px; font-size:14px;" onchange="updateCartItemValue('${item.id}', 'hero', this.value)">
-                            <option value="千芳" ${item.hero === '千芳' ? 'selected' : ''}>千芳</option>
-                            <option value="奎元" ${item.hero === '奎元' ? 'selected' : ''}>奎元</option>
-                        </select>
-                    </td>
-                    <td>
-                        <input type="number" value="${item.price}" style="padding:6px; font-size:14px; width:70px;" onchange="updateCartItemValue('${item.id}', 'price', this.value)">
-                    </td>
-                    <td class="cart-remove" onclick="removeCartItem('${item.id}')">移除</td>
-                </tr>
-                <tr>
-                    <td colspan="5" style="border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:5px;">
-                        <input type="text" placeholder="輸入單項調理備註 (選填)..." value="${item.note}" style="padding:5px; font-size:13px; background:rgba(0,0,0,0.1); height:30px;" onchange="updateCartItemValue('${item.id}', 'note', this.value)">
-                    </td>
-                </tr>`;
-        });
-        
-        document.getElementById('cartTotalSum').innerText = '$' + total;
+        el('cBody').innerHTML=''; let s=0; window.uc = (id,f,val) => { const i=cart.find(x=>x.id===id); if(i){ i[f]=val; if(f==='course') i.price=prices[val]||0; renderCart(); } };
+        cart.forEach(i=>{ s+=Number(i.price); el('cBody').innerHTML+=`<tr><td><input value="${i.name}" onchange="uc('${i.id}','name',this.value)" style="padding:4px"></td><td><select onchange="uc('${i.id}','course',this.value)" style="padding:4px"><option value="無痛滑罐放鬆(快速修復)-30分鐘" ${i.course.includes('30分鐘')?'selected':''}>30分</option><option value="全方位滑罐放鬆(全身修復)-90分鐘" ${i.course.includes('90分鐘')?'selected':''}>90分</option><option value="單部位舒緩修復(精準調理)" ${i.course.includes('單部位')?'selected':''}>單部位</option><option value="全身結構養護(平衡調理)" ${i.course.includes('全身')?'selected':''}>全身</option><option value="全身全方位深度修復-60分鐘" ${i.course.includes('60分鐘')?'selected':''}>深度60分</option><option value="其他" ${i.course==='其他'?'selected':''}>其他</option></select></td><td><select onchange="uc('${i.id}','hero',this.value)" style="padding:4px"><option value="千芳" ${i.hero==='千芳'?'selected':''}>千芳</option><option value="奎元" ${i.hero==='奎元'?'selected':''}>奎元</option></select></td><td><input type="number" value="${i.price}" onchange="uc('${i.id}','price',this.value)" style="padding:4px;width:60px"></td><td class="cart-remove" onclick="cart=cart.filter(x=>x.id!=='${i.id}');renderCart()">X</td></tr><tr><td colspan="5"><input value="${i.note}" placeholder="備註..." onchange="uc('${i.id}','note',this.value)" style="padding:4px"></td></tr>`; }); el('cSum').innerText='$'+s;
     }
 
-    async function processCartCheckout() {
-        if (checkoutCart.length === 0) {
-            return alert('購物車內無核對資料，無法結帳！');
-        }
-        
-        const orderId = 'F' + Date.now();
-        const method = document.getElementById('finPayment').value;
-        const cashier = document.getElementById('finCashier').value;
-        const remittance = document.getElementById('finRemittanceNote').value;
-        
-        // 準備電子明細文字資料
-        document.getElementById('recOrderId').innerText = orderId;
-        document.getElementById('recTime').innerText = new Date().toLocaleString();
-        document.getElementById('recMethod').innerText = method;
-        document.getElementById('recCashier').innerText = cashier;
-        
-        const listArea = document.getElementById('receiptItemsList');
-        listArea.innerHTML = '';
-        let grandTotal = 0;
-        
-        checkoutCart.forEach(item => {
-            grandTotal += parseInt(item.price) || 0;
-            listArea.innerHTML += `
-                <div class="receipt-row" style="font-weight:bold;">
-                    <span>${item.name} (${item.hero})</span>
-                    <span>$${item.price}</span>
-                </div>
-                <div style="font-size:13px; color:#475569; margin-bottom:8px; padding-left:10px;">
-                    項目：${item.course} ${item.note ? ` / 備註: ${item.note}` : ''}
-                </div>`;
-        });
-        
-        document.getElementById('recTotalSum').innerText = '$' + grandTotal;
-
-        // 呼叫 html2canvas 將隱藏區域繪製成圖片
-        const captureEl = document.getElementById('receiptCaptureArea');
-        html2canvas(captureEl, { scale: 2 }).then(async (canvas) => {
-            const base64Image = canvas.toDataURL('image/png');
-            
-            // 觸發本機端下載
-            const downloadLink = document.createElement('a');
-            downloadLink.href = base64Image;
-            downloadLink.download = `錦葳收據明細_${orderId}.png`;
-            downloadLink.click();
-
-            // 打包所有資料發送給 GAS 寫入資料庫
-            const payload = {
-                action: 'createFinance',
-                orderId: orderId,
-                paymentMethod: method,
-                remittanceNote: remittance,
-                cashier: cashier,
-                startTime: new Date().toISOString(),
-                cartItems: checkoutCart,
-                receiptImageBase64: base64Image
-            };
-
-            try {
-                const response = await fetch(GAS_API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify(payload) 
-                });
-                const r = await response.json();
-                
-                if (r.status === 'success') {
-                    alert('結帳完成！明細圖片已自動下載並同步存檔至雲端。');
-                    checkoutCart = []; // 清空購物車
-                    renderCart();
-                    liff.closeWindow(); // 關閉 LIFF 視窗
-                } else {
-                    alert('結帳存檔失敗：' + r.message);
-                }
-            } catch (err) {
-                alert('結帳時發生網路錯誤。');
-            }
+    async function processCart() {
+        if(!cart.length) return alert('空購物車'); const id='F'+Date.now(); el('rId').innerText=id; el('rTm').innerText=new Date().toLocaleString(); el('rMth').innerText=v('fPay'); el('rCsh').innerText=v('fCash'); el('rItems').innerHTML=''; let s=0;
+        cart.forEach(i=>{ s+=Number(i.price); el('rItems').innerHTML+=`<div class="receipt-row"><span>${i.name}(${i.hero})</span><span>$${i.price}</span></div><div style="font-size:12px">項目:${i.course} ${i.note?'備註:'+i.note:''}</div>`; }); el('rSum').innerText='$'+s;
+        html2canvas(el('receiptCaptureArea'), {scale:2}).then(async c=>{
+            const b64=c.toDataURL('image/png'); const a=document.createElement('a'); a.href=b64; a.download=`明細_${id}.png`; a.click();
+            await apiCall('createFinance',{orderId:id,paymentMethod:v('fPay'),remittanceNote:v('fRem'),cashier:v('fCash'),startTime:new Date().toISOString(),cartItems:cart,receiptImageBase64:b64}, '結帳成功!'); cart=[]; renderCart(); liff.closeWindow();
         });
     }
 
-    async function fetchSummary() {
-        document.getElementById('summaryData').classList.remove('hidden');
-        try {
-            const res = await fetch(GAS_API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: 'getSummary' }) 
-            });
-            const r = await res.json();
-            
-            if (r.status === 'success') {
-                document.getElementById('valDaily').innerText = '$' + r.summary.daily;
-                document.getElementById('valWeekly').innerText = '$' + r.summary.weekly;
-                document.getElementById('valMonthly').innerText = '$' + r.summary.monthly;
-            }
-        } catch (e) {
-            alert('高階營收數據讀取失敗');
-        }
+    async function fetchSum() { el('sumData').classList.remove('hidden'); const r = await apiCall('getSummary',{}); if(r) { el('vD').innerText='$'+r.summary.daily; el('vW').innerText='$'+r.summary.weekly; el('vM').innerText='$'+r.summary.monthly; } }
+    async function searchFin() {
+        const k=v('adjKw'); if(!k) return alert('輸入關鍵字'); const r = await apiCall('searchFinanceRecords',{keyword:k}); el('adjArea').innerHTML='';
+        if(r && r.data.length){ r.data.forEach(i=>{ el('adjArea').innerHTML+=`<div class="result-card" id="f-${i.rowIndex}">單號:${i.orderId}<br>${i.name} - $${i.amount}<br><button class="btn-small btn-del" onclick="if(confirm('作廢退費?'))apiCall('voidFinanceRecord',{rowIndex:${i.rowIndex},orderId:'${i.orderId}'}).then(()=>el('f-${i.rowIndex}').style.opacity=0.3)">作廢歸零</button></div>`; }); } else el('adjArea').innerHTML='<p>無紀錄</p>';
     }
-
-    // ==========================================
-    // 5. 財務異動：搜尋與作廢邏輯
-    // ==========================================
-    async function searchFinanceRecords() {
-        const keyword = document.getElementById('adjustSearchKeyword').value;
-        if (!keyword) {
-            return alert('請輸入顧客姓名或手機');
-        }
-        
-        const btn = document.getElementById('btnSearchFinance');
-        btn.innerText = '調閱中...';
-        
-        try {
-            const res = await fetch(GAS_API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ 
-                    action: 'searchFinanceRecords', 
-                    keyword: keyword 
-                }) 
-            });
-            const r = await res.json();
-            const area = document.getElementById('financeSearchResultsArea');
-            area.innerHTML = '';
-            
-            if (r.status === 'success' && r.data.length > 0) {
-                r.data.forEach(item => {
-                    area.innerHTML += `
-                        <div class="result-card" style="border-left-color: #ef4444;" id="fin-row-${item.rowIndex}">
-                            <div class="result-info">
-                                <strong>單號：${item.orderId} (日期: ${item.date})</strong><br>
-                                客戶：${item.name} | 項目：${item.course}<br>
-                                金額：<span style="color:#f43f5e; font-weight:bold;">$${item.amount}</span> (${item.method})<br>
-                                備註：<span style="color:#94a3b8;">${item.note || '無'}</span>
-                            </div>
-                            <div class="result-actions">
-                                <button class="btn-small btn-del" style="background:#dc2626;" onclick="voidFinanceRow(${item.rowIndex}, '${item.orderId}')">確定作廢/退費歸零</button>
-                            </div>
-                        </div>`;
-                });
-            } else { 
-                area.innerHTML = '<p style="text-align:center; color:#fca5a5;">無當月入帳符合紀錄</p>'; 
-            }
-        } catch(e) { 
-            alert('財務數據載入失敗'); 
-        } finally { 
-            btn.innerText = '查詢當月財務紀錄'; 
-        }
-    }
-
-    async function voidFinanceRow(rowIndex, orderId) {
-        if (!confirm(`警告：確定要將單號 ${orderId} 執行財務作廢退費嗎？此動作會將本筆入帳實收金額歸零，並自動扣除本日/本月營收累計數據！`)) {
-            return;
-        }
-        
-        try {
-            const res = await fetch(GAS_API_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ 
-                    action: 'voidFinanceRecord', 
-                    rowIndex: rowIndex, 
-                    orderId: orderId 
-                }) 
-            });
-            const r = await res.json();
-            
-            if (r.status === 'success') {
-                alert('該筆款項已作廢歸零修正完畢！');
-                const rowEl = document.getElementById(`fin-row-${rowIndex}`);
-                rowEl.style.opacity = '0.4';
-                rowEl.innerHTML = '<p style="color:#ef4444; text-align:center; font-weight:bold;">[此項紀錄已完成作廢歸零]</p>';
-            } else { 
-                alert('作廢失敗：' + r.message); 
-            }
-        } catch(e) { 
-            alert('執行異動修正時發生錯誤'); 
-        }
-    }
-</script>
-</body>
-</html>
+</script></body></html>
