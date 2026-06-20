@@ -51,14 +51,13 @@
         }
 
         #loadingOverlay {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: rgba(15, 23, 42, 0.9);
-            z-index: 10;
-            border-radius: 12px;
+            z-index: 1000;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -77,19 +76,19 @@
             width: 100%;
             height: 100%;
             background: rgba(15, 23, 42, 0.95);
-            z-index: 100;
+            z-index: 999;
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 20px;
+            justify-content: flex-start;
+            padding: 30px 20px;
             box-sizing: border-box;
             backdrop-filter: blur(5px);
+            overflow-y: auto;
         }
 
         #previewImage {
             max-width: 100%;
-            max-height: 70vh;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             margin-bottom: 20px;
@@ -100,6 +99,15 @@
             gap: 15px;
             width: 100%;
             max-width: 400px;
+            flex-shrink: 0;
+        }
+
+        .preview-tip {
+            color: #fca5a5;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: center;
+            line-height: 1.5;
         }
 
         /* =========================================================
@@ -372,22 +380,45 @@
         }
 
         /* =========================================================
-           實體收據圖渲染區 (不破壞 LIFF 畫面，隱藏在螢幕外)
+           實體收據圖渲染區 (重新設計為奶茶色明細)
            ========================================================= */
         #receiptCaptureArea {
             position: absolute;
             left: -9999px;
             top: 0;
-            width: 450px;
-            background: #ffffff;
-            color: #1e293b;
+            width: 420px;
+            background: #fdfaf5; /* 奶茶色質感背景 */
+            color: #333333; /* 較深的文字更易閱讀 */
             padding: 30px;
-            font-family: sans-serif;
+            border-radius: 8px;
+            font-family: "Microsoft JhengHei", sans-serif;
+            box-sizing: border-box;
+        }
+
+        .receipt-logo-container {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        /* Logo 預設樣式，如果找不到圖片會隱藏 */
+        .receipt-logo-container img {
+            max-width: 140px;
+            height: auto;
+        }
+
+        /* 如果沒上傳 Logo，會有一個備用的文字 Logo */
+        .fallback-logo-text {
+            display: none;
+            font-size: 26px;
+            font-weight: bold;
+            color: #4a4a4a;
+            letter-spacing: 4px;
+            margin: 0;
         }
 
         .receipt-header {
             text-align: center;
-            border-bottom: 2px dashed #cbd5e1;
+            border-bottom: 2px dashed #b0a89a;
             padding-bottom: 15px;
             margin-bottom: 15px;
         }
@@ -397,6 +428,7 @@
             justify-content: space-between;
             margin-bottom: 10px;
             font-size: 15px;
+            font-weight: 500;
         }
         
         .divider {
@@ -537,58 +569,67 @@
 </div>
 
 <div id="previewOverlay">
-    <h3 style="color: #4ade80; margin-top: 0;">請確認結帳明細無誤</h3>
+    <h3 style="color: #4ade80; margin-top: 0; text-align: center;">請核對結帳明細</h3>
+    <div class="preview-tip">
+        ⚠️ 若需傳送給顧客，請直接長按下方圖片，選擇「儲存圖片」即可。<br>確認無誤後，請點擊最下方的確認結帳按鈕。
+    </div>
     <img id="previewImage" src="" alt="明細預覽">
     <div class="preview-actions">
         <button class="btn-cancel-action" onclick="cancelCheckout()">返回修改</button>
-        <button class="btn-submit" style="margin-top: 0; background: linear-gradient(to right, #10b981, #059669);" onclick="confirmCheckout()">確認下載並完成結帳</button>
+        <button class="btn-submit" style="margin-top: 0; background: linear-gradient(to right, #10b981, #059669);" onclick="confirmCheckout()">確認結帳存檔</button>
     </div>
 </div>
 
 <div id="receiptCaptureArea">
-    <div class="receipt-header">
-        <h3 style="margin: 0;">錦葳養生館</h3>
-        <p style="margin: 5px 0 0; color: #64748b;">電子結帳核對明細</p>
+    
+    <div class="receipt-logo-container">
+        <img src="logo.jpg" alt="錦葳Logo" onerror="this.style.display='none'; document.getElementById('fallbackLogoText').style.display='block';">
+        <h1 id="fallbackLogoText" class="fallback-logo-text">錦葳養生館</h1>
     </div>
+
+    <div class="receipt-header">
+        <p style="margin: 0; font-size: 15px; color: #6b7280;">電子結帳核對明細</p>
+    </div>
+    
     <div class="receipt-row">
-        <span>單號：</span>
+        <span style="color: #6b7280;">單號：</span>
         <span id="rId"></span>
     </div>
     <div class="receipt-row">
-        <span>時間：</span>
+        <span style="color: #6b7280;">時間：</span>
         <span id="rTm"></span>
     </div>
     <div class="receipt-row">
-        <span>方式：</span>
+        <span style="color: #6b7280;">方式：</span>
         <span id="rMth"></span>
     </div>
     <div class="receipt-row">
-        <span>人員：</span>
+        <span style="color: #6b7280;">人員：</span>
         <span id="rCsh"></span>
     </div>
     
-    <div class="receipt-row" id="rRemRow" style="display: none; color: #10b981; font-weight: bold;">
+    <div class="receipt-row" id="rRemRow" style="display: none; color: #059669; font-weight: bold; margin-top: 8px;">
         <span>匯款資料：</span>
         <span id="rRemNote"></span>
     </div>
     
-    <div style="border-bottom: 1px dashed #cbd5e1; margin: 15px 0;"></div>
+    <div style="border-bottom: 2px dashed #b0a89a; margin: 20px 0;"></div>
     
     <div id="rItems"></div>
     
-    <div style="border-bottom: 2px solid #1e293b; margin: 15px 0;"></div>
+    <div style="border-bottom: 2px solid #4a4a4a; margin: 20px 0;"></div>
     
-    <div class="receipt-row" style="font-weight: bold; font-size: 18px;">
-        <span>加總調理金額：</span>
+    <div class="receipt-row" style="font-weight: bold; font-size: 20px; color: #1f2937;">
+        <span>總計金額：</span>
         <span id="rSum"></span>
     </div>
     
-    <div id="rGenNoteBox" style="display: none; font-size: 13px; color: #475569; margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
-        <strong>整體備註說明：</strong><br>
-        <span id="rGenNote"></span>
+    <div id="rGenNoteBox" style="display: none; font-size: 14px; color: #4b5563; margin-top: 20px; border-top: 1px dashed #b0a89a; padding-top: 15px;">
+        <strong>備註說明：</strong><br>
+        <span id="rGenNote" style="line-height: 1.6; display: inline-block; margin-top: 5px;"></span>
     </div>
     
-    <p style="text-align: center; font-size: 12px; margin-top: 25px; color: #94a3b8;">感謝您的光臨，期待再次為您服務。</p>
+    <p style="text-align: center; font-size: 13px; margin-top: 40px; color: #9ca3af;">感謝您的光臨，期待再次為您服務。</p>
 </div>
 
 <script>
@@ -604,8 +645,8 @@
     };
     
     let cart = [];
-    let pendingCheckoutPayload = null; // 暫存結帳資料
-    let pendingBase64 = null;          // 暫存圖片Base64
+    let pendingCheckoutPayload = null; 
+    let pendingBase64 = null;          
     
     const v = id => document.getElementById(id).value;
     const el = id => document.getElementById(id);
@@ -681,8 +722,13 @@
                 if (msg) {
                     alert(msg);
                 }
-                // 【修改要求：不再關閉視窗，讓行政人員持續使用】
-                // 移除了 liff.closeWindow()
+                if (action === 'createBooking') {
+                    // 若是店務預約，維持不關閉，清空表單
+                    el('bkPhone').value = '';
+                    el('bkName').value = '';
+                    el('bkStart').value = '';
+                    el('bkEnd').value = '';
+                }
                 return r;
             } else {
                 alert('作業失敗：' + r.message);
@@ -704,11 +750,6 @@
             endTime: v('bkEnd')
         };
         await apiCall('createBooking', payload, '預約排程寫入成功！');
-        // 自動清空輸入框，方便下一位顧客建立
-        el('bkPhone').value = '';
-        el('bkName').value = '';
-        el('bkStart').value = '';
-        el('bkEnd').value = '';
     }
 
     // 6. 店務預約核心：搜尋與修改
@@ -809,8 +850,11 @@
                     d.innerText = `+ ${i.name}${dateLabel} [${displayCourse}]`;
                     
                     d.onclick = () => {
+                        // 紀錄原本從中台來的分頁與列數
                         cart.push({
                             id: 'i' + Date.now() + Math.random().toString(36).substr(2,3),
+                            sheetName: i.sheetName,
+                            rowIndex: i.rowIndex,
                             name: i.name,
                             phone: i.phone,
                             course: i.course || '無痛滑罐放鬆(快速修復)-30分鐘',
@@ -824,7 +868,7 @@
                     el('pendArea').appendChild(d);
                 });
             } else {
-                el('pendArea').innerText = '目前中台沒有待結帳的顧客。';
+                el('pendArea').innerText = '目前中台沒有符合的待結帳顧客。';
             }
         } catch(e) {
             console.error(e);
@@ -897,14 +941,14 @@
         el('cSum').innerText = '$' + totalSum;
     }
 
-    // 9. 財務結帳：預覽畫面與準備資料
+    // 9. 財務結帳：生成明細與預覽
     function previewAndProcessCart() {
         if (cart.length === 0) {
             return alert('結帳核對清單內無資料！');
         }
         
         const btn = el('btnProcessCart');
-        btn.innerText = '明細生成中...';
+        btn.innerText = '明細圖生成中...';
         
         const fid = 'F' + Date.now();
         el('rId').innerText = fid;
@@ -936,62 +980,57 @@
             const displayCourse = i.course.replace(/\(.*?\)/g, '');
             
             el('rItems').innerHTML += `
-                <div class="receipt-row" style="font-weight:bold;margin-top:8px;">
+                <div class="receipt-row" style="font-weight:bold; margin-top:10px;">
                     <span>${i.name} (${i.hero})</span>
-                    <span>$${i.price}</span>
+                    <span style="color: #1f2937;">$${i.price}</span>
                 </div>
-                <div style="font-size:13px;color:#475569;padding-left:10px;margin-bottom:4px;">
+                <div style="font-size:13px; color:#6b7280; padding-left:10px; margin-bottom:6px;">
                     項目：${displayCourse} ${i.note ? ' / 備註：' + i.note : ''}
                 </div>`;
         });
         
         el('rSum').innerText = '$' + grandTotal;
         
-        // 呼叫 html2canvas 生成預覽圖片
-        html2canvas(el('receiptCaptureArea'), { scale: 2 }).then(canvas => {
-            pendingBase64 = canvas.toDataURL('image/png');
-            
-            pendingCheckoutPayload = {
-                action: 'createFinance', // 確保加上 action 供 API 使用
-                orderId: fid,
-                paymentMethod: v('fPay'),
-                remittanceNote: remVal,
-                cashier: v('fCash'),
-                startTime: new Date().toISOString(),
-                cartItems: cart,
-                generalNote: genNote,
-                receiptImageBase64: pendingBase64
-            };
-            
-            // 顯示預覽畫面
-            el('previewImage').src = pendingBase64;
-            el('previewOverlay').style.display = 'flex';
-            
-            btn.innerText = '產生電子明細預覽';
-        });
+        // 延遲一點點，確保 DOM 更新完成再繪圖
+        setTimeout(() => {
+            html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true }).then(canvas => {
+                pendingBase64 = canvas.toDataURL('image/png');
+                
+                pendingCheckoutPayload = {
+                    action: 'createFinance', 
+                    orderId: fid,
+                    paymentMethod: v('fPay'),
+                    remittanceNote: remVal,
+                    cashier: v('fCash'),
+                    startTime: new Date().toISOString(),
+                    cartItems: cart,
+                    generalNote: genNote,
+                    receiptImageBase64: pendingBase64
+                };
+                
+                // 顯示預覽畫面
+                el('previewImage').src = pendingBase64;
+                el('previewOverlay').style.display = 'flex';
+                
+                btn.innerText = '產生電子明細預覽';
+            });
+        }, 100);
     }
 
-    // 10. 財務結帳：取消預覽 (返回修改)
+    // 10. 財務結帳：取消預覽
     function cancelCheckout() {
         el('previewOverlay').style.display = 'none';
         pendingCheckoutPayload = null;
         pendingBase64 = null;
     }
 
-    // 11. 財務結帳：確認結帳並下載明細 (保留在系統不關閉)
+    // 11. 財務結帳：確認結帳 (儲存並停留在系統)
     async function confirmCheckout() {
         if (!pendingCheckoutPayload) return;
-        
-        // 執行下載
-        const a = document.createElement('a');
-        a.href = pendingBase64;
-        a.download = `錦葳結帳明細_${pendingCheckoutPayload.orderId}.png`;
-        a.click();
         
         // 隱藏預覽畫面
         el('previewOverlay').style.display = 'none';
         
-        // 送出資料至後端 GAS
         try {
             const response = await fetch(API, {
                 method: 'POST', 
@@ -1000,7 +1039,7 @@
             const r = await response.json();
             
             if (r.status === 'success') {
-                alert('款項結帳成功！電子核對明細已自動儲存至雲端與本機。');
+                alert('結帳存檔成功！已同步上傳至雲端並更新中台進度。');
                 
                 // 清空購物車與表單
                 cart = [];
@@ -1012,7 +1051,8 @@
                 pendingCheckoutPayload = null;
                 pendingBase64 = null;
                 
-                // 重點：不再呼叫 liff.closeWindow()，讓畫面留在結帳頁準備迎接下一位客人
+                // 重新載入中台清單，確認已結帳的人消失
+                loadPend();
                 
             } else {
                 alert('結帳存檔失敗：' + r.message);
