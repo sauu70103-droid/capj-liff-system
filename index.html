@@ -10,7 +10,7 @@
     
     <style>
         /* =========================================================
-           1. 品牌視覺風格：深藍帶紫浪漫星空
+           品牌視覺風格
            ========================================================= */
         body {
             margin: 0;
@@ -50,7 +50,6 @@
             letter-spacing: 2px;
         }
 
-        /* 系統核心讀取遮罩 */
         #loadingOverlay {
             position: absolute;
             top: 0;
@@ -69,7 +68,7 @@
         }
 
         /* =========================================================
-           2. 導覽頁籤按鈕 (Tabs)
+           導覽頁籤與輸入欄位
            ========================================================= */
         .tabs {
             display: flex;
@@ -97,9 +96,6 @@
             box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
         }
 
-        /* =========================================================
-           3. 磨砂玻璃質感容器與輸入欄位
-           ========================================================= */
         .form-section {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(12px);
@@ -151,7 +147,9 @@
             color: #ffffff;
         }
 
-        /* 按鈕視覺設定 */
+        /* =========================================================
+           按鈕視覺設定
+           ========================================================= */
         .btn-submit {
             background: linear-gradient(to right, #6366f1, #8b5cf6);
             color: white;
@@ -189,7 +187,7 @@
         }
 
         /* =========================================================
-           4. 財務結帳模組專用 UI：中台候選人與行動端購物車
+           財務結帳模組專用 UI：中台候選人與行動端購物車
            ========================================================= */
         .pending-box {
             background: rgba(139, 92, 246, 0.1);
@@ -233,7 +231,6 @@
             font-size: 16px;
         }
 
-        /* 重點優化：行動端購物車卡片化，拒絕擠壓 */
         .cart-item-card {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -268,7 +265,7 @@
         }
 
         /* =========================================================
-           5. 店務查詢 / 高階儀表板 UI
+           店務查詢 / 高階儀表板 UI
            ========================================================= */
         .result-card {
             background: rgba(0, 0, 0, 0.4);
@@ -299,15 +296,8 @@
             cursor: pointer;
         }
 
-        .btn-edit { 
-            background: #3b82f6; 
-            color: white; 
-        }
-
-        .btn-del { 
-            background: #ef4444; 
-            color: white; 
-        }
+        .btn-edit { background: #3b82f6; color: white; }
+        .btn-del { background: #ef4444; color: white; }
         
         .reschedule-box {
             margin-top: 15px;
@@ -347,7 +337,7 @@
         }
 
         /* =========================================================
-           6. 實體收據圖渲染區 (不破壞 LIFF 畫面，隱藏在螢幕外)
+           實體收據圖渲染區
            ========================================================= */
         #receiptCaptureArea {
             position: absolute;
@@ -558,7 +548,6 @@
 </div>
 
 <script>
-    // 請確認此 API 為您的最新 GAS 部署網址
     const API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
     
     const prices = {
@@ -574,9 +563,7 @@
     const v = id => document.getElementById(id).value;
     const el = id => document.getElementById(id);
 
-    // ==========================================
     // 1. LIFF 初始化與權限鎖控
-    // ==========================================
     liff.init({ liffId: '2010453415-nTX3Lo1L' }).then(async () => {
         if (!liff.isLoggedIn()) {
             liff.login();
@@ -609,9 +596,7 @@
         }
     });
 
-    // ==========================================
     // 2. 頁籤切換控制
-    // ==========================================
     function switchTab(id, btn) {
         document.querySelectorAll('.form-section').forEach(x => {
             x.style.display = 'none';
@@ -623,9 +608,7 @@
         btn.classList.add('active');
     }
     
-    // ==========================================
     // 3. 匯款備註顯示控制
-    // ==========================================
     function toggleRem() {
         if (v('fPay') === '匯款') {
             el('remBox').classList.remove('hidden');
@@ -634,9 +617,7 @@
         }
     }
 
-    // ==========================================
     // 4. API 通訊打包元件
-    // ==========================================
     async function apiCall(action, payload, msg) {
         try {
             const response = await fetch(API, {
@@ -665,9 +646,7 @@
         }
     }
 
-    // ==========================================
     // 5. 店務預約核心：建立預約
-    // ==========================================
     async function submitBookingData() {
         const payload = {
             phone: v('bkPhone'),
@@ -681,9 +660,7 @@
         await apiCall('createBooking', payload, '預約排程寫入成功！');
     }
 
-    // ==========================================
     // 6. 店務預約核心：搜尋與修改
-    // ==========================================
     async function searchBks() {
         const k = v('srchKw');
         if (!k) {
@@ -759,9 +736,7 @@
         }
     }
 
-    // ==========================================
     // 7. 財務結帳：加載中台名單
-    // ==========================================
     async function loadPend() {
         const btn = el('btnFetchPending');
         if (btn) {
@@ -776,8 +751,12 @@
                 r.data.forEach(i => {
                     const d = document.createElement('div');
                     d.className = 'pending-item';
+                    
+                    // 顯示時隱藏括號，並加上從後端傳來的日期字串
                     const displayCourse = (i.course || '未定').replace(/\(.*?\)/g, '');
-                    d.innerText = `+ ${i.name} [${displayCourse}]`;
+                    const dateLabel = i.dateStr ? ` [${i.dateStr}]` : '';
+                    
+                    d.innerText = `+ ${i.name}${dateLabel} [${displayCourse}]`;
                     
                     d.onclick = () => {
                         cart.push({
@@ -806,9 +785,7 @@
         }
     }
 
-    // ==========================================
     // 8. 財務結帳：購物車卡片化渲染
-    // ==========================================
     function renderCart() {
         el('cBody').innerHTML = '';
         let totalSum = 0;
@@ -870,9 +847,7 @@
         el('cSum').innerText = '$' + totalSum;
     }
 
-    // ==========================================
-    // 9. 財務結帳：執行合併結帳與產出明細
-    // ==========================================
+    // 9. 財務結帳：執行合併結帳
     async function processCart() {
         if (cart.length === 0) {
             return alert('結帳核對清單內無資料！');
@@ -950,9 +925,7 @@
         });
     }
 
-    // ==========================================
     // 10. 財務摘要儀表板
-    // ==========================================
     async function fetchSum() {
         el('sumData').classList.remove('hidden');
         const r = await apiCall('getSummary', {});
@@ -963,9 +936,7 @@
         }
     }
     
-    // ==========================================
     // 11. 財務異動紀錄查詢與作廢
-    // ==========================================
     async function searchFin() {
         const k = v('adjKw');
         if (!k) {
