@@ -148,6 +148,41 @@
         }
 
         /* =========================================================
+           ⭐️ POS 級：自定義智慧搜尋浮動選單 (Autocomplete)
+           ========================================================= */
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 99;
+            background: #1e293b;
+            border: 1px solid #8b5cf6;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            color: #e2e8f0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 15px;
+        }
+
+        .autocomplete-item:hover {
+            background: #4c1d95;
+            color: #ffffff;
+        }
+
+        /* =========================================================
            按鈕視覺設定
            ========================================================= */
         .btn-submit {
@@ -185,7 +220,7 @@
             font-size: 16px;
             cursor: pointer;
         }
-        
+
         .btn-calendar {
             background: rgba(59, 130, 246, 0.2);
             border: 1px solid #3b82f6;
@@ -410,8 +445,6 @@
 </head>
 <body>
 
-<datalist id="memberListDatalist"></datalist>
-
 <div class="container">
     <div id="loadingOverlay">系統連線驗證中...</div>
     
@@ -424,18 +457,23 @@
     </div>
 
     <div id="bookingTab" class="form-section active">
-        <div class="form-group">
+        
+        <div class="form-group autocomplete-container">
             <label>會員姓名 (支援自動帶入與記憶)</label>
-            <input type="text" id="bkName" list="memberListDatalist" placeholder="輸入關鍵字自動搜尋舊會員" onchange="autoFillPhone(this.value)">
+            <input type="text" id="bkName" placeholder="輸入關鍵字自動搜尋舊會員" autocomplete="off" onkeyup="showAutocomplete('bkName', 'bkNameList', 'bkPhone')" onfocus="showAutocomplete('bkName', 'bkNameList', 'bkPhone')">
+            <div id="bkNameList" class="autocomplete-list"></div>
         </div>
+
         <div class="form-group">
             <label>手機號碼</label>
             <input type="tel" id="bkPhone" placeholder="09xxxxxxxx">
         </div>
+        
         <div class="form-group">
             <label>人數</label>
             <input type="number" id="bkPeople" value="1" min="1">
         </div>
+        
         <div class="form-group">
             <label>課程類型 (選取後自動推算結束時間)</label>
             <select id="bkCourse" onchange="autoCalcEndTime()">
@@ -447,6 +485,7 @@
                 <option value="其他">其他</option>
             </select>
         </div>
+        
         <div class="form-group">
             <label>指定調理師傅</label>
             <select id="bkHero">
@@ -463,18 +502,23 @@
             <label>開始時間</label>
             <input type="datetime-local" id="bkStart" onchange="autoCalcEndTime()">
         </div>
+        
         <div class="form-group">
             <label>結束時間 (可手動微調)</label>
             <input type="datetime-local" id="bkEnd">
         </div>
+        
         <button class="btn-submit" onclick="submitBookingData()">確認建立預約排程</button>
         
         <div class="divider"></div>
         
         <h3 style="color: #cbd5e1; font-size: 16px;">🔍 查詢、改期與取消預約</h3>
-        <div class="form-group">
-            <input type="text" id="srchKw" list="memberListDatalist" placeholder="請輸入會員姓名或手機">
+        
+        <div class="form-group autocomplete-container">
+            <input type="text" id="srchKw" placeholder="請輸入會員姓名或手機" autocomplete="off" onkeyup="showAutocomplete('srchKw', 'srchKwList', null)" onfocus="showAutocomplete('srchKw', 'srchKwList', null)">
+            <div id="srchKwList" class="autocomplete-list"></div>
         </div>
+        
         <button class="btn-search" id="btnSearch" onclick="searchBks()">搜尋預約紀錄</button>
         <div id="srchArea"></div>
     </div>
@@ -533,9 +577,11 @@
         <h3 style="color: #fca5a5;">⚠️ 財務帳務異動調整</h3>
         <p style="font-size: 14px; color: #94a3b8;">預設顯示近 48 小時入帳明細，若需調閱更早資料請手動搜尋。</p>
         
-        <div class="form-group">
-            <input type="text" id="adjKw" list="memberListDatalist" placeholder="請輸入會員姓名或手機">
+        <div class="form-group autocomplete-container">
+            <input type="text" id="adjKw" placeholder="請輸入會員姓名或手機" autocomplete="off" onkeyup="showAutocomplete('adjKw', 'adjKwList', null)" onfocus="showAutocomplete('adjKw', 'adjKwList', null)">
+            <div id="adjKwList" class="autocomplete-list"></div>
         </div>
+        
         <button class="btn-search" id="btnSearchFinance" style="border-color: #ef4444; color: #fca5a5;" onclick="searchFin()">手動搜尋歷史財務紀錄</button>
         <div id="adjArea" style="margin-top: 20px;"></div>
     </div>
@@ -597,6 +643,7 @@
 </div>
 
 <script>
+    // 專屬 API 通道
     const API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
     
     const prices = {
@@ -608,7 +655,7 @@
     };
     
     let cart = [];
-    let memberDatabase = [];
+    let memberDatabase = []; // 存放 CRM 抓來的會員名單
     
     const v = id => document.getElementById(id).value;
     const el = id => document.getElementById(id);
@@ -642,6 +689,7 @@
                         el('summaryDashboard').classList.remove('hidden');
                     }
                     
+                    // 權限通過後，背景自動去抓取 CRM 會員名單
                     fetchCRMData();
                 }
             } catch(e) {
@@ -650,6 +698,7 @@
         }
     });
     
+    // 背景抓取會員名單
     async function fetchCRMData() {
         try {
             const res = await fetch(API, {
@@ -659,26 +708,65 @@
             
             if (res.status === 'success') {
                 memberDatabase = res.data;
-                const datalist = el('memberListDatalist');
-                datalist.innerHTML = '';
-                
-                memberDatabase.forEach(m => {
-                    const option = document.createElement('option');
-                    option.value = m.name;
-                    datalist.appendChild(option);
-                });
             }
         } catch(e) {
             console.log("CRM 會員清單載入失敗", e);
         }
     }
-    
-    function autoFillPhone(selectedName) {
-        const member = memberDatabase.find(m => m.name === selectedName);
-        if (member && member.phone) {
-            el('bkPhone').value = member.phone;
+
+    // ==========================================
+    // ⭐️ POS 級：自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
+    // ==========================================
+    function showAutocomplete(inputId, dropdownId, phoneInputId) {
+        const inputVal = el(inputId).value.trim();
+        const drop = el(dropdownId);
+        drop.innerHTML = '';
+        
+        if (!inputVal) {
+            drop.style.display = 'none';
+            return;
         }
+
+        // 過濾符合名字或手機的會員
+        const matches = memberDatabase.filter(m => 
+            m.name.includes(inputVal) || (m.phone && m.phone.includes(inputVal))
+        );
+
+        if (matches.length === 0) {
+            drop.style.display = 'none';
+            return;
+        }
+
+        // 渲染浮動選單
+        matches.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item';
+            div.innerText = `${m.name} (${m.phone || '無手機號碼'})`;
+            
+            // 點選後的自動帶入行為
+            div.onclick = () => {
+                el(inputId).value = m.name;
+                if (phoneInputId && m.phone) {
+                    el(phoneInputId).value = m.phone;
+                }
+                drop.style.display = 'none';
+            };
+            drop.appendChild(div);
+        });
+        
+        drop.style.display = 'block';
     }
+
+    // 點擊畫面其他地方時，隱藏浮動選單
+    document.addEventListener('click', function(e) {
+        const dropdowns = document.querySelectorAll('.autocomplete-list');
+        dropdowns.forEach(drop => {
+            // 如果點擊的地方不是輸入框，也不是選單本身，就隱藏它
+            if (!e.target.closest('.autocomplete-container')) {
+                drop.style.display = 'none';
+            }
+        });
+    });
 
     // ==========================================
     // 2. 頁籤切換控制
@@ -946,7 +1034,10 @@
                 <div class="cart-item-row" style="padding-right: 35px;">
                     <div>
                         <label style="font-size:12px;margin-bottom:2px;">會員姓名</label>
-                        <input value="${i.name}" list="memberListDatalist" onchange="uc('${i.id}','name',this.value)" style="padding:6px;font-size:14px;">
+                        <div class="autocomplete-container">
+                            <input value="${i.name}" onkeyup="uc('${i.id}','name',this.value); showAutocomplete('cartName-${i.id}', 'cartDrop-${i.id}', null)" onfocus="showAutocomplete('cartName-${i.id}', 'cartDrop-${i.id}', null)" id="cartName-${i.id}" style="padding:6px;font-size:14px;" autocomplete="off">
+                            <div id="cartDrop-${i.id}" class="autocomplete-list"></div>
+                        </div>
                     </div>
                     <div>
                         <label style="font-size:12px;margin-bottom:2px;">調理師傅</label>
