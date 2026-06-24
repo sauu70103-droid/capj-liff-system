@@ -186,7 +186,6 @@
             cursor: pointer;
         }
         
-        /* 行事曆快速跳轉按鈕 (店務預約專用) */
         .btn-calendar {
             background: rgba(59, 130, 246, 0.2);
             border: 1px solid #3b82f6;
@@ -411,6 +410,8 @@
 </head>
 <body>
 
+<datalist id="memberListDatalist"></datalist>
+
 <div class="container">
     <div id="loadingOverlay">系統連線驗證中...</div>
     
@@ -424,12 +425,12 @@
 
     <div id="bookingTab" class="form-section active">
         <div class="form-group">
-            <label>手機號碼</label>
-            <input type="tel" id="bkPhone" placeholder="09xxxxxxxx">
+            <label>會員姓名 (支援自動帶入與記憶)</label>
+            <input type="text" id="bkName" list="memberListDatalist" placeholder="輸入關鍵字自動搜尋舊會員" onchange="autoFillPhone(this.value)">
         </div>
         <div class="form-group">
-            <label>顧客姓名</label>
-            <input type="text" id="bkName" placeholder="請輸入顧客姓名">
+            <label>手機號碼</label>
+            <input type="tel" id="bkPhone" placeholder="09xxxxxxxx">
         </div>
         <div class="form-group">
             <label>人數</label>
@@ -472,7 +473,7 @@
         
         <h3 style="color: #cbd5e1; font-size: 16px;">🔍 查詢、改期與取消預約</h3>
         <div class="form-group">
-            <input type="text" id="srchKw" placeholder="請輸入姓名或手機號碼">
+            <input type="text" id="srchKw" list="memberListDatalist" placeholder="請輸入會員姓名或手機">
         </div>
         <button class="btn-search" id="btnSearch" onclick="searchBks()">搜尋預約紀錄</button>
         <div id="srchArea"></div>
@@ -533,10 +534,9 @@
         <p style="font-size: 14px; color: #94a3b8;">預設顯示近 48 小時入帳明細，若需調閱更早資料請手動搜尋。</p>
         
         <div class="form-group">
-            <input type="text" id="adjKw" placeholder="請輸入顧客姓名或手機">
+            <input type="text" id="adjKw" list="memberListDatalist" placeholder="請輸入會員姓名或手機">
         </div>
         <button class="btn-search" id="btnSearchFinance" style="border-color: #ef4444; color: #fca5a5;" onclick="searchFin()">手動搜尋歷史財務紀錄</button>
-        
         <div id="adjArea" style="margin-top: 20px;"></div>
     </div>
 </div>
@@ -544,7 +544,7 @@
 <div id="receiptSaveModal">
     <h3 style="color: #4ade80; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與雲端存檔完畢！</h3>
     <p style="color: #cbd5e1; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
-        💡 提示：請直接對著下方圖片<b>「長按」</b>，即可儲存至手機相簿或分享給顧客。
+        💡 提示：請直接對著下方圖片<b>「長按」</b>，即可儲存至手機相簿或分享給會員。
     </p>
     <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
     <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px;">關閉並返回系統</button>
@@ -608,11 +608,14 @@
     };
     
     let cart = [];
+    let memberDatabase = [];
     
     const v = id => document.getElementById(id).value;
     const el = id => document.getElementById(id);
 
-    // 1. LIFF 初始化與權限鎖控
+    // ==========================================
+    // 1. LIFF 初始化、權限鎖控與非同步載入會員資料庫
+    // ==========================================
     liff.init({ liffId: '2010453415-nTX3Lo1L' }).then(async () => {
         if (!liff.isLoggedIn()) {
             liff.login();
@@ -638,14 +641,48 @@
                     if (r.permissions.canViewSummary) {
                         el('summaryDashboard').classList.remove('hidden');
                     }
+                    
+                    fetchCRMData();
                 }
             } catch(e) {
                 el('loadingOverlay').innerText = '驗證連線失敗，請洽詢管理員。';
             }
         }
     });
+    
+    async function fetchCRMData() {
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'fetchMembers' })
+            }).then(x => x.json());
+            
+            if (res.status === 'success') {
+                memberDatabase = res.data;
+                const datalist = el('memberListDatalist');
+                datalist.innerHTML = '';
+                
+                memberDatabase.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m.name;
+                    datalist.appendChild(option);
+                });
+            }
+        } catch(e) {
+            console.log("CRM 會員清單載入失敗", e);
+        }
+    }
+    
+    function autoFillPhone(selectedName) {
+        const member = memberDatabase.find(m => m.name === selectedName);
+        if (member && member.phone) {
+            el('bkPhone').value = member.phone;
+        }
+    }
 
+    // ==========================================
     // 2. 頁籤切換控制
+    // ==========================================
     function switchTab(id, btn) {
         document.querySelectorAll('.form-section').forEach(x => {
             x.style.display = 'none';
@@ -656,13 +693,14 @@
         el(id).style.display = 'block';
         btn.classList.add('active');
         
-        // 若點擊的是財務異動，自動載入近兩日的明細
         if (id === 'adjustTab') {
             loadRecentFinanceRecords();
         }
     }
     
+    // ==========================================
     // 3. 匯款備註顯示控制
+    // ==========================================
     function toggleRem() {
         if (v('fPay') === '匯款') {
             el('remBox').classList.remove('hidden');
@@ -671,7 +709,9 @@
         }
     }
 
+    // ==========================================
     // 4. API 通訊打包元件
+    // ==========================================
     async function apiCall(action, payload, msg) {
         try {
             const response = await fetch(API, {
@@ -701,39 +741,37 @@
     }
 
     // ==========================================
-    // 💡 深度優化神級功能：自動推算結束時間
+    // 5. 智慧輔助功能：自動推算結束時間
     // ==========================================
     function autoCalcEndTime() {
         const startVal = v('bkStart');
         const courseVal = v('bkCourse');
         
-        if (!startVal || !courseVal) return; // 如果沒填寫時間或課程，不動作
+        if (!startVal || !courseVal) return; 
         
-        let addMinutes = 60; // 預設保守抓 60 分鐘
+        let addMinutes = 60; 
         
-        // 智慧萃取課程字串中的分鐘數
         const matchMins = courseVal.match(/(\d+)分鐘/);
         if (matchMins) {
             addMinutes = parseInt(matchMins[1]);
         } else if (courseVal.includes('單部位')) {
-            addMinutes = 30; // 單部位預設 30 分鐘
+            addMinutes = 30; 
         } else if (courseVal.includes('全身結構')) {
-            addMinutes = 60; // 結構調理預設 60 分鐘
+            addMinutes = 60; 
         }
         
-        // 進行時間物件加法運算
         const startDateObj = new Date(startVal);
         startDateObj.setMinutes(startDateObj.getMinutes() + addMinutes);
         
-        // 轉換回 datetime-local 接受的格式 (YYYY-MM-DDTHH:mm) 並考量時區偏移
         const tzOffset = startDateObj.getTimezoneOffset() * 60000;
         const localISOTime = (new Date(startDateObj - tzOffset)).toISOString().slice(0, 16);
         
-        // 自動填入結束時間欄位
         el('bkEnd').value = localISOTime;
     }
 
-    // 5. 店務預約核心：建立預約
+    // ==========================================
+    // 6. 店務預約核心：建立預約
+    // ==========================================
     async function submitBookingData() {
         const payload = {
             phone: v('bkPhone'),
@@ -752,11 +790,13 @@
         await apiCall('createBooking', payload, '預約排程寫入成功！');
     }
 
-    // 6. 店務預約核心：搜尋與修改
+    // ==========================================
+    // 7. 店務預約核心：搜尋與修改
+    // ==========================================
     async function searchBks() {
         const k = v('srchKw');
         if (!k) {
-            return alert('請輸入姓名或手機號碼查詢');
+            return alert('請輸入會員姓名或手機號碼查詢');
         }
         
         const btn = el('btnSearch');
@@ -795,7 +835,7 @@
         } catch(e) {
             console.error(e);
         } finally {
-            btn.innerText = '搜尋目前預約紀錄';
+            btn.innerText = '搜尋預約紀錄';
         }
     }
 
@@ -828,7 +868,9 @@
         }
     }
 
-    // 7. 財務結帳：加載中台名單
+    // ==========================================
+    // 8. 財務結帳：加載中台名單
+    // ==========================================
     async function loadPend() {
         const btn = el('btnFetchPending');
         if (btn) {
@@ -876,7 +918,9 @@
         }
     }
 
-    // 8. 財務結帳：購物車卡片化渲染
+    // ==========================================
+    // 9. 財務結帳：購物車卡片化渲染
+    // ==========================================
     function renderCart() {
         el('cBody').innerHTML = '';
         let totalSum = 0;
@@ -901,8 +945,8 @@
                 <button class="cart-item-del" onclick="cart=cart.filter(x=>x.id!=='${i.id}');renderCart()">✕</button>
                 <div class="cart-item-row" style="padding-right: 35px;">
                     <div>
-                        <label style="font-size:12px;margin-bottom:2px;">顧客姓名</label>
-                        <input value="${i.name}" onchange="uc('${i.id}','name',this.value)" style="padding:6px;font-size:14px;">
+                        <label style="font-size:12px;margin-bottom:2px;">會員姓名</label>
+                        <input value="${i.name}" list="memberListDatalist" onchange="uc('${i.id}','name',this.value)" style="padding:6px;font-size:14px;">
                     </div>
                     <div>
                         <label style="font-size:12px;margin-bottom:2px;">調理師傅</label>
@@ -938,7 +982,9 @@
         el('cSum').innerText = '$' + totalSum;
     }
 
-    // 9. 財務結帳：執行合併結帳
+    // ==========================================
+    // 10. 財務結帳：執行合併結帳與彈出圖檔下載 Modal
+    // ==========================================
     async function processCart() {
         if (cart.length === 0) {
             return alert('結帳核對清單內無資料！');
@@ -1003,7 +1049,6 @@
                 receiptImageBase64: base64Data
             };
             
-            // 將訂單送到後端處理 (不依賴 apiCall 防止單號被覆寫)
             try {
                 const response = await fetch(API, {
                     method: 'POST', 
@@ -1045,7 +1090,9 @@
         liff.closeWindow();
     }
 
-    // 10. 財務摘要儀表板
+    // ==========================================
+    // 11. 財務摘要儀表板
+    // ==========================================
     async function fetchSum() {
         el('sumData').classList.remove('hidden');
         const r = await apiCall('getSummary', {});
@@ -1056,8 +1103,9 @@
         }
     }
     
-    // 11. 財務異動紀錄查詢與調整 (溫和用語版)
-    
+    // ==========================================
+    // 12. 財務異動紀錄查詢與調整
+    // ==========================================
     async function loadRecentFinanceRecords() {
         el('adjArea').innerHTML = '<p style="text-align:center; color:#94a3b8;">載入近期紀錄中...</p>';
         try {
@@ -1075,7 +1123,7 @@
     async function searchFin() {
         const k = v('adjKw');
         if (!k) {
-            return alert('請輸入客戶姓名或手機查詢');
+            return alert('請輸入會員姓名或手機查詢');
         }
         
         const btn = el('btnSearchFinance');
