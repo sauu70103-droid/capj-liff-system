@@ -507,6 +507,11 @@
             <label>結束時間 (可手動微調)</label>
             <input type="datetime-local" id="bkEnd">
         </div>
+
+        <div class="form-group">
+            <label>預約備註細節 (選填，若課程選「其他」請務必填寫)</label>
+            <input type="text" id="bkNote" placeholder="例如：特別加強肩頸、或是其他客製化需求...">
+        </div>
         
         <button class="btn-submit" onclick="submitBookingData()">確認建立預約排程</button>
         
@@ -643,7 +648,6 @@
 </div>
 
 <script>
-    // 專屬 API 通道
     const API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
     
     const prices = {
@@ -655,7 +659,7 @@
     };
     
     let cart = [];
-    let memberDatabase = []; // 存放 CRM 抓來的會員名單
+    let memberDatabase = []; 
     
     const v = id => document.getElementById(id).value;
     const el = id => document.getElementById(id);
@@ -727,7 +731,6 @@
             return;
         }
 
-        // 過濾符合名字或手機的會員
         const matches = memberDatabase.filter(m => 
             m.name.includes(inputVal) || (m.phone && m.phone.includes(inputVal))
         );
@@ -737,13 +740,11 @@
             return;
         }
 
-        // 渲染浮動選單
         matches.forEach(m => {
             const div = document.createElement('div');
             div.className = 'autocomplete-item';
             div.innerText = `${m.name} (${m.phone || '無手機號碼'})`;
             
-            // 點選後的自動帶入行為
             div.onclick = () => {
                 el(inputId).value = m.name;
                 if (phoneInputId && m.phone) {
@@ -757,11 +758,9 @@
         drop.style.display = 'block';
     }
 
-    // 點擊畫面其他地方時，隱藏浮動選單
     document.addEventListener('click', function(e) {
         const dropdowns = document.querySelectorAll('.autocomplete-list');
         dropdowns.forEach(drop => {
-            // 如果點擊的地方不是輸入框，也不是選單本身，就隱藏它
             if (!e.target.closest('.autocomplete-container')) {
                 drop.style.display = 'none';
             }
@@ -858,7 +857,7 @@
     }
 
     // ==========================================
-    // 6. 店務預約核心：建立預約
+    // 6. 店務預約核心：建立預約 (支援預約備註寫入)
     // ==========================================
     async function submitBookingData() {
         const payload = {
@@ -868,7 +867,8 @@
             courseType: v('bkCourse'),
             heroStaff: v('bkHero'),
             startTime: v('bkStart'),
-            endTime: v('bkEnd')
+            endTime: v('bkEnd'),
+            note: v('bkNote') // 💡 新增擷取備註內容
         };
         
         if(!payload.startTime || !payload.endTime) {
@@ -879,7 +879,7 @@
     }
 
     // ==========================================
-    // 7. 店務預約核心：搜尋與修改
+    // 7. 店務預約核心：搜尋與修改 (支援備註顯示)
     // ==========================================
     async function searchBks() {
         const k = v('srchKw');
@@ -902,7 +902,8 @@
                         <div class="result-card" id="bk-${i.orderId}">
                             <div class="result-info">
                                 <strong>${i.name}</strong> - ${displayCourse}<br>
-                                時間：${i.startTime} | 師傅：${i.hero}
+                                時間：${i.startTime} | 師傅：${i.hero}<br>
+                                備註：<span style="color:#94a3b8;">${i.note || '無'}</span>
                             </div>
                             <div class="result-actions">
                                 <button class="btn-small btn-edit" onclick="toggleReschedule('${i.orderId}')">改期</button>
