@@ -147,9 +147,7 @@
             color: #ffffff;
         }
 
-        /* =========================================================
-           ⭐️ POS 級：自定義智慧搜尋浮動選單 (Autocomplete)
-           ========================================================= */
+        /* 智慧浮動選單 Autocomplete */
         .autocomplete-container {
             position: relative;
         }
@@ -182,9 +180,7 @@
             color: #ffffff;
         }
 
-        /* =========================================================
-           按鈕視覺設定
-           ========================================================= */
+        /* 按鈕視覺 */
         .btn-submit {
             background: linear-gradient(to right, #6366f1, #8b5cf6);
             color: white;
@@ -238,9 +234,7 @@
             gap: 8px;
         }
 
-        /* =========================================================
-           財務結帳模組專用 UI：中台候選人與行動端購物車
-           ========================================================= */
+        /* 財務模組 UI */
         .pending-box {
             background: rgba(139, 92, 246, 0.1);
             border: 1px solid #8b5cf6;
@@ -316,9 +310,6 @@
             font-weight: bold;
         }
 
-        /* =========================================================
-           店務查詢 / 高階儀表板 UI
-           ========================================================= */
         .result-card {
             background: rgba(0, 0, 0, 0.4);
             border-left: 4px solid #8b5cf6;
@@ -389,33 +380,100 @@
         }
 
         /* =========================================================
-           實體收據圖渲染區與手機儲存用 Modal 視窗
+           實體收據圖渲染區
            ========================================================= */
         #receiptCaptureArea {
             position: absolute;
             left: -9999px;
             top: 0;
-            width: 450px;
+            width: 480px;
             background: #ffffff;
-            color: #1e293b;
-            padding: 30px;
-            font-family: sans-serif;
+            color: #1a1a1a;
+            padding: 40px;
+            font-family: "Courier New", Courier, monospace;
+            box-sizing: border-box;
         }
 
         .receipt-header {
             text-align: center;
-            border-bottom: 2px dashed #cbd5e1;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .receipt-title {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .receipt-subtitle {
+            margin: 8px 0 0 0;
+            font-size: 16px;
+            color: #444;
+        }
+
+        .receipt-info-group {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 20px;
         }
 
         .receipt-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+        }
+
+        .receipt-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .receipt-table th {
+            text-align: left;
+            border-bottom: 1px solid #000;
+            padding: 10px 0;
             font-size: 15px;
         }
-        
+
+        .receipt-table td {
+            padding: 12px 0;
+            font-size: 15px;
+            vertical-align: top;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .receipt-total-section {
+            border-top: 2px solid #000;
+            padding-top: 15px;
+            margin-top: 10px;
+            text-align: right;
+        }
+
+        .receipt-total-label {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .receipt-total-val {
+            font-size: 24px;
+            font-weight: 900;
+            margin-left: 10px;
+        }
+
+        .receipt-footer-msg {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            border-top: 1px dashed #000;
+            padding-top: 20px;
+        }
+
         .divider {
             height: 1px;
             background: rgba(255, 255, 255, 0.1);
@@ -426,6 +484,7 @@
             display: none !important;
         }
 
+        /* 儲存圖片用 Modal */
         #receiptSaveModal {
             position: fixed;
             top: 0;
@@ -552,7 +611,7 @@
         </div>
         
         <div class="form-group">
-            <label>支付方式</label>
+            <label>結帳方式 💰</label>
             <select id="fPay" onchange="toggleRem()">
                 <option value="現金">現金</option>
                 <option value="匯款">匯款</option>
@@ -566,16 +625,16 @@
         </div>
         
         <div class="form-group">
-            <label>結帳經手人</label>
+            <label>經手人員 👤</label>
             <input type="text" id="fCash" readonly>
         </div>
         
         <div class="form-group">
             <label>整體結帳備註 (會永久記錄於表單並呈現在明細上)</label>
-            <textarea id="fGenNote" placeholder="例如：開發票統編、或是整批客人的特殊交代項目..." style="resize: vertical; height: 80px;"></textarea>
+            <textarea id="fGenNote" placeholder="例如：開立統編、整批客人的特殊交代項目..." style="resize: vertical; height: 80px;"></textarea>
         </div>
         
-        <button id="btnCheckout" class="btn-submit" style="background: linear-gradient(to right, #10b981, #059669);" onclick="processCart()">確認合併結帳並產生收據明細</button>
+        <button id="btnCheckout" class="btn-submit" style="background: linear-gradient(to right, #10b981, #059669);" onclick="processCart()">確認合併結帳並產生電子明細圖</button>
     </div>
 
     <div id="adjustTab" class="form-section">
@@ -593,58 +652,79 @@
 </div>
 
 <div id="receiptSaveModal">
-    <h3 style="color: #4ade80; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與雲端存檔完畢！</h3>
+    <h3 style="color: #4ade80; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
     <p style="color: #cbd5e1; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
-        💡 提示：請直接對著下方圖片<b>「長按」</b>，即可儲存至手機相簿或分享給會員。
+        💡 提示：請點擊下方按鈕，將明細儲存至設備或直接分享給會員。<br>(若按鈕無效請直接長按圖片儲存)
     </p>
-    <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
-    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px;">關閉並返回系統</button>
+    
+    <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 55vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+    
+    <button id="btnUniversalShare" style="margin-top: 25px; padding: 15px; background: linear-gradient(to right, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
+        📲 儲存至手機 / 分享給會員
+    </button>
+    
+    <button onclick="closeReceiptModal()" style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
+        關閉並返回系統
+    </button>
 </div>
 
 <div id="receiptCaptureArea">
     <div class="receipt-header">
-        <h3 style="margin: 0; font-size: 24px;">錦葳健康美學中心</h3>
-        <p style="margin: 5px 0 0; color: #64748b;">電子結帳核對明細</p>
-    </div>
-    <div class="receipt-row">
-        <span>單號：</span>
-        <span id="rId"></span>
-    </div>
-    <div class="receipt-row">
-        <span>時間：</span>
-        <span id="rTm"></span>
-    </div>
-    <div class="receipt-row">
-        <span>方式：</span>
-        <span id="rMth"></span>
-    </div>
-    <div class="receipt-row">
-        <span>人員：</span>
-        <span id="rCsh"></span>
+        <h3 class="receipt-title">錦葳健康美學中心 🌿</h3>
+        <p class="receipt-subtitle">專業調理 · 結構修復 · 美學中心</p>
     </div>
     
-    <div class="receipt-row" id="rRemRow" style="display: none; color: #10b981; font-weight: bold;">
-        <span>匯款資料：</span>
-        <span id="rRemNote"></span>
+    <div class="receipt-info-group">
+        <div class="receipt-row">
+            <span>交易單號：</span>
+            <span id="rId"></span>
+        </div>
+        <div class="receipt-row">
+            <span>結帳時間：</span>
+            <span id="rTm"></span>
+        </div>
+        <div class="receipt-row">
+            <span>結帳方式 💰：</span>
+            <span id="rMth"></span>
+        </div>
+        <div class="receipt-row">
+            <span>經手人員 👤：</span>
+            <span id="rCsh"></span>
+        </div>
+        <div class="receipt-row" id="rRemRow" style="display: none; font-weight: bold;">
+            <span>匯款資料：</span>
+            <span id="rRemNote"></span>
+        </div>
     </div>
     
-    <div style="border-bottom: 1px dashed #cbd5e1; margin: 15px 0;"></div>
+    <table class="receipt-table">
+        <thead>
+            <tr>
+                <th style="width: 50%;">調理項目 / 會員</th>
+                <th style="width: 15%; text-align: center;">數量</th>
+                <th style="width: 35%; text-align: right;">金額 (師傅)</th>
+            </tr>
+        </thead>
+        <tbody id="rItems">
+            </tbody>
+    </table>
     
-    <div id="rItems"></div>
-    
-    <div style="border-bottom: 2px solid #1e293b; margin: 15px 0;"></div>
-    
-    <div class="receipt-row" style="font-weight: bold; font-size: 18px;">
-        <span>加總調理金額：</span>
-        <span id="rSum"></span>
+    <div class="receipt-total-section">
+        <span class="receipt-total-label">總計金額：</span>
+        <span class="receipt-total-val" id="rSum"></span>
     </div>
     
-    <div id="rGenNoteBox" style="display: none; font-size: 13px; color: #475569; margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
-        <strong>整體備註說明：</strong><br>
+    <div id="rGenNoteBox" style="display: none; font-size: 14px; border-top: 1px dashed #000; margin-top: 15px; padding-top: 10px;">
+        <strong>結帳備註：</strong><br>
         <span id="rGenNote"></span>
     </div>
     
-    <p style="text-align: center; font-size: 12px; margin-top: 25px; color: #94a3b8;">感謝您的蒞臨，錦葳健康美學中心關心您的結構與健康。</p>
+    <div class="receipt-footer-msg">
+        🧖 調理完畢後會有兩到三天的恢復期，<br>
+        💧 請多喝開水，避免劇烈運動，<br>
+        ✨ 若有任何情況歡迎隨時官方賴詢問。<br><br>
+        -- 感謝您的蒞臨與信任 --
+    </div>
 </div>
 
 <script>
@@ -693,7 +773,6 @@
                         el('summaryDashboard').classList.remove('hidden');
                     }
                     
-                    // 權限通過後，背景自動去抓取 CRM 會員名單
                     fetchCRMData();
                 }
             } catch(e) {
@@ -702,7 +781,6 @@
         }
     });
     
-    // 背景抓取會員名單
     async function fetchCRMData() {
         try {
             const res = await fetch(API, {
@@ -719,7 +797,7 @@
     }
 
     // ==========================================
-    // ⭐️ POS 級：自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
+    // 自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
     // ==========================================
     function showAutocomplete(inputId, dropdownId, phoneInputId) {
         const inputVal = el(inputId).value.trim();
@@ -857,7 +935,7 @@
     }
 
     // ==========================================
-    // 6. 店務預約核心：建立預約 (支援預約備註寫入)
+    // 6. 店務預約核心：建立預約 (附帶備註)
     // ==========================================
     async function submitBookingData() {
         const payload = {
@@ -868,7 +946,7 @@
             heroStaff: v('bkHero'),
             startTime: v('bkStart'),
             endTime: v('bkEnd'),
-            note: v('bkNote') // 💡 新增擷取備註內容
+            note: v('bkNote')
         };
         
         if(!payload.startTime || !payload.endTime) {
@@ -879,7 +957,7 @@
     }
 
     // ==========================================
-    // 7. 店務預約核心：搜尋與修改 (支援備註顯示)
+    // 7. 店務預約核心：搜尋與修改
     // ==========================================
     async function searchBks() {
         const k = v('srchKw');
@@ -1075,8 +1153,48 @@
     }
 
     // ==========================================
-    // 10. 財務結帳：執行合併結帳與彈出圖檔下載 Modal
+    // 10. 財務結帳：通用儲存與分享機制 (Web Share API)
     // ==========================================
+    function base64ToBlob(base64, mime) {
+        let byteString = atob(base64.split(',')[1]);
+        let ab = new ArrayBuffer(byteString.length);
+        let ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        return new Blob([ab], {type: mime});
+    }
+
+    // 綁定通用分享按鈕
+    el('btnUniversalShare').onclick = async () => {
+        if (!window.currentReceiptBase64) return;
+        
+        const blob = base64ToBlob(window.currentReceiptBase64, 'image/png');
+        const file = new File([blob], window.currentReceiptFileName, { type: 'image/png' });
+        
+        // 判斷設備是否支援 Web Share API (手機 / 平板)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: '錦葳健康美學中心_結帳明細',
+                    text: '感謝您的蒞臨！附上本次的結帳明細。'
+                });
+            } catch (error) {
+                console.log('使用者取消分享或發生錯誤', error);
+            }
+        } else {
+            // 不支援的環境 (一般電腦版瀏覽器)，改用 ObjectURL 強制下載
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = window.currentReceiptFileName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    };
+
+    // 執行合併結帳與產出明細
     async function processCart() {
         if (cart.length === 0) {
             return alert('結帳核對清單內無資料！');
@@ -1116,19 +1234,27 @@
             const displayCourse = i.course.replace(/\(.*?\)/g, '');
             
             el('rItems').innerHTML += `
-                <div class="receipt-row" style="font-weight:bold;margin-top:8px;">
-                    <span>${i.name} (${i.hero})</span>
-                    <span>$${i.price}</span>
-                </div>
-                <div style="font-size:13px;color:#475569;padding-left:10px;margin-bottom:4px;">
-                    項目：${displayCourse} ${i.note ? ' / 備註：' + i.note : ''}
-                </div>`;
+                <tr>
+                    <td style="font-weight:bold;">
+                        ${i.name}<br>
+                        <small style="color:#666; font-weight:normal;">${displayCourse} ${i.note ? ' / ' + i.note : ''}</small>
+                    </td>
+                    <td style="text-align:center;">1</td>
+                    <td style="text-align:right;">
+                        $${i.price}<br>
+                        <small style="color:#666;">(${i.hero})</small>
+                    </td>
+                </tr>`;
         });
         
         el('rSum').innerText = '$' + grandTotal;
         
         html2canvas(el('receiptCaptureArea'), { scale: 2 }).then(async canvas => {
             const base64Data = canvas.toDataURL('image/png');
+            
+            // 將圖檔暫存於全域變數，供稍後的「儲存/分享」按鈕使用
+            window.currentReceiptBase64 = base64Data;
+            window.currentReceiptFileName = `錦葳健康美學中心_結帳明細_${fid}.png`;
             
             const payload = {
                 orderId: fid,
@@ -1148,25 +1274,27 @@
                 });
                 const r = await response.json();
                 
-                btn.innerText = '確認合併結帳並產生收據明細';
+                btn.innerText = '確認合併結帳並產生電子明細圖';
                 btn.disabled = false;
                 
                 if (r && r.status === 'success') {
+                    // 顯示收據 Modal 視窗
                     el('finalReceiptImage').src = base64Data;
                     el('receiptSaveModal').style.display = 'flex';
                     
+                    // 背景嘗試自動下載 (給非 iOS 的環境)
                     try {
                         const a = document.createElement('a');
                         a.href = base64Data;
-                        a.download = `錦葳健康美學中心_結帳明細_${fid}.png`;
+                        a.download = window.currentReceiptFileName;
                         a.click();
                     } catch(e) {}
                     
                 } else {
-                    alert('結帳存檔失敗：' + r.message);
+                    alert('結帳線上存檔失敗：' + r.message);
                 }
             } catch(e) {
-                btn.innerText = '確認合併結帳並產生收據明細';
+                btn.innerText = '確認合併結帳並產生電子明細圖';
                 btn.disabled = false;
                 alert('網路異常，結帳失敗');
             }
