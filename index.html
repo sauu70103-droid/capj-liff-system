@@ -310,6 +310,7 @@
             font-weight: bold;
         }
 
+        /* 店務查詢 / 高階儀表板 UI */
         .result-card {
             background: rgba(0, 0, 0, 0.4);
             border-left: 4px solid #8b5cf6;
@@ -379,15 +380,32 @@
             margin-top: 5px;
         }
 
+        /* 儲存圖片用 Modal */
+        #receiptSaveModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
         /* =========================================================
-           實體收據圖渲染區
+           實體收據圖渲染區 (Thermal Receipt Style)
            ========================================================= */
         #receiptCaptureArea {
             position: absolute;
             left: -9999px;
             top: 0;
             width: 480px;
-            background: #ffffff;
+            background: #ffffff; /* 強制白底，避免截圖出現透明黑底 */
             color: #1a1a1a;
             padding: 40px;
             font-family: "Courier New", Courier, monospace;
@@ -473,36 +491,11 @@
             border-top: 1px dashed #000;
             padding-top: 20px;
         }
-
-        .divider {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 30px 0;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* 儲存圖片用 Modal */
-        #receiptSaveModal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            z-index: 9999;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
     </style>
 </head>
 <body>
+
+<datalist id="memberListDatalist"></datalist>
 
 <div class="container">
     <div id="loadingOverlay">系統連線驗證中...</div>
@@ -516,7 +509,6 @@
     </div>
 
     <div id="bookingTab" class="form-section active">
-        
         <div class="form-group autocomplete-container">
             <label>會員姓名 (支援自動帶入與記憶)</label>
             <input type="text" id="bkName" placeholder="輸入關鍵字自動搜尋舊會員" autocomplete="off" onkeyup="showAutocomplete('bkName', 'bkNameList', 'bkPhone')" onfocus="showAutocomplete('bkName', 'bkNameList', 'bkPhone')">
@@ -577,12 +569,10 @@
         <div class="divider"></div>
         
         <h3 style="color: #cbd5e1; font-size: 16px;">🔍 查詢、改期與取消預約</h3>
-        
         <div class="form-group autocomplete-container">
             <input type="text" id="srchKw" placeholder="請輸入會員姓名或手機" autocomplete="off" onkeyup="showAutocomplete('srchKw', 'srchKwList', null)" onfocus="showAutocomplete('srchKw', 'srchKwList', null)">
             <div id="srchKwList" class="autocomplete-list"></div>
         </div>
-        
         <button class="btn-search" id="btnSearch" onclick="searchBks()">搜尋預約紀錄</button>
         <div id="srchArea"></div>
     </div>
@@ -670,6 +660,7 @@
 
 <div id="receiptCaptureArea">
     <div class="receipt-header">
+        <img src="./logo.png" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
         <h3 class="receipt-title">錦葳健康美學中心 🌿</h3>
         <p class="receipt-subtitle">專業調理 · 結構修復 · 美學中心</p>
     </div>
@@ -744,9 +735,7 @@
     const v = id => document.getElementById(id).value;
     const el = id => document.getElementById(id);
 
-    // ==========================================
     // 1. LIFF 初始化、權限鎖控與非同步載入會員資料庫
-    // ==========================================
     liff.init({ liffId: '2010453415-nTX3Lo1L' }).then(async () => {
         if (!liff.isLoggedIn()) {
             liff.login();
@@ -796,9 +785,7 @@
         }
     }
 
-    // ==========================================
-    // 自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
-    // ==========================================
+    // ⭐️ POS 級：自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
     function showAutocomplete(inputId, dropdownId, phoneInputId) {
         const inputVal = el(inputId).value.trim();
         const drop = el(dropdownId);
@@ -845,9 +832,7 @@
         });
     });
 
-    // ==========================================
     // 2. 頁籤切換控制
-    // ==========================================
     function switchTab(id, btn) {
         document.querySelectorAll('.form-section').forEach(x => {
             x.style.display = 'none';
@@ -863,9 +848,7 @@
         }
     }
     
-    // ==========================================
     // 3. 匯款備註顯示控制
-    // ==========================================
     function toggleRem() {
         if (v('fPay') === '匯款') {
             el('remBox').classList.remove('hidden');
@@ -874,9 +857,7 @@
         }
     }
 
-    // ==========================================
     // 4. API 通訊打包元件
-    // ==========================================
     async function apiCall(action, payload, msg) {
         try {
             const response = await fetch(API, {
@@ -905,9 +886,7 @@
         }
     }
 
-    // ==========================================
     // 5. 智慧輔助功能：自動推算結束時間
-    // ==========================================
     function autoCalcEndTime() {
         const startVal = v('bkStart');
         const courseVal = v('bkCourse');
@@ -934,9 +913,7 @@
         el('bkEnd').value = localISOTime;
     }
 
-    // ==========================================
     // 6. 店務預約核心：建立預約 (附帶備註)
-    // ==========================================
     async function submitBookingData() {
         const payload = {
             phone: v('bkPhone'),
@@ -956,9 +933,7 @@
         await apiCall('createBooking', payload, '預約排程寫入成功！');
     }
 
-    // ==========================================
     // 7. 店務預約核心：搜尋與修改
-    // ==========================================
     async function searchBks() {
         const k = v('srchKw');
         if (!k) {
@@ -1035,9 +1010,7 @@
         }
     }
 
-    // ==========================================
     // 8. 財務結帳：加載中台名單
-    // ==========================================
     async function loadPend() {
         const btn = el('btnFetchPending');
         if (btn) {
@@ -1074,7 +1047,7 @@
                     el('pendArea').appendChild(d);
                 });
             } else {
-                el('pendArea').innerText = '目前中台沒有待結帳的顧客。';
+                el('pendArea').innerText = '目前中台沒有待結帳的會員。';
             }
         } catch(e) {
             console.error(e);
@@ -1085,9 +1058,7 @@
         }
     }
 
-    // ==========================================
     // 9. 財務結帳：購物車卡片化渲染
-    // ==========================================
     function renderCart() {
         el('cBody').innerHTML = '';
         let totalSum = 0;
@@ -1165,14 +1136,12 @@
         return new Blob([ab], {type: mime});
     }
 
-    // 綁定通用分享按鈕
     el('btnUniversalShare').onclick = async () => {
         if (!window.currentReceiptBase64) return;
         
         const blob = base64ToBlob(window.currentReceiptBase64, 'image/png');
         const file = new File([blob], window.currentReceiptFileName, { type: 'image/png' });
         
-        // 判斷設備是否支援 Web Share API (手機 / 平板)
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share({
@@ -1184,7 +1153,6 @@
                 console.log('使用者取消分享或發生錯誤', error);
             }
         } else {
-            // 不支援的環境 (一般電腦版瀏覽器)，改用 ObjectURL 強制下載
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -1194,7 +1162,6 @@
         }
     };
 
-    // 執行合併結帳與產出明細
     async function processCart() {
         if (cart.length === 0) {
             return alert('結帳核對清單內無資料！');
@@ -1249,10 +1216,10 @@
         
         el('rSum').innerText = '$' + grandTotal;
         
-        html2canvas(el('receiptCaptureArea'), { scale: 2 }).then(async canvas => {
+        // ⭐️ 加入 useCORS: true 參數，徹底解決 Logo 無法截圖的問題
+        html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(async canvas => {
             const base64Data = canvas.toDataURL('image/png');
             
-            // 將圖檔暫存於全域變數，供稍後的「儲存/分享」按鈕使用
             window.currentReceiptBase64 = base64Data;
             window.currentReceiptFileName = `錦葳健康美學中心_結帳明細_${fid}.png`;
             
@@ -1274,15 +1241,13 @@
                 });
                 const r = await response.json();
                 
-                btn.innerText = '確認合併結帳並產生電子明細圖';
+                btn.innerText = '確認合併結帳並產生收據明細';
                 btn.disabled = false;
                 
                 if (r && r.status === 'success') {
-                    // 顯示收據 Modal 視窗
                     el('finalReceiptImage').src = base64Data;
                     el('receiptSaveModal').style.display = 'flex';
                     
-                    // 背景嘗試自動下載 (給非 iOS 的環境)
                     try {
                         const a = document.createElement('a');
                         a.href = base64Data;
@@ -1291,10 +1256,10 @@
                     } catch(e) {}
                     
                 } else {
-                    alert('結帳線上存檔失敗：' + r.message);
+                    alert('結帳存檔失敗：' + r.message);
                 }
             } catch(e) {
-                btn.innerText = '確認合併結帳並產生電子明細圖';
+                btn.innerText = '確認合併結帳並產生收據明細';
                 btn.disabled = false;
                 alert('網路異常，結帳失敗');
             }
@@ -1310,9 +1275,7 @@
         liff.closeWindow();
     }
 
-    // ==========================================
     // 11. 財務摘要儀表板
-    // ==========================================
     async function fetchSum() {
         el('sumData').classList.remove('hidden');
         const r = await apiCall('getSummary', {});
@@ -1323,9 +1286,7 @@
         }
     }
     
-    // ==========================================
     // 12. 財務異動紀錄查詢與調整
-    // ==========================================
     async function loadRecentFinanceRecords() {
         el('adjArea').innerHTML = '<p style="text-align:center; color:#94a3b8;">載入近期紀錄中...</p>';
         try {
