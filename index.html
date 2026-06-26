@@ -604,14 +604,24 @@
             <label>結帳方式 💰</label>
             <select id="fPay" onchange="toggleRem()">
                 <option value="現金">現金</option>
-                <option value="匯款">匯款</option>
+                <option value="轉帳/匯款">轉帳/匯款</option>
                 <option value="扣堂">扣堂</option>
             </select>
         </div>
         
-        <div class="form-group hidden" id="remBox">
-            <label>匯款備註資料</label>
-            <input type="text" id="fRem" placeholder="請輸入後五碼或匯款日期">
+        <div id="transferBox" class="hidden">
+            <div class="form-group" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+                <label>我方收款帳戶</label>
+                <select id="fRecAcc" style="margin-bottom: 15px;">
+                    <option value="Line pay轉帳">Line pay轉帳</option>
+                    <option value="ipass money">ipass money</option>
+                    <option value="中信末碼06505">中信末碼06505</option>
+                    <option value="國泰末碼88265">國泰末碼88265</option>
+                </select>
+                
+                <label>顧客匯款備註資料 (如: 帳號後五碼)</label>
+                <input type="text" id="fRem" placeholder="請輸入後五碼或匯款日期">
+            </div>
         </div>
         
         <div class="form-group">
@@ -660,7 +670,7 @@
 
 <div id="receiptCaptureArea">
     <div class="receipt-header">
-        <img src="./logo.png" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
+        <img src="./logo.jpg" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
         <h3 class="receipt-title">錦葳健康美學中心 🌿</h3>
         <p class="receipt-subtitle">專業調理 · 結構修復 · 美學中心</p>
     </div>
@@ -683,7 +693,7 @@
             <span id="rCsh"></span>
         </div>
         <div class="receipt-row" id="rRemRow" style="display: none; font-weight: bold;">
-            <span>匯款資料：</span>
+            <span>顧客匯款備註：</span>
             <span id="rRemNote"></span>
         </div>
     </div>
@@ -785,7 +795,7 @@
         }
     }
 
-    // ⭐️ 自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
+    // ⭐️ POS 級：自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
     function showAutocomplete(inputId, dropdownId, phoneInputId) {
         const inputVal = el(inputId).value.trim();
         const drop = el(dropdownId);
@@ -848,16 +858,16 @@
         }
     }
     
-    // 3. 匯款備註顯示控制
+    // 3. 轉帳選單顯示控制 ⭐️ 更新為轉帳/匯款的邏輯
     function toggleRem() {
-        if (v('fPay') === '匯款') {
-            el('remBox').classList.remove('hidden');
+        if (v('fPay') === '轉帳/匯款') {
+            el('transferBox').classList.remove('hidden');
         } else {
-            el('remBox').classList.add('hidden');
+            el('transferBox').classList.add('hidden');
         }
     }
 
-    // 4. API 通訊打包元件 (💡 拔除 liff.closeWindow()，改為清空表單)
+    // 4. API 通訊打包元件
     async function apiCall(action, payload, msg) {
         try {
             const response = await fetch(API, {
@@ -875,7 +885,7 @@
                     alert(msg);
                 }
                 if (action === 'createBooking') {
-                    // 自動清空關鍵欄位，不關閉視窗，讓行政留在原畫面繼續操作
+                    // 自動清空預約輸入欄位，不關閉視窗
                     el('bkName').value = '';
                     el('bkPhone').value = '';
                     el('bkNote').value = '';
@@ -1177,11 +1187,20 @@
         const fid = 'F' + Date.now();
         el('rId').innerText = fid;
         el('rTm').innerText = new Date().toLocaleString();
-        el('rMth').innerText = v('fPay');
+        
+        const rawPayMethod = v('fPay');
+        let finalPayMethodStr = rawPayMethod;
+        
+        // ⭐️ 判斷結帳方式，如果是轉帳，把收款帳戶加到顯示文字中
+        if (rawPayMethod === '轉帳/匯款') {
+            finalPayMethodStr = `轉帳/匯款 (${v('fRecAcc')})`;
+        }
+        
+        el('rMth').innerText = finalPayMethodStr;
         el('rCsh').innerText = v('fCash');
         
         const remVal = v('fRem');
-        if (v('fPay') === '匯款' && remVal) {
+        if (rawPayMethod === '轉帳/匯款' && remVal) {
             el('rRemRow').style.display = 'flex';
             el('rRemNote').innerText = remVal;
         } else {
@@ -1227,7 +1246,7 @@
             
             const payload = {
                 orderId: fid,
-                paymentMethod: v('fPay'),
+                paymentMethod: finalPayMethodStr, // 傳送完整的結帳方式給後端
                 remittanceNote: remVal,
                 cashier: v('fCash'),
                 startTime: new Date().toISOString(),
@@ -1268,13 +1287,13 @@
         });
     }
 
-    // 💡 拔除 liff.closeWindow()，改為清空表單
     function closeReceiptModal() {
         el('receiptSaveModal').style.display = 'none';
         cart = [];
         renderCart();
         el('fGenNote').value = '';
         el('fRem').value = '';
+        // 只有這裡不要呼叫 closeWindow，讓畫面留在原處
     }
 
     // 11. 財務摘要儀表板
