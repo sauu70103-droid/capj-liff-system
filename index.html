@@ -785,7 +785,7 @@
         }
     }
 
-    // ⭐️ POS 級：自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
+    // ⭐️ 自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
     function showAutocomplete(inputId, dropdownId, phoneInputId) {
         const inputVal = el(inputId).value.trim();
         const drop = el(dropdownId);
@@ -857,7 +857,7 @@
         }
     }
 
-    // 4. API 通訊打包元件
+    // 4. API 通訊打包元件 (💡 拔除 liff.closeWindow()，改為清空表單)
     async function apiCall(action, payload, msg) {
         try {
             const response = await fetch(API, {
@@ -875,7 +875,10 @@
                     alert(msg);
                 }
                 if (action === 'createBooking') {
-                    liff.closeWindow();
+                    // 自動清空關鍵欄位，不關閉視窗，讓行政留在原畫面繼續操作
+                    el('bkName').value = '';
+                    el('bkPhone').value = '';
+                    el('bkNote').value = '';
                 }
                 return r;
             } else {
@@ -913,7 +916,7 @@
         el('bkEnd').value = localISOTime;
     }
 
-    // 6. 店務預約核心：建立預約 (附帶備註)
+    // 6. 店務預約核心：建立預約
     async function submitBookingData() {
         const payload = {
             phone: v('bkPhone'),
@@ -1124,7 +1127,7 @@
     }
 
     // ==========================================
-    // 10. 財務結帳：通用儲存與分享機制 (Web Share API)
+    // 10. 財務結帳：執行合併結帳與彈出圖檔下載 Modal
     // ==========================================
     function base64ToBlob(base64, mime) {
         let byteString = atob(base64.split(',')[1]);
@@ -1216,7 +1219,6 @@
         
         el('rSum').innerText = '$' + grandTotal;
         
-        // ⭐️ 加入 useCORS: true 參數，徹底解決 Logo 無法截圖的問題
         html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(async canvas => {
             const base64Data = canvas.toDataURL('image/png');
             
@@ -1266,13 +1268,13 @@
         });
     }
 
+    // 💡 拔除 liff.closeWindow()，改為清空表單
     function closeReceiptModal() {
         el('receiptSaveModal').style.display = 'none';
         cart = [];
         renderCart();
         el('fGenNote').value = '';
         el('fRem').value = '';
-        liff.closeWindow();
     }
 
     // 11. 財務摘要儀表板
