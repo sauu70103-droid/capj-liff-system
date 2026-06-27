@@ -405,7 +405,7 @@
             left: -9999px;
             top: 0;
             width: 480px;
-            background: #ffffff; /* 強制白底 */
+            background: #ffffff; /* 強制白底，避免截圖出現透明黑底 */
             color: #1a1a1a;
             padding: 40px;
             font-family: "Courier New", Courier, monospace;
@@ -604,29 +604,14 @@
             <label>結帳方式 💰</label>
             <select id="fPay" onchange="toggleRem()">
                 <option value="現金">現金</option>
-                <option value="轉帳/匯款">轉帳/匯款</option>
+                <option value="匯款">匯款</option>
                 <option value="扣堂">扣堂</option>
             </select>
         </div>
         
-        <div id="transferBox" class="hidden">
-            <div class="form-group" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
-                <label>我方收款帳戶</label>
-                <select id="fRecAcc" style="margin-bottom: 15px;">
-                    <option value="Line pay轉帳">Line pay轉帳</option>
-                    <option value="ipass money">ipass money</option>
-                    <option value="中信末碼06505">中信末碼06505</option>
-                    <option value="國泰末碼88265">國泰末碼88265</option>
-                </select>
-                
-                <label>顧客匯款備註資料</label>
-                <input type="text" id="fRem" placeholder="請輸入後五碼或匯款日期">
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label>結帳時間 🕒 (預設為現在，補帳可手動修改)</label>
-            <input type="datetime-local" id="fTime">
+        <div class="form-group hidden" id="remBox">
+            <label>匯款備註資料</label>
+            <input type="text" id="fRem" placeholder="請輸入後五碼或匯款日期">
         </div>
         
         <div class="form-group">
@@ -659,19 +644,23 @@
 <div id="receiptSaveModal">
     <h3 style="color: #4ade80; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
     <p style="color: #cbd5e1; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
-        💡 提示：請直接對著下方收據<b>「長按螢幕」</b>，即可儲存至手機相簿或分享給會員。<br>
+        💡 提示：請點擊下方按鈕，將明細儲存至設備或直接分享給會員。<br>(若按鈕無效請直接長按圖片儲存)
     </p>
     
-    <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+    <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 55vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
     
-    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
+    <button id="btnUniversalShare" style="margin-top: 25px; padding: 15px; background: linear-gradient(to right, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
+        📲 儲存至手機 / 分享給會員
+    </button>
+    
+    <button onclick="closeReceiptModal()" style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
         關閉並返回系統
     </button>
 </div>
 
 <div id="receiptCaptureArea">
     <div class="receipt-header">
-        <img src="./logo.jpg" crossorigin="anonymous" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
+        <img src="./logo.png" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
         <h3 class="receipt-title">錦葳健康美學中心 🌿</h3>
         <p class="receipt-subtitle">專業調理 · 結構修復 · 美學中心</p>
     </div>
@@ -695,7 +684,7 @@
         </div>
         <div class="receipt-row" id="rRemRow" style="display: none; font-weight: bold;">
             <span>匯款資料：</span>
-            <span><span id="rRemNote"></span> <span style="font-size: 13px; color: #666; font-weight: normal;">(轉帳末5碼/日期)</span></span>
+            <span id="rRemNote"></span>
         </div>
     </div>
     
@@ -796,7 +785,7 @@
         }
     }
 
-    // ⭐️ POS 級：自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
+    // ⭐️ 自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
     function showAutocomplete(inputId, dropdownId, phoneInputId) {
         const inputVal = el(inputId).value.trim();
         const drop = el(dropdownId);
@@ -856,24 +845,19 @@
         
         if (id === 'adjustTab') {
             loadRecentFinanceRecords();
-        } else if (id === 'financeTab') {
-            // 切換到結帳頁面時，自動更新「結帳時間」為當下時刻
-            const nowObj = new Date();
-            const tzOffset = nowObj.getTimezoneOffset() * 60000;
-            el('fTime').value = (new Date(nowObj - tzOffset)).toISOString().slice(0, 16);
         }
     }
     
     // 3. 匯款備註顯示控制
     function toggleRem() {
-        if (v('fPay') === '轉帳/匯款') {
-            el('transferBox').classList.remove('hidden');
+        if (v('fPay') === '匯款') {
+            el('remBox').classList.remove('hidden');
         } else {
-            el('transferBox').classList.add('hidden');
+            el('remBox').classList.add('hidden');
         }
     }
 
-    // 4. API 通訊打包元件
+    // 4. API 通訊打包元件 (💡 拔除 liff.closeWindow()，改為清空表單)
     async function apiCall(action, payload, msg) {
         try {
             const response = await fetch(API, {
@@ -891,6 +875,7 @@
                     alert(msg);
                 }
                 if (action === 'createBooking') {
+                    // 自動清空關鍵欄位，不關閉視窗，讓行政留在原畫面繼續操作
                     el('bkName').value = '';
                     el('bkPhone').value = '';
                     el('bkNote').value = '';
@@ -931,7 +916,7 @@
         el('bkEnd').value = localISOTime;
     }
 
-    // 6. 店務預約核心：建立預約 (附帶備註)
+    // 6. 店務預約核心：建立預約
     async function submitBookingData() {
         const payload = {
             phone: v('bkPhone'),
@@ -1144,6 +1129,42 @@
     // ==========================================
     // 10. 財務結帳：執行合併結帳與彈出圖檔下載 Modal
     // ==========================================
+    function base64ToBlob(base64, mime) {
+        let byteString = atob(base64.split(',')[1]);
+        let ab = new ArrayBuffer(byteString.length);
+        let ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+        return new Blob([ab], {type: mime});
+    }
+
+    el('btnUniversalShare').onclick = async () => {
+        if (!window.currentReceiptBase64) return;
+        
+        const blob = base64ToBlob(window.currentReceiptBase64, 'image/png');
+        const file = new File([blob], window.currentReceiptFileName, { type: 'image/png' });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: '錦葳健康美學中心_結帳明細',
+                    text: '感謝您的蒞臨！附上本次的結帳明細。'
+                });
+            } catch (error) {
+                console.log('使用者取消分享或發生錯誤', error);
+            }
+        } else {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = window.currentReceiptFileName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    };
+
     async function processCart() {
         if (cart.length === 0) {
             return alert('結帳核對清單內無資料！');
@@ -1155,30 +1176,12 @@
         
         const fid = 'F' + Date.now();
         el('rId').innerText = fid;
-        
-        // ⭐️ 抓取手動結帳時間
-        const manualTimeInput = v('fTime');
-        const finalCheckoutTime = manualTimeInput ? new Date(manualTimeInput).toISOString() : new Date().toISOString();
-        
-        // 將手動時間格式化顯示在收據上
-        let displayTime = new Date(finalCheckoutTime).toLocaleString();
-        if (manualTimeInput) {
-            displayTime = manualTimeInput.replace('T', ' ');
-        }
-        el('rTm').innerText = displayTime;
-        
-        const rawPayMethod = v('fPay');
-        let finalPayMethodStr = rawPayMethod;
-        
-        if (rawPayMethod === '轉帳/匯款') {
-            finalPayMethodStr = `轉帳/匯款 (${v('fRecAcc')})`;
-        }
-        
-        el('rMth').innerText = finalPayMethodStr;
+        el('rTm').innerText = new Date().toLocaleString();
+        el('rMth').innerText = v('fPay');
         el('rCsh').innerText = v('fCash');
         
         const remVal = v('fRem');
-        if (rawPayMethod === '轉帳/匯款' && remVal) {
+        if (v('fPay') === '匯款' && remVal) {
             el('rRemRow').style.display = 'flex';
             el('rRemNote').innerText = remVal;
         } else {
@@ -1216,21 +1219,18 @@
         
         el('rSum').innerText = '$' + grandTotal;
         
-        // ⭐️ 加入 useCORS: true 參數，徹底解決 Logo 無法截圖的問題
         html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(async canvas => {
             const base64Data = canvas.toDataURL('image/png');
             
-            // ⭐️ 抓取購物車內的第一個人的名字作為檔名
-            const combinedNames = cart.map(c => c.name).join('_');
-            const safeFileName = `錦葳健康美學中心_結帳明細_${combinedNames}_${fid}.png`.replace(/[\/\\:*?"<>|]/g, '');
+            window.currentReceiptBase64 = base64Data;
+            window.currentReceiptFileName = `錦葳健康美學中心_結帳明細_${fid}.png`;
             
             const payload = {
                 orderId: fid,
-                paymentMethod: finalPayMethodStr, 
+                paymentMethod: v('fPay'),
                 remittanceNote: remVal,
                 cashier: v('fCash'),
-                startTime: finalCheckoutTime, // 寫入資料庫使用手動時間
-                customerNames: combinedNames, // 傳送姓名給後端用於檔名
+                startTime: new Date().toISOString(),
                 cartItems: cart,
                 generalNote: genNote,
                 receiptImageBase64: base64Data
@@ -1253,7 +1253,7 @@
                     try {
                         const a = document.createElement('a');
                         a.href = base64Data;
-                        a.download = safeFileName;
+                        a.download = window.currentReceiptFileName;
                         a.click();
                     } catch(e) {}
                     
@@ -1268,6 +1268,7 @@
         });
     }
 
+    // 💡 拔除 liff.closeWindow()，改為清空表單
     function closeReceiptModal() {
         el('receiptSaveModal').style.display = 'none';
         cart = [];
