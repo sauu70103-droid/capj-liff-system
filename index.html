@@ -96,6 +96,22 @@
             box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
         }
 
+        .sub-toggle-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .sub-toggle-btn.active {
+            background: #8b5cf6;
+            color: white;
+            border-color: #a78bfa;
+        }
+
         .form-section {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(12px);
@@ -405,7 +421,7 @@
             left: -9999px;
             top: 0;
             width: 480px;
-            background: #ffffff; /* 強制白底，避免截圖出現透明黑底 */
+            background: #ffffff; 
             color: #1a1a1a;
             padding: 40px;
             font-family: "Courier New", Courier, monospace;
@@ -509,6 +525,26 @@
     </div>
 
     <div id="bookingTab" class="form-section active">
+        
+        <div class="form-group">
+            <label>預約模式 📅</label>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" id="modeSingle" class="sub-toggle-btn active" onclick="changeBookingMode('single')">單次預約 📌</button>
+                <button type="button" id="modeMultiple" class="sub-toggle-btn" onclick="changeBookingMode('multiple')">多次預約 🔄 (常客週調)</button>
+            </div>
+        </div>
+
+        <div id="multipleBox" class="hidden" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #c4b5fd; margin-bottom: 18px;">
+            <label style="color: #c4b5fd; font-weight: bold;">🔄 多次連續預約設定 (每週固定時段)</label>
+            <div style="margin-top: 10px;">
+                <label style="font-size: 13px;">安排調理總次數 (最多 10 次)</label>
+                <input type="number" id="bkRepeatCount" value="4" min="1" max="10" style="padding: 8px;">
+                <p style="font-size: 12px; color: #94a3b8; margin-top: 6px; margin-bottom: 0;">
+                    💡 提示：系統會以您下方選取的「開始時間」當天為核心基準，全自動往後每隔 7 天自動敲進 Google 日曆與店務排程。
+                </p>
+            </div>
+        </div>
+
         <div class="form-group autocomplete-container">
             <label>會員姓名 (支援自動帶入與記憶)</label>
             <input type="text" id="bkName" placeholder="輸入關鍵字自動搜尋舊會員" autocomplete="off" onkeyup="showAutocomplete('bkName', 'bkNameList', 'bkPhone')" onfocus="showAutocomplete('bkName', 'bkNameList', 'bkPhone')">
@@ -561,7 +597,7 @@
 
         <div class="form-group">
             <label>預約備註細節 (選填，若課程選「其他」請務必填寫)</label>
-            <input type="text" id="bkNote" placeholder="例如：特別加強肩頸、或是其他客製化需求...">
+            <input type="text" id="bkNote" placeholder="例如：特別加強肩頸、或是固定週調行程...">
         </div>
         
         <button class="btn-submit" onclick="submitBookingData()">確認建立預約排程</button>
@@ -604,14 +640,37 @@
             <label>結帳方式 💰</label>
             <select id="fPay" onchange="toggleRem()">
                 <option value="現金">現金</option>
-                <option value="匯款">匯款</option>
+                <option value="轉帳/匯款">轉帳/匯款</option>
                 <option value="扣堂">扣堂</option>
             </select>
         </div>
         
-        <div class="form-group hidden" id="remBox">
-            <label>匯款備註資料</label>
-            <input type="text" id="fRem" placeholder="請輸入後五碼或匯款日期">
+        <div id="packageBox" class="hidden" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 18px;">
+            <label style="color: #fcd34d; font-weight: bold; margin-bottom: 10px;">📖 會員扣堂數位存摺狀態</label>
+            <button type="button" class="btn-search" style="background: rgba(245, 158, 11, 0.2); border-color: #f59e0b; color: #fcd34d; padding: 8px; margin-bottom: 10px;" onclick="checkPackageAssets()">
+                🔍 讀取購物車會員存摺餘額
+            </button>
+            <div id="packageStatusArea" style="font-size: 14px; color: #e2e8f0; line-height: 1.6;"></div>
+        </div>
+
+        <div id="transferBox" class="hidden">
+            <div class="form-group" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+                <label>我方收款帳戶</label>
+                <select id="fRecAcc" style="margin-bottom: 15px;">
+                    <option value="Line pay轉帳">Line pay轉帳</option>
+                    <option value="ipass money">ipass money</option>
+                    <option value="中信末碼06505">中信末碼06505</option>
+                    <option value="國泰末碼88265">國泰末碼88265</option>
+                </select>
+                
+                <label>顧客匯款備註資料</label>
+                <input type="text" id="fRem" placeholder="請輸入後五碼或匯款日期">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>結帳時間 🕒 (預設為現在，補帳可手動修改)</label>
+            <input type="datetime-local" id="fTime">
         </div>
         
         <div class="form-group">
@@ -644,7 +703,8 @@
 <div id="receiptSaveModal">
     <h3 style="color: #4ade80; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
     <p style="color: #cbd5e1; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
-        💡 提示：請點擊下方按鈕，將明細儲存至設備或直接分享給會員。<br>(若按鈕無效請直接長按圖片儲存)
+        💡 提示：請點擊下方按鈕，將明細儲存至設備或直接分享給會員。<br>
+        <span style="color: #fca5a5;">(若按鈕無效請直接長按圖片儲存)</span>
     </p>
     
     <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 55vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
@@ -660,7 +720,7 @@
 
 <div id="receiptCaptureArea">
     <div class="receipt-header">
-        <img src="./logo.png" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
+        <img src="./logo.jpg" crossorigin="anonymous" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
         <h3 class="receipt-title">錦葳健康美學中心 🌿</h3>
         <p class="receipt-subtitle">專業調理 · 結構修復 · 美學中心</p>
     </div>
@@ -684,7 +744,7 @@
         </div>
         <div class="receipt-row" id="rRemRow" style="display: none; font-weight: bold;">
             <span>匯款資料：</span>
-            <span id="rRemNote"></span>
+            <span><span id="rRemNote"></span> <span style="font-size: 13px; color: #666; font-weight: normal;">(轉帳末5碼/日期)</span></span>
         </div>
     </div>
     
@@ -731,6 +791,7 @@
     
     let cart = [];
     let memberDatabase = []; 
+    let currentBookingMode = 'single';
     
     const v = id => document.getElementById(id).value;
     const el = id => document.getElementById(id);
@@ -785,7 +846,20 @@
         }
     }
 
-    // ⭐️ 自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
+    function changeBookingMode(mode) {
+        currentBookingMode = mode;
+        if (mode === 'multiple') {
+            el('modeMultiple').classList.add('active');
+            el('modeSingle').classList.remove('active');
+            el('multipleBox').classList.remove('hidden');
+        } else {
+            el('modeSingle').classList.add('active');
+            el('modeMultiple').classList.remove('active');
+            el('multipleBox').classList.add('hidden');
+        }
+    }
+
+    // ⭐️ POS 級：自定義智慧搜尋浮動選單 (Autocomplete 核心引擎)
     function showAutocomplete(inputId, dropdownId, phoneInputId) {
         const inputVal = el(inputId).value.trim();
         const drop = el(dropdownId);
@@ -845,19 +919,49 @@
         
         if (id === 'adjustTab') {
             loadRecentFinanceRecords();
+        } else if (id === 'financeTab') {
+            const nowObj = new Date();
+            const tzOffset = nowObj.getTimezoneOffset() * 60000;
+            el('fTime').value = (new Date(nowObj - tzOffset)).toISOString().slice(0, 16);
         }
     }
     
     // 3. 匯款備註顯示控制
     function toggleRem() {
-        if (v('fPay') === '匯款') {
-            el('remBox').classList.remove('hidden');
+        const method = v('fPay');
+        if (method === '轉帳/匯款') {
+            el('transferBox').classList.remove('hidden');
+            el('packageBox').classList.add('hidden');
+        } else if (method === '扣堂') {
+            el('transferBox').classList.add('hidden');
+            el('packageBox').classList.remove('hidden');
         } else {
-            el('remBox').classList.add('hidden');
+            el('transferBox').classList.add('hidden');
+            el('packageBox').classList.add('hidden');
         }
     }
 
-    // 4. API 通訊打包元件 (💡 拔除 liff.closeWindow()，改為清空表單)
+    async function checkPackageAssets() {
+        if(cart.length === 0) return alert('購物車內目前無會員，請先帶入中台清單。');
+        const area = el('packageStatusArea'); area.innerHTML = '連線讀取存摺中...';
+        const names = cart.map(c => c.name);
+        try {
+            const r = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'checkPackageStatus', names: names }) }).then(x => x.json());
+            if(r.status === 'success') {
+                if(r.data.length === 0) {
+                    area.innerHTML = '目前資料庫尚無此會員的購買紀錄。<br>💡 結帳將自動為新客開戶建檔。';
+                } else {
+                    let html = '';
+                    r.data.forEach(m => {
+                        html += `<div style="margin-bottom:12px; padding-bottom:12px; border-bottom: 1px dashed rgba(255,255,255,0.2);"><span style="font-size: 16px; font-weight: bold; color: #ffffff;">${m.name}</span><br>專案：${m.courseName}<br>堂數：已用 <span style="color:#fcd34d; font-weight:bold;">${m.used}</span> 次 / 剩餘 <span style="color:#4ade80; font-weight:bold;">${m.remain}</span> 次<br><span style="color:#94a3b8; font-size:12px;">(前次紀錄: ${m.lastRecord || '無'})</span></div>`;
+                    });
+                    area.innerHTML = html;
+                }
+            } else { area.innerHTML = '讀取失敗：' + r.message; }
+        } catch(e) { area.innerHTML = '網路連線異常。'; }
+    }
+
+    // 4. API 通訊打包元件
     async function apiCall(action, payload, msg) {
         try {
             const response = await fetch(API, {
@@ -871,22 +975,13 @@
             const r = await response.json();
             
             if (r.status === 'success') {
-                if (msg) {
-                    alert(msg);
-                }
+                if (msg) alert(msg);
                 if (action === 'createBooking') {
-                    // 自動清空關鍵欄位，不關閉視窗，讓行政留在原畫面繼續操作
-                    el('bkName').value = '';
-                    el('bkPhone').value = '';
-                    el('bkNote').value = '';
+                    el('bkName').value = ''; el('bkPhone').value = ''; el('bkNote').value = '';
                 }
                 return r;
-            } else {
-                alert('作業失敗：' + r.message);
-            }
-        } catch(e) {
-            alert('網路連線異常，請稍後再試。');
-        }
+            } else alert('作業失敗：' + r.message);
+        } catch(e) { alert('網路連線異常，請稍後再試。'); }
     }
 
     // 5. 智慧輔助功能：自動推算結束時間
@@ -919,6 +1014,8 @@
     // 6. 店務預約核心：建立預約
     async function submitBookingData() {
         const payload = {
+            bookingType: currentBookingMode,
+            repeatCount: v('bkRepeatCount'),
             phone: v('bkPhone'),
             customerName: v('bkName'),
             people: v('bkPeople'),
@@ -929,9 +1026,7 @@
             note: v('bkNote')
         };
         
-        if(!payload.startTime || !payload.endTime) {
-            return alert('請完整填寫開始與結束時間');
-        }
+        if(!payload.startTime || !payload.endTime) return alert('請完整填寫時間');
         
         await apiCall('createBooking', payload, '預約排程寫入成功！');
     }
@@ -939,9 +1034,7 @@
     // 7. 店務預約核心：搜尋與修改
     async function searchBks() {
         const k = v('srchKw');
-        if (!k) {
-            return alert('請輸入會員姓名或手機號碼查詢');
-        }
+        if (!k) return alert('請輸入會員姓名或手機號碼查詢');
         
         const btn = el('btnSearch');
         btn.innerText = '搜尋中...';
@@ -997,9 +1090,7 @@
         const start = v(`ns-${id}`);
         const end = v(`ne-${id}`);
         
-        if (!start || !end) {
-            return alert('請完整選擇新的時間');
-        }
+        if (!start || !end) return alert('請完整選擇新的時間');
         
         const r = await apiCall('rescheduleBooking', { 
             orderId: id, 
@@ -1016,9 +1107,7 @@
     // 8. 財務結帳：加載中台名單
     async function loadPend() {
         const btn = el('btnFetchPending');
-        if (btn) {
-            btn.innerText = '讀取中...';
-        }
+        if (btn) btn.innerText = '讀取中...';
         
         try {
             const r = await apiCall('fetchPendingCheckouts', {});
@@ -1045,6 +1134,7 @@
                             note: ''
                         });
                         renderCart();
+                        if(v('fPay') === '扣堂') checkPackageAssets();
                     };
                     
                     el('pendArea').appendChild(d);
@@ -1055,9 +1145,7 @@
         } catch(e) {
             console.error(e);
         } finally {
-            if (btn) {
-                btn.innerText = '📥 載入中台待結帳清單';
-            }
+            if (btn) btn.innerText = '📥 載入中台待結帳清單';
         }
     }
 
@@ -1070,9 +1158,7 @@
             const item = cart.find(x => x.id === id);
             if (item) {
                 item[field] = val;
-                if (field === 'course') {
-                    item.price = prices[val] || 0;
-                }
+                if (field === 'course') item.price = prices[val] || 0;
                 renderCart();
             }
         };
@@ -1126,49 +1212,33 @@
         el('cSum').innerText = '$' + totalSum;
     }
 
-    // ==========================================
     // 10. 財務結帳：執行合併結帳與彈出圖檔下載 Modal
-    // ==========================================
     function base64ToBlob(base64, mime) {
         let byteString = atob(base64.split(',')[1]);
         let ab = new ArrayBuffer(byteString.length);
         let ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-        }
+        for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
         return new Blob([ab], {type: mime});
     }
 
     el('btnUniversalShare').onclick = async () => {
         if (!window.currentReceiptBase64) return;
-        
         const blob = base64ToBlob(window.currentReceiptBase64, 'image/png');
         const file = new File([blob], window.currentReceiptFileName, { type: 'image/png' });
-        
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
-                await navigator.share({
-                    files: [file],
-                    title: '錦葳健康美學中心_結帳明細',
-                    text: '感謝您的蒞臨！附上本次的結帳明細。'
-                });
-            } catch (error) {
-                console.log('使用者取消分享或發生錯誤', error);
-            }
+                await navigator.share({ files: [file], title: '錦葳健康美學中心_結帳明細', text: '感謝您的蒞臨！附上本次的結帳明細。' });
+            } catch (error) { console.log('分享取消或失敗', error); }
         } else {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = window.currentReceiptFileName;
-            a.click();
+            a.href = url; a.download = window.currentReceiptFileName; a.click();
             window.URL.revokeObjectURL(url);
         }
     };
 
     async function processCart() {
-        if (cart.length === 0) {
-            return alert('結帳核對清單內無資料！');
-        }
+        if (cart.length === 0) return alert('結帳核對清單內無資料！');
         
         const btn = el('btnCheckout');
         btn.innerText = '處理中，請稍候...';
@@ -1176,12 +1246,26 @@
         
         const fid = 'F' + Date.now();
         el('rId').innerText = fid;
-        el('rTm').innerText = new Date().toLocaleString();
-        el('rMth').innerText = v('fPay');
+        
+        const manualTimeInput = v('fTime');
+        const finalCheckoutTime = manualTimeInput ? new Date(manualTimeInput).toISOString() : new Date().toISOString();
+        
+        let displayTime = new Date(finalCheckoutTime).toLocaleString();
+        if (manualTimeInput) displayTime = manualTimeInput.replace('T', ' ');
+        el('rTm').innerText = displayTime;
+        
+        const rawPayMethod = v('fPay');
+        let finalPayMethodStr = rawPayMethod;
+        
+        if (rawPayMethod === '轉帳/匯款') {
+            finalPayMethodStr = `轉帳/匯款 (${v('fRecAcc')})`;
+        }
+        
+        el('rMth').innerText = finalPayMethodStr;
         el('rCsh').innerText = v('fCash');
         
         const remVal = v('fRem');
-        if (v('fPay') === '匯款' && remVal) {
+        if (rawPayMethod === '轉帳/匯款' && remVal) {
             el('rRemRow').style.display = 'flex';
             el('rRemNote').innerText = remVal;
         } else {
@@ -1222,15 +1306,19 @@
         html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(async canvas => {
             const base64Data = canvas.toDataURL('image/png');
             
+            const combinedNames = cart.map(c => c.name).join('_');
+            const safeFileName = `錦葳健康美學中心_結帳明細_${combinedNames}_${fid}.png`.replace(/[\/\\:*?"<>|]/g, '');
+            
             window.currentReceiptBase64 = base64Data;
-            window.currentReceiptFileName = `錦葳健康美學中心_結帳明細_${fid}.png`;
+            window.currentReceiptFileName = safeFileName;
             
             const payload = {
                 orderId: fid,
-                paymentMethod: v('fPay'),
+                paymentMethod: finalPayMethodStr, 
                 remittanceNote: remVal,
                 cashier: v('fCash'),
-                startTime: new Date().toISOString(),
+                startTime: finalCheckoutTime, 
+                customerNames: combinedNames, 
                 cartItems: cart,
                 generalNote: genNote,
                 receiptImageBase64: base64Data
@@ -1249,14 +1337,10 @@
                 if (r && r.status === 'success') {
                     el('finalReceiptImage').src = base64Data;
                     el('receiptSaveModal').style.display = 'flex';
-                    
                     try {
                         const a = document.createElement('a');
-                        a.href = base64Data;
-                        a.download = window.currentReceiptFileName;
-                        a.click();
+                        a.href = base64Data; a.download = safeFileName; a.click();
                     } catch(e) {}
-                    
                 } else {
                     alert('結帳存檔失敗：' + r.message);
                 }
@@ -1268,13 +1352,9 @@
         });
     }
 
-    // 💡 拔除 liff.closeWindow()，改為清空表單
     function closeReceiptModal() {
         el('receiptSaveModal').style.display = 'none';
-        cart = [];
-        renderCart();
-        el('fGenNote').value = '';
-        el('fRem').value = '';
+        cart = []; renderCart(); el('fGenNote').value = ''; el('fRem').value = ''; el('packageStatusArea').innerHTML = '';
     }
 
     // 11. 財務摘要儀表板
@@ -1293,8 +1373,7 @@
         el('adjArea').innerHTML = '<p style="text-align:center; color:#94a3b8;">載入近期紀錄中...</p>';
         try {
             const response = await fetch(API, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: 'fetchRecentFinanceRecords' }) 
+                method: 'POST', body: JSON.stringify({ action: 'fetchRecentFinanceRecords' }) 
             });
             const r = await response.json();
             renderFinanceRecords(r.data, 'adjArea');
@@ -1305,17 +1384,11 @@
     
     async function searchFin() {
         const k = v('adjKw');
-        if (!k) {
-            return alert('請輸入會員姓名或手機查詢');
-        }
-        
-        const btn = el('btnSearchFinance');
-        btn.innerText = '調閱中...';
-        
+        if (!k) return alert('請輸入會員姓名或手機查詢');
+        const btn = el('btnSearchFinance'); btn.innerText = '調閱中...';
         try {
             const response = await fetch(API, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: 'searchFinanceRecords', keyword: k }) 
+                method: 'POST', body: JSON.stringify({ action: 'searchFinanceRecords', keyword: k }) 
             });
             const r = await response.json();
             renderFinanceRecords(r.data, 'adjArea');
@@ -1368,17 +1441,12 @@
 
     function toggleVoidForm(id) {
         const box = el(`voidForm-${id}`);
-        if (box.style.display === 'block') {
-            box.style.display = 'none';
-        } else {
-            box.style.display = 'block';
-        }
+        if (box.style.display === 'block') box.style.display = 'none';
+        else box.style.display = 'block';
     }
 
     async function submitVoid(rowIndex, orderId) {
-        if (!confirm(`警告：確定要將單號 ${orderId} 進行財務調整歸零嗎？此動作將扣除當日/當月營收累計！`)) {
-            return;
-        }
+        if (!confirm(`警告：確定要將單號 ${orderId} 進行財務調整歸零嗎？此動作將扣除當日/當月營收累計！`)) return;
         
         const reason = v(`voidReason-${orderId}`);
         const note = v(`voidNote-${orderId}`);
@@ -1386,13 +1454,7 @@
         try {
             const response = await fetch(API, { 
                 method: 'POST', 
-                body: JSON.stringify({ 
-                    action: 'voidFinanceRecord', 
-                    rowIndex: rowIndex, 
-                    orderId: orderId,
-                    reason: reason,
-                    note: note
-                }) 
+                body: JSON.stringify({ action: 'voidFinanceRecord', rowIndex: rowIndex, orderId: orderId, reason: reason, note: note }) 
             });
             const r = await response.json();
             
@@ -1401,12 +1463,8 @@
                 const rowEl = el(`f-${orderId}`);
                 rowEl.style.opacity = '0.4';
                 rowEl.innerHTML = '<p style="color:#f59e0b;text-align:center;font-weight:bold;margin-top:10px;">[此項紀錄已完成財務異動歸零]</p>';
-            } else {
-                alert('異動失敗：' + r.message);
-            }
-        } catch(e) {
-            alert('執行異動時發生網路錯誤');
-        }
+            } else alert('異動失敗：' + r.message);
+        } catch(e) { alert('執行異動時發生網路錯誤'); }
     }
 </script>
 </body>
