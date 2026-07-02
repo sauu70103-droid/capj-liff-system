@@ -726,17 +726,12 @@
 <div id="receiptSaveModal">
     <h3 style="color: #4ade80; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
     <p style="color: #cbd5e1; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
-        💡 提示：請點擊下方按鈕，將明細儲存至設備或直接分享給會員。<br>
-        <span style="color: #fca5a5;">(若按鈕無效請直接長按圖片儲存)</span>
+        💡 提示：請直接對著下方收據<b>「長按螢幕」</b>，即可儲存至手機相簿或分享給會員。<br>
     </p>
     
-    <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 55vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+    <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
     
-    <button id="btnUniversalShare" style="margin-top: 25px; padding: 15px; background: linear-gradient(to right, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
-        📲 儲存至手機 / 分享給會員
-    </button>
-    
-    <button onclick="closeReceiptModal()" style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
+    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
         關閉並返回系統
     </button>
 </div>
@@ -926,7 +921,7 @@
             const r = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'checkPackageStatus', names: names }) }).then(x => x.json());
             if(r.status === 'success') {
                 if(r.data.length === 0) {
-                    area.innerHTML = '目前資料庫尚無此會員的購買紀錄。<br>💡 結 গৌ將自動為新客開戶建檔。';
+                    area.innerHTML = '目前資料庫尚無此會員的購買紀錄。<br>💡 結帳將自動為新客開戶建檔。';
                 } else {
                     let html = '';
                     r.data.forEach(m => {
@@ -980,7 +975,6 @@
         
         if(!dS || !tS || !dE || !tE) return alert('請完整填寫日期與時間');
 
-        // 🚨 終極防呆：單次預約次數強制鎖死為 1，無視欄位內的任何數字！
         const actualRepeatCount = currentBookingMode === 'single' ? 1 : v('bkRepeatCount');
 
         const payload = { 
@@ -1006,14 +1000,31 @@
             const r = await apiCall('searchBookings', { keyword: k }); el('srchArea').innerHTML = '';
             if (r && r.data.length > 0) {
                 r.data.forEach(i => {
-                    el('srchArea').innerHTML += `<div class="result-card" id="bk-${i.orderId}"><div class="result-info"><strong>${i.name}</strong> - ${i.course.replace(/\(.*?\)/g, '')}<br>時間：${i.startTime} | 師傅：${i.hero}<br>備註：<span style="color:#94a3b8;">${i.note || '無'}</span></div><div class="result-actions"><button class="btn-small btn-edit" onclick="toggleReschedule('${i.orderId}')">改期</button><button class="btn-small btn-del" onclick="if(confirm('確定要取消此預約排程嗎？')) apiCall('cancelBooking',{orderId:'${i.orderId}'}).then(()=>el('bk-${i.orderId}').style.display='none')">取消預約</button></div>
-                    <div class="reschedule-box" id="rBx-${i.orderId}">
-                        <label style="font-size:12px;">新開始時間</label>
-                        <div style="display:flex; gap:5px; margin-bottom:8px;"><input type="date" id="nsD-${i.orderId}" style="flex:1;"><input type="time" id="nsT-${i.orderId}" style="flex:1;"></div>
-                        <label style="font-size:12px;">新結束時間</label>
-                        <div style="display:flex; gap:5px; margin-bottom:8px;"><input type="date" id="neD-${i.orderId}" style="flex:1;"><input type="time" id="neT-${i.orderId}" style="flex:1;"></div>
-                        <button class="btn-submit" onclick="submitReschedule('${i.orderId}')">儲存變更</button>
-                    </div></div>`;
+                    el('srchArea').innerHTML += `
+                        <div class="result-card" id="bk-${i.orderId}">
+                            <div class="result-info">
+                                <strong>${i.name}</strong> - ${i.course.replace(/\(.*?\)/g, '')}<br>
+                                時間：${i.startTime} | 師傅：${i.hero}<br>
+                                備註：<span style="color:#94a3b8;">${i.note || '無'}</span>
+                            </div>
+                            <div class="result-actions">
+                                <button class="btn-small btn-edit" onclick="toggleReschedule('${i.orderId}')">改期</button>
+                                <button class="btn-small btn-del" onclick="if(confirm('確定要取消此預約排程嗎？')) apiCall('cancelBooking',{orderId:'${i.orderId}'}).then(()=>el('bk-${i.orderId}').style.display='none')">取消預約</button>
+                            </div>
+                            <div class="reschedule-box" id="rBx-${i.orderId}">
+                                <label style="font-size:12px;">新開始時間</label>
+                                <div style="display:flex; gap:5px; margin-bottom:8px;">
+                                    <input type="date" id="nsD-${i.orderId}" style="flex:1;">
+                                    <input type="time" id="nsT-${i.orderId}" style="flex:1;">
+                                </div>
+                                <label style="font-size:12px;">新結束時間</label>
+                                <div style="display:flex; gap:5px; margin-bottom:8px;">
+                                    <input type="date" id="neD-${i.orderId}" style="flex:1;">
+                                    <input type="time" id="neT-${i.orderId}" style="flex:1;">
+                                </div>
+                                <button class="btn-submit" onclick="submitReschedule('${i.orderId}')">儲存變更</button>
+                            </div>
+                        </div>`;
                 });
             } else el('srchArea').innerHTML = '<p style="text-align:center;color:#fca5a5;">查無目前生效的預約紀錄</p>';
         } catch(e) { console.error(e); } finally { btn.innerText = '搜尋預約紀錄'; }
@@ -1202,7 +1213,6 @@
                 btn.innerText = '確認合併結帳並產生電子明細圖'; btn.disabled = false;
                 if (r && r.status === 'success') {
                     el('finalReceiptImage').src = base64Data; el('receiptSaveModal').style.display = 'flex';
-                    try { const a = document.createElement('a'); a.href = base64Data; a.download = safeFileName; a.click(); } catch(e) {}
                 } else alert('結帳線上存檔失敗：' + r.message);
             } catch(e) { btn.innerText = '確認合併結帳並產生電子明細圖'; btn.disabled = false; alert('網路異常，結帳失敗'); }
         });
@@ -1237,12 +1247,18 @@
         if (dataArray && dataArray.length > 0) {
             dataArray.forEach(i => {
                 const displayCourse = i.course.replace(/\(.*?\)/g, '');
-                area.innerHTML += `<div class="result-card" style="border-left-color:#f59e0b;" id="f-${i.orderId}"><strong>單號：${i.orderId}</strong> (${i.date})<br>客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>項目：${displayCourse}<br>備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br><div class="result-actions" style="margin-top:10px;"><button class="btn-small btn-del" style="background:#f59e0b;" onclick="toggleVoidForm('${i.orderId}')">進行財務項目異動</button></div><div id="voidForm-${i.orderId}" class="void-box"><label style="font-size:12px;">常規異動原因</label><select id="voidReason-${i.orderId}" style="margin-bottom:12px; padding:6px; font-size:14px;"><option value="金額調整/退還">金額調整/退還</option><option value="課程項目變更">課程項目變更</option><option value="重複結帳修正">重複結帳修正</option><option value="其他行政異動">其他行政異動</option></select><label style="font-size:12px;">異動備註細節</label><input type="text" id="voidNote-${i.orderId}" placeholder="輸入詳細調整原因 (選填)..." style="margin-bottom:12px; padding:6px; font-size:14px;"><button class="btn-submit" style="background:#f59e0b; color: white;" onclick="submitVoid('${i.rowIndex}', '${i.orderId}')">確認執行財務金額歸零</button></div></div>`;
+                area.innerHTML += `
+                    <div class="result-card" style="border-left-color:#f59e0b;" id="f-${i.orderId}">
+                        <strong>單號：${i.orderId}</strong> (${i.date})<br>客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>項目：${displayCourse}<br>備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br>
+                        <div class="result-actions" style="margin-top:10px;"><button class="btn-small btn-del" style="background:#f59e0b;" onclick="toggleVoidForm('${i.orderId}')">進行財務項目異動</button></div>
+                        <div id="voidForm-${i.orderId}" class="void-box"><label style="font-size:12px;">常規異動原因</label><select id="voidReason-${i.orderId}" style="margin-bottom:12px; padding:6px; font-size:14px;"><option value="金額調整/退還">金額調整/退還</option><option value="課程項目變更">課程項目變更</option><option value="重複結帳修正">重複結帳修正</option><option value="其他行政異動">其他行政異動</option></select><label style="font-size:12px;">異動備註細節</label><input type="text" id="voidNote-${i.orderId}" placeholder="輸入詳細調整原因 (選填)..." style="margin-bottom:12px; padding:6px; font-size:14px;"><button class="btn-submit" style="background:#f59e0b; color: white;" onclick="submitVoid('${i.rowIndex}', '${i.orderId}')">確認執行財務金額歸零</button></div>
+                    </div>`;
             });
         } else area.innerHTML = '<p style="text-align:center;">查無符合紀錄</p>';
     }
 
     function toggleVoidForm(id) { const box = el(`voidForm-${id}`); box.style.display = box.style.display === 'block' ? 'none' : 'block'; }
+    
     async function submitVoid(rowIndex, orderId) {
         if (!confirm(`警告：確定要將單號 ${orderId} 進行財務調整歸零嗎？此動作將扣除當日/當月營收累計！`)) return;
         try {
