@@ -9,509 +9,76 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
-        /* =========================================================
-           品牌視覺風格
-           ========================================================= */
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%);
-            color: #f8fafc;
-            min-height: 100vh;
-        }
-
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
-                radial-gradient(2px 2px at 150px 70px, #ffffff, transparent),
-                radial-gradient(2px 2px at 50px 160px, #ffffff, transparent);
-            background-size: 350px 350px;
-            opacity: 0.3;
-            z-index: -1;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        h2 {
-            text-align: center;
-            color: #c4b5fd;
-            text-shadow: 0 0 10px rgba(196, 181, 253, 0.3);
-            letter-spacing: 2px;
-        }
-
-        #loadingOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.9);
-            z-index: 10;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            color: #2dd4bf;
-            font-weight: bold;
-        }
-
-        /* =========================================================
-           導覽頁籤與輸入欄位
-           ========================================================= */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 15px 5px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #cbd5e1;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 15px;
-            text-align: center;
-        }
-
-        .tab-btn.active {
-            background: rgba(139, 92, 246, 0.3);
-            color: #ddd6fe;
-            border-color: #8b5cf6;
-            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
-        }
-
-        .sub-toggle-btn {
-            padding: 10px 20px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #cbd5e1;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .sub-toggle-btn.active {
-            background: #8b5cf6;
-            color: white;
-            border-color: #a78bfa;
-        }
-
-        .form-section {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 25px;
-            border-radius: 12px;
-            display: none;
-        }
-
-        .form-section.active {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: #cbd5e1;
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: 12px;
-            box-sizing: border-box;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            color: #f8fafc;
-            font-size: 16px;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #8b5cf6;
-        }
-
-        input[readonly] {
-            background: rgba(255, 255, 255, 0.05);
-            color: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        option {
-            background: #1e1b4b;
-            color: #ffffff;
-        }
-
-        /* 智慧浮動選單 Autocomplete */
-        .autocomplete-container {
-            position: relative;
-        }
-
-        .autocomplete-list {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            z-index: 99;
-            background: #1e293b;
-            border: 1px solid #8b5cf6;
-            border-radius: 6px;
-            max-height: 200px;
-            overflow-y: auto;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            display: none;
-        }
-
-        .autocomplete-item {
-            padding: 12px 15px;
-            cursor: pointer;
-            color: #e2e8f0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            font-size: 15px;
-        }
-
-        .autocomplete-item:hover {
-            background: #4c1d95;
-            color: #ffffff;
-        }
-
-        /* 按鈕視覺 */
-        .btn-submit {
-            background: linear-gradient(to right, #6366f1, #8b5cf6);
-            color: white;
-            border: none;
-            padding: 15px;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
-        .btn-cancel-action {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
-            border: 1px solid #ef4444;
-            padding: 15px;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .btn-search {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .btn-calendar {
-            background: rgba(59, 130, 246, 0.2);
-            border: 1px solid #3b82f6;
-            color: #93c5fd;
-            padding: 12px;
-            width: 100%;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* 財務模組 UI */
-        .pending-box {
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid #8b5cf6;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .pending-item {
-            display: inline-block;
-            background: #4c1d95;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
-            margin: 5px;
-            font-size: 14px;
-            cursor: pointer;
-            border: 1px solid #6d28d9;
-            transition: 0.2s;
-        }
-
-        .pending-item:hover {
-            background: #6d28d9;
-        }
-
-        .cart-box {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid #4ade80;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .cart-title {
-            font-weight: bold;
-            color: #4ade80;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 16px;
-        }
-
-        .cart-item-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 14px;
-            margin-bottom: 12px;
-            position: relative;
-        }
-
-        .cart-item-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .cart-item-row > div {
-            flex: 1;
-        }
-
-        .cart-item-del {
-            position: absolute;
-            right: 10px;
-            top: 10px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 8px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        /* 店務查詢 / 高階儀表板 UI */
-        .result-card {
-            background: rgba(0, 0, 0, 0.4);
-            border-left: 4px solid #8b5cf6;
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 15px;
-        }
-
-        .result-info {
-            font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 15px;
-            color: #e2e8f0;
-        }
-
-        .result-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-small {
-            flex: 1;
-            padding: 10px;
-            border-radius: 6px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
+        body { margin: 0; padding: 20px; font-family: sans-serif; background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%); color: #f8fafc; min-height: 100vh; }
+        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(2px 2px at 20px 30px, #ffffff, transparent), radial-gradient(2px 2px at 150px 70px, #ffffff, transparent), radial-gradient(2px 2px at 50px 160px, #ffffff, transparent); background-size: 350px 350px; opacity: 0.3; z-index: -1; }
+        .container { max-width: 600px; margin: 0 auto; position: relative; }
+        h2 { text-align: center; color: #c4b5fd; text-shadow: 0 0 10px rgba(196, 181, 253, 0.3); letter-spacing: 2px; }
+        #loadingOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 10; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 18px; color: #2dd4bf; font-weight: bold; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 15px 5px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #cbd5e1; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 15px; text-align: center; }
+        .tab-btn.active { background: rgba(139, 92, 246, 0.3); color: #ddd6fe; border-color: #8b5cf6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.2); }
+        .sub-toggle-btn { padding: 10px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .sub-toggle-btn.active { background: #8b5cf6; color: white; border-color: #a78bfa; }
+        .form-section { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); padding: 25px; border-radius: 12px; display: none; }
+        .form-section.active { display: block; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; color: #cbd5e1; }
+        input, select, textarea { width: 100%; padding: 12px; box-sizing: border-box; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; color: #f8fafc; font-size: 16px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #8b5cf6; }
+        input[readonly] { background: rgba(255, 255, 255, 0.05); color: #94a3b8; cursor: not-allowed; }
+        option { background: #1e1b4b; color: #ffffff; }
+        
+        .autocomplete-container { position: relative; }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 99; background: #1e293b; border: 1px solid #8b5cf6; border-radius: 6px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: none; }
+        .autocomplete-item { padding: 12px 15px; cursor: pointer; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 15px; }
+        .autocomplete-item:hover { background: #4c1d95; color: #ffffff; }
+        
+        .btn-submit { background: linear-gradient(to right, #6366f1, #8b5cf6); color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-cancel-action { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; padding: 15px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-search { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: white; padding: 12px; width: 100%; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .btn-calendar { background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #93c5fd; padding: 12px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        
+        .pending-box { background: rgba(139, 92, 246, 0.1); border: 1px solid #8b5cf6; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .pending-item { display: inline-block; background: #4c1d95; color: white; padding: 8px 12px; border-radius: 20px; margin: 5px; font-size: 14px; cursor: pointer; border: 1px solid #6d28d9; transition: 0.2s; }
+        .pending-item:hover { background: #6d28d9; }
+        .cart-box { background: rgba(0, 0, 0, 0.4); border: 1px solid #4ade80; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .cart-title { font-weight: bold; color: #4ade80; margin-bottom: 12px; display: flex; justify-content: space-between; font-size: 16px; }
+        .cart-item-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 14px; margin-bottom: 12px; position: relative; }
+        .cart-item-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .cart-item-row > div { flex: 1; }
+        .cart-item-del { position: absolute; right: 10px; top: 10px; background: #ef4444; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        
+        .result-card { background: rgba(0, 0, 0, 0.4); border-left: 4px solid #8b5cf6; padding: 15px; border-radius: 6px; margin-top: 15px; }
+        .result-info { font-size: 14px; line-height: 1.6; margin-bottom: 15px; color: #e2e8f0; }
+        .result-actions { display: flex; gap: 10px; }
+        .btn-small { flex: 1; padding: 10px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
         .btn-edit { background: #3b82f6; color: white; }
         .btn-del { background: #ef4444; color: white; }
         
-        .reschedule-box, .void-box {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px dashed rgba(255, 255, 255, 0.2);
-            display: none;
-        }
-
-        #summaryDashboard {
-            background: rgba(45, 212, 191, 0.1);
-            border: 1px solid #2dd4bf;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .summary-item {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 10px;
-            border-radius: 6px;
-        }
-
-        .summary-val {
-            display: block;
-            font-size: 20px;
-            font-weight: bold;
-            color: #2dd4bf;
-            margin-top: 5px;
-        }
-
-        /* 儲存圖片用 Modal */
-        #receiptSaveModal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            z-index: 9999;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        /* =========================================================
-           實體收據圖渲染區 (Thermal Receipt Style)
-           ========================================================= */
-        #receiptCaptureArea {
-            position: absolute;
-            left: -9999px;
-            top: 0;
-            width: 480px;
-            background: #ffffff; 
-            color: #1a1a1a;
-            padding: 40px;
-            font-family: "Courier New", Courier, monospace;
-            box-sizing: border-box;
-        }
-
-        .receipt-header {
-            text-align: center;
-            border-bottom: 2px dashed #000;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-
-        .receipt-title {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 900;
-            letter-spacing: 1px;
-        }
-
-        .receipt-subtitle {
-            margin: 8px 0 0 0;
-            font-size: 16px;
-            color: #444;
-        }
-
-        .receipt-info-group {
-            font-size: 15px;
-            line-height: 1.8;
-            margin-bottom: 20px;
-        }
-
-        .receipt-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-
-        .receipt-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        .receipt-table th {
-            text-align: left;
-            border-bottom: 1px solid #000;
-            padding: 10px 0;
-            font-size: 15px;
-        }
-
-        .receipt-table td {
-            padding: 12px 0;
-            font-size: 15px;
-            vertical-align: top;
-            border-bottom: 1px dashed #eee;
-        }
-
-        .receipt-total-section {
-            border-top: 2px solid #000;
-            padding-top: 15px;
-            margin-top: 10px;
-            text-align: right;
-        }
-
-        .receipt-total-label {
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .receipt-total-val {
-            font-size: 24px;
-            font-weight: 900;
-            margin-left: 10px;
-        }
-
-        .receipt-footer-msg {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 14px;
-            line-height: 1.6;
-            color: #333;
-            border-top: 1px dashed #000;
-            padding-top: 20px;
-        }
+        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .summary-item { background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 6px; text-align: center;}
+        .summary-val { display: block; font-size: 20px; font-weight: bold; color: #2dd4bf; margin-top: 5px; }
+        
+        #receiptSaveModal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        
+        /* 收據圖片渲染區 (Thermal Receipt Style) */
+        #receiptCaptureArea { position: absolute; left: -9999px; top: 0; width: 480px; background: #ffffff; color: #1a1a1a; padding: 40px; font-family: "Courier New", Courier, monospace; box-sizing: border-box; }
+        .receipt-header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 20px; margin-bottom: 20px; }
+        .receipt-title { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 1px; }
+        .receipt-subtitle { margin: 8px 0 0 0; font-size: 16px; color: #444; }
+        .receipt-info-group { font-size: 15px; line-height: 1.8; margin-bottom: 20px; }
+        .receipt-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .receipt-table th { text-align: left; border-bottom: 1px solid #000; padding: 10px 0; font-size: 15px; }
+        .receipt-table td { padding: 12px 0; font-size: 15px; vertical-align: top; border-bottom: 1px dashed #eee; }
+        .receipt-total-section { border-top: 2px solid #000; padding-top: 15px; margin-top: 10px; text-align: right; }
+        .receipt-total-label { font-size: 20px; font-weight: bold; }
+        .receipt-total-val { font-size: 24px; font-weight: 900; margin-left: 10px; }
+        .receipt-footer-msg { text-align: center; margin-top: 30px; font-size: 14px; line-height: 1.6; color: #333; border-top: 1px dashed #000; padding-top: 20px; }
     </style>
 </head>
 <body>
 
-<!-- 隱藏的自動完成名單 (Datalist) -->
 <datalist id="memberListDatalist"></datalist>
 
 <div class="container">
@@ -544,7 +111,7 @@
                 <label style="font-size: 13px;">安排調理總次數 (最多 10 次)</label>
                 <input type="number" id="bkRepeatCount" value="4" min="1" max="10" style="padding: 8px;">
                 <p style="font-size: 12px; color: #94a3b8; margin-top: 6px; margin-bottom: 0;">
-                    💡 提示：系統會以您下方選取的「開始時間」當天為核心基準，全自動往後每隔 7 天自動敲進 Google 日曆與店務排程。
+                    💡 提示：系統會以您下方選取的「開始時間」當天為核心基準，自動每隔 7 天寫入店務排程。
                 </p>
             </div>
         </div>
@@ -613,7 +180,7 @@
         
         <button class="btn-submit" onclick="submitBookingData()">確認建立預約排程</button>
         
-        <div class="divider"></div>
+        <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 30px 0;"></div>
         
         <h3 style="color: #cbd5e1; font-size: 16px;">🔍 查詢、改期與取消預約</h3>
         <div class="form-group autocomplete-container">
@@ -628,7 +195,7 @@
          頁籤二：財務結帳系統 (多人購物車)
          ========================================================= -->
     <div id="financeTab" class="form-section">
-        <div id="summaryDashboard" class="hidden">
+        <div id="summaryDashboard" class="hidden" style="background: rgba(45, 212, 191, 0.1); border: 1px solid #2dd4bf; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <button class="btn-cancel-action" style="color: #2dd4bf; border-color: #2dd4bf;" onclick="fetchSum()">📊 載入高階營收數據</button>
             <div class="summary-grid hidden" id="sumData">
                 <div class="summary-item">本日<span class="summary-val" id="vD">$0</span></div>
@@ -729,9 +296,13 @@
         💡 提示：請直接對著下方收據<b>「長按螢幕」</b>，即可儲存至手機相簿或分享給會員。<br>
     </p>
     
-    <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+    <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 55vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
     
-    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
+    <button id="btnUniversalShare" style="margin-top: 25px; padding: 15px; background: linear-gradient(to right, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
+        📲 儲存至手機 / 分享給會員
+    </button>
+    
+    <button onclick="closeReceiptModal()" style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
         關閉並返回系統
     </button>
 </div>
@@ -840,7 +411,7 @@
         try {
             const res = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'fetchMembers' }) }).then(x => x.json());
             if (res.status === 'success') memberDatabase = res.data;
-        } catch(e) { console.log("CRM 載入失敗", e); }
+        } catch(e) {}
     }
 
     function changeBookingMode(mode) {
@@ -933,9 +504,10 @@
         } catch(e) { area.innerHTML = '網路連線異常。'; }
     }
 
+    // 🚨 核心防呆：移除了 API 中的自動單號產生，將單號生成權交給前端功能自行決定！
     async function apiCall(action, payload, msg) {
         try {
-            const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: action, ...payload, orderId: 'B' + Date.now() }) });
+            const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: action, ...payload }) });
             const r = await response.json();
             if (r.status === 'success') {
                 if (msg) alert(msg);
@@ -972,12 +544,12 @@
     async function submitBookingData() {
         const dS = v('bkStartDate'), tS = v('bkStartTime');
         const dE = v('bkEndDate'), tE = v('bkEndTime');
-        
         if(!dS || !tS || !dE || !tE) return alert('請完整填寫日期與時間');
 
         const actualRepeatCount = currentBookingMode === 'single' ? 1 : v('bkRepeatCount');
 
         const payload = { 
+            orderId: 'B' + Date.now(), // 🌟 單號由前端產生
             bookingType: currentBookingMode, 
             repeatCount: actualRepeatCount, 
             phone: v('bkPhone'), 
@@ -1000,6 +572,10 @@
             const r = await apiCall('searchBookings', { keyword: k }); el('srchArea').innerHTML = '';
             if (r && r.data.length > 0) {
                 r.data.forEach(i => {
+                    const [sDate, sTime] = (i.startTime || ' ').split(' ');
+                    const [eDate, eTime] = (i.endTime || ' ').split(' ');
+                    
+                    // 🌟 完美升級：改期面板支援「所有欄位」變更！
                     el('srchArea').innerHTML += `
                         <div class="result-card" id="bk-${i.orderId}">
                             <div class="result-info">
@@ -1008,21 +584,49 @@
                                 備註：<span style="color:#94a3b8;">${i.note || '無'}</span>
                             </div>
                             <div class="result-actions">
-                                <button class="btn-small btn-edit" onclick="toggleReschedule('${i.orderId}')">改期</button>
+                                <button class="btn-small btn-edit" onclick="toggleReschedule('${i.orderId}')">改期/變更</button>
                                 <button class="btn-small btn-del" onclick="if(confirm('確定要取消此預約排程嗎？')) apiCall('cancelBooking',{orderId:'${i.orderId}'}).then(()=>el('bk-${i.orderId}').style.display='none')">取消預約</button>
                             </div>
-                            <div class="reschedule-box" id="rBx-${i.orderId}">
+                            <div class="reschedule-box" id="rBx-${i.orderId}" style="display:none; background:rgba(0,0,0,0.2); padding:15px; border-radius:6px; margin-top:15px;">
+                                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                                    <div style="flex:1;"><label style="font-size:12px;">姓名</label><input type="text" id="rn-${i.orderId}" value="${i.name}" style="padding:8px;"></div>
+                                    <div style="flex:1;"><label style="font-size:12px;">手機</label><input type="tel" id="rp-${i.orderId}" value="${i.phone}" style="padding:8px;"></div>
+                                    <div style="flex:1;"><label style="font-size:12px;">人數</label><input type="number" id="rpp-${i.orderId}" value="${i.people}" style="padding:8px;"></div>
+                                </div>
+                                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                                    <div style="flex:2;">
+                                        <label style="font-size:12px;">消費項目</label>
+                                        <select id="rc-${i.orderId}" style="padding:8px; font-size:13px;">
+                                            <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${i.course.includes('無痛')?'selected':''}>無痛滑罐放鬆-30分鐘</option>
+                                            <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${i.course.includes('全方位')?'selected':''}>全方位滑罐放鬆-90分鐘</option>
+                                            <option value="單部位舒緩修復(精準調理)" ${i.course.includes('單部位')?'selected':''}>單部位舒緩修復</option>
+                                            <option value="全身結構養護(平衡調理)" ${i.course.includes('結構') || i.course.includes('平衡')?'selected':''}>全身結構養護</option>
+                                            <option value="全身全方位深度修復-60分鐘" ${i.course.includes('深度')?'selected':''}>全身全方位深度修復-60分鐘</option>
+                                            <option value="專案套票/多堂課程 (純購買)" ${i.course.includes('套票')?'selected':''}>專案套票/多堂課程</option>
+                                            <option value="其他" ${i.course === '其他'?'selected':''}>其他</option>
+                                        </select>
+                                    </div>
+                                    <div style="flex:1;">
+                                        <label style="font-size:12px;">師傅</label>
+                                        <select id="rh-${i.orderId}" style="padding:8px; font-size:13px;">
+                                            <option value="千芳" ${i.hero==='千芳'?'selected':''}>千芳</option>
+                                            <option value="奎元" ${i.hero==='奎元'?'selected':''}>奎元</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 <label style="font-size:12px;">新開始時間</label>
-                                <div style="display:flex; gap:5px; margin-bottom:8px;">
-                                    <input type="date" id="nsD-${i.orderId}" style="flex:1;">
-                                    <input type="time" id="nsT-${i.orderId}" style="flex:1;">
+                                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                                    <input type="date" id="nsD-${i.orderId}" value="${sDate}" style="flex:1; padding:8px;">
+                                    <input type="time" id="nsT-${i.orderId}" value="${sTime}" style="flex:1; padding:8px;">
                                 </div>
                                 <label style="font-size:12px;">新結束時間</label>
-                                <div style="display:flex; gap:5px; margin-bottom:8px;">
-                                    <input type="date" id="neD-${i.orderId}" style="flex:1;">
-                                    <input type="time" id="neT-${i.orderId}" style="flex:1;">
+                                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                                    <input type="date" id="neD-${i.orderId}" value="${eDate}" style="flex:1; padding:8px;">
+                                    <input type="time" id="neT-${i.orderId}" value="${eTime}" style="flex:1; padding:8px;">
                                 </div>
-                                <button class="btn-submit" onclick="submitReschedule('${i.orderId}')">儲存變更</button>
+                                <label style="font-size:12px;">備註</label>
+                                <input type="text" id="rnote-${i.orderId}" value="${i.note}" style="margin-bottom:15px; padding:8px;">
+                                <button class="btn-submit" onclick="submitReschedule('${i.orderId}')">💾 儲存並同步日曆</button>
                             </div>
                         </div>`;
                 });
@@ -1031,11 +635,25 @@
     }
 
     function toggleReschedule(id) { const box = el(`rBx-${id}`); box.style.display = box.style.display === 'block' ? 'none' : 'block'; }
+    
     async function submitReschedule(id) { 
         const dS = v(`nsD-${id}`), tS = v(`nsT-${id}`), dE = v(`neD-${id}`), tE = v(`neT-${id}`);
         if (!dS || !tS || !dE || !tE) return alert('請完整選擇新的時間與日期'); 
-        const r = await apiCall('rescheduleBooking', { orderId: id, newStartTime: `${dS} ${tS}`, newEndTime: `${dE} ${tE}` }); 
-        if (r && r.status === 'success') { alert('改期完成'); searchBks(); } 
+        
+        const payload = {
+            orderId: id, // 送出原本的單號讓後端尋找
+            newName: v(`rn-${id}`),
+            newPhone: v(`rp-${id}`),
+            newPeople: v(`rpp-${id}`),
+            newCourse: v(`rc-${id}`),
+            newHero: v(`rh-${id}`),
+            newStartTime: `${dS} ${tS}`, 
+            newEndTime: `${dE} ${tE}`,
+            newNote: v(`rnote-${id}`)
+        };
+        
+        const r = await apiCall('rescheduleBooking', payload); 
+        if (r && r.status === 'success') { alert('改期與變更已完成！'); searchBks(); } 
     }
 
     async function loadPend() {
@@ -1247,22 +865,17 @@
         if (dataArray && dataArray.length > 0) {
             dataArray.forEach(i => {
                 const displayCourse = i.course.replace(/\(.*?\)/g, '');
-                area.innerHTML += `
-                    <div class="result-card" style="border-left-color:#f59e0b;" id="f-${i.orderId}">
-                        <strong>單號：${i.orderId}</strong> (${i.date})<br>客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>項目：${displayCourse}<br>備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br>
-                        <div class="result-actions" style="margin-top:10px;"><button class="btn-small btn-del" style="background:#f59e0b;" onclick="toggleVoidForm('${i.orderId}')">進行財務項目異動</button></div>
-                        <div id="voidForm-${i.orderId}" class="void-box"><label style="font-size:12px;">常規異動原因</label><select id="voidReason-${i.orderId}" style="margin-bottom:12px; padding:6px; font-size:14px;"><option value="金額調整/退還">金額調整/退還</option><option value="課程項目變更">課程項目變更</option><option value="重複結帳修正">重複結帳修正</option><option value="其他行政異動">其他行政異動</option></select><label style="font-size:12px;">異動備註細節</label><input type="text" id="voidNote-${i.orderId}" placeholder="輸入詳細調整原因 (選填)..." style="margin-bottom:12px; padding:6px; font-size:14px;"><button class="btn-submit" style="background:#f59e0b; color: white;" onclick="submitVoid('${i.rowIndex}', '${i.orderId}')">確認執行財務金額歸零</button></div>
-                    </div>`;
+                area.innerHTML += `<div class="result-card" style="border-left-color:#f59e0b;" id="f-${i.orderId}"><strong>單號：${i.orderId}</strong> (${i.date})<br>客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>項目：${displayCourse}<br>備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br><div class="result-actions" style="margin-top:10px;"><button class="btn-small btn-del" style="background:#f59e0b;" onclick="toggleVoidForm('${i.orderId}')">進行財務項目異動</button></div><div id="voidForm-${i.orderId}" class="void-box"><label style="font-size:12px;">常規異動原因</label><select id="voidReason-${i.orderId}" style="margin-bottom:12px; padding:6px; font-size:14px;"><option value="金額調整/退還">金額調整/退還</option><option value="課程項目變更">課程項目變更</option><option value="重複結帳修正">重複結帳修正</option><option value="其他行政異動">其他行政異動</option></select><label style="font-size:12px;">異動備註細節</label><input type="text" id="voidNote-${i.orderId}" placeholder="輸入詳細調整原因 (選填)..." style="margin-bottom:12px; padding:6px; font-size:14px;"><button class="btn-submit" style="background:#f59e0b; color: white;" onclick="submitVoid('${i.orderId}')">確認執行財務金額歸零</button></div></div>`;
             });
         } else area.innerHTML = '<p style="text-align:center;">查無符合紀錄</p>';
     }
 
     function toggleVoidForm(id) { const box = el(`voidForm-${id}`); box.style.display = box.style.display === 'block' ? 'none' : 'block'; }
     
-    async function submitVoid(rowIndex, orderId) {
+    async function submitVoid(orderId) {
         if (!confirm(`警告：確定要將單號 ${orderId} 進行財務調整歸零嗎？此動作將扣除當日/當月營收累計！`)) return;
         try {
-            const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'voidFinanceRecord', rowIndex: rowIndex, orderId: orderId, reason: v(`voidReason-${orderId}`), note: v(`voidNote-${orderId}`) }) });
+            const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'voidFinanceRecord', orderId: orderId, reason: v(`voidReason-${orderId}`), note: v(`voidNote-${orderId}`) }) });
             const r = await response.json();
             if (r.status === 'success') {
                 alert('該筆款項已成功執行異動歸零！');
