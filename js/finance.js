@@ -1,0 +1,277 @@
+// ==========================================
+// 財務收銀與數位資產引擎
+// ==========================================
+function toggleRem() {
+    const method = v('fPay');
+    if (method === '轉帳/匯款') {
+        el('transferBox').classList.remove('hidden');
+        el('packageBox').classList.add('hidden');
+    } else if (method === '扣堂') {
+        el('transferBox').classList.add('hidden');
+        el('packageBox').classList.remove('hidden');
+    } else {
+        el('transferBox').classList.add('hidden');
+        el('packageBox').classList.add('hidden');
+    }
+}
+
+async function checkPackageAssets() {
+    if(cart.length === 0) return alert('購物車內目前無會員，請先帶入中台清單。');
+    const area = el('packageStatusArea'); area.innerHTML = '連線讀取存摺中...';
+    const names = cart.map(c => c.name);
+    try {
+        const r = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'checkPackageStatus', names: names }) }).then(x => x.json());
+        if(r.status === 'success') {
+            if(r.data.length === 0) {
+                area.innerHTML = '目前資料庫尚無此會員的購買紀錄。<br>💡 結帳將自動為新客開戶建檔。';
+            } else {
+                let html = '';
+                r.data.forEach(m => {
+                    html += `<div style="margin-bottom:12px; padding-bottom:12px; border-bottom: 1px dashed rgba(255,255,255,0.2);"><span style="font-size: 16px; font-weight: bold; color: #ffffff;">${m.name}</span><br>專案：${m.courseName}<br>堂數：已用 <span style="color:#fcd34d; font-weight:bold;">${m.used}</span> 次 / 剩餘 <span style="color:#4ade80; font-weight:bold;">${m.remain}</span> 次<br><span style="color:#94a3b8; font-size:12px;">(前次紀錄: ${m.lastRecord || '無'})</span></div>`;
+                });
+                area.innerHTML = html;
+            }
+        } else { area.innerHTML = '讀取失敗：' + r.message; }
+    } catch(e) { area.innerHTML = '網路連線異常。'; }
+}
+
+async function loadPend() {
+    const btn = el('btnFetchPending'); if (btn) btn.innerText = '讀取中...';
+    try {
+        const r = await apiCall('fetchPendingCheckouts', {}); el('pendArea').innerHTML = '';
+        if (r && r.data.length > 0) {
+            r.data.forEach(i => {
+                const d = document.createElement('div'); d.className = 'pending-item';
+                const displayCourse = (i.course || '未定').replace(/\(.*?\)/g, '');
+                d.innerText = `+ ${i.name} [${i.dateStr}] [${displayCourse}]`;
+                
+                d.onclick = () => {
+                    let matchedCourse = "無痛滑罐放鬆(快速修復)-30分鐘";
+                    let matchedPrice = 600;
+                    const rawC = i.course || '';
+                    
+                    if (rawC.includes('深度')) { matchedCourse = "全身全方位深度修復-60分鐘"; matchedPrice = 2000; }
+                    else if (rawC.includes('全方位')) { matchedCourse = "全方位滑罐放鬆(全身修復)-90分鐘"; matchedPrice = 1600; }
+                    else if (rawC.includes('單部位')) { matchedCourse = "單部位舒緩修復(精準調理)"; matchedPrice = 600; }
+                    else if (rawC.includes('結構') || rawC.includes('平衡')) { matchedCourse = "全身結構養護(平衡調理)"; matchedPrice = 1000; }
+                    else if (rawC.includes('無痛') || rawC.includes('滑罐')) { matchedCourse = "無痛滑罐放鬆(快速修復)-30分鐘"; matchedPrice = 600; }
+                    else if (rawC.includes('套票') || rawC.includes('純購')) { matchedCourse = "專案套票/多堂課程 (純購買)"; matchedPrice = 0; }
+                    else { matchedCourse = "其他"; matchedPrice = 0; }
+
+                    cart.push({
+                        id: 'i' + Date.now() + Math.random().toString(36).substr(2,3),
+                        name: i.name,
+                        phone: i.phone,
+                        course: matchedCourse,
+                        hero: i.hero || '千芳',
+                        price: matchedPrice,
+                        note: ''
+                    });
+                    renderCart();
+                    if(v('fPay') === '扣堂') checkPackageAssets();
+                };
+                el('pendArea').appendChild(d);
+            });
+        } else el('pendArea').innerText = '目前中台沒有待結帳的會員。';
+    } catch(e) { console.error(e); } finally { if (btn) btn.innerText = '📥 載入中台待結帳清單'; }
+}
+
+function renderCart() {
+    el('cBody').innerHTML = ''; let totalSum = 0;
+    window.uc = (id, field, val) => { const item = cart.find(x => x.id === id); if (item) { item[field] = val; if (field === 'course') item.price = prices[val] || 0; renderCart(); } };
+    cart.forEach(i => {
+        totalSum += Number(i.price); const c = i.course;
+        el('cBody').innerHTML += `
+        <div class="cart-item-card">
+            <button class="cart-item-del" onclick="cart=cart.filter(x=>x.id!=='${i.id}');renderCart()">✕</button>
+            <div class="cart-item-row" style="padding-right: 35px;">
+                <div>
+                    <label style="font-size:12px;margin-bottom:2px;">會員姓名</label>
+                    <div class="autocomplete-container">
+                        <input value="${i.name}" onkeyup="uc('${i.id}','name',this.value); showAutocomplete('cartName-${i.id}', 'cartDrop-${i.id}', null)" onfocus="showAutocomplete('cartName-${i.id}', 'cartDrop-${i.id}', null)" id="cartName-${i.id}" style="padding:6px;font-size:14px;" autocomplete="off">
+                        <div id="cartDrop-${i.id}" class="autocomplete-list"></div>
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size:12px;margin-bottom:2px;">調理師傅</label>
+                    <select onchange="uc('${i.id}','hero',this.value)" style="padding:6px;font-size:14px;">
+                        <option value="千芳" ${i.hero === '千芳' ? 'selected' : ''}>千芳</option>
+                        <option value="奎元" ${i.hero === '奎元' ? 'selected' : ''}>奎元</option>
+                    </select>
+                </div>
+            </div>
+            <div class="cart-item-row">
+                <div style="flex:2;">
+                    <label style="font-size:12px;margin-bottom:2px;">消費項目</label>
+                    <select onchange="uc('${i.id}','course',this.value)" style="padding:6px;font-size:14px;">
+                        <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${c.includes('無痛') ? 'selected' : ''}>無痛滑罐放鬆-30分鐘</option>
+                        <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${c.includes('全方位') ? 'selected' : ''}>全方位滑罐放鬆-90分鐘</option>
+                        <option value="單部位舒緩修復(精準調理)" ${c.includes('單部位') ? 'selected' : ''}>單部位舒緩修復</option>
+                        <option value="全身結構養護(平衡調理)" ${c.includes('結構') || c.includes('平衡') ? 'selected' : ''}>全身結構養護</option>
+                        <option value="全身全方位深度修復-60分鐘" ${c.includes('深度') ? 'selected' : ''}>全身全方位深度修復-60分鐘</option>
+                        <option value="專案套票/多堂課程 (純購買)" ${c.includes('套票') ? 'selected' : ''}>專案套票/多堂課程 (純購買)</option>
+                        <option value="其他" ${c === '其他' ? 'selected' : ''}>其他</option>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:12px;margin-bottom:2px;">實收金額</label>
+                    <input type="number" value="${i.price}" onchange="uc('${i.id}','price',this.value)" style="padding:6px;font-size:14px;">
+                </div>
+            </div>
+            <div>
+                <input value="${i.note}" placeholder="調理細節或購課備註 (選填)..." onchange="uc('${i.id}','note',this.value)" style="padding:6px;font-size:13px;background:rgba(0,0,0,0.1);">
+            </div>
+        </div>`;
+    });
+    el('cSum').innerText = '$' + totalSum;
+}
+
+function base64ToBlob(base64, mime) {
+    let byteString = atob(base64.split(',')[1]);
+    let ab = new ArrayBuffer(byteString.length);
+    let ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
+    return new Blob([ab], {type: mime});
+}
+
+// 在畫面載入完畢後綁定按鈕
+window.addEventListener('DOMContentLoaded', () => {
+    el('btnUniversalShare').onclick = async () => {
+        if (!window.currentReceiptBase64) return;
+        const blob = base64ToBlob(window.currentReceiptBase64, 'image/png');
+        const file = new File([blob], window.currentReceiptFileName, { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try { await navigator.share({ files: [file], title: '錦葳健康美學中心_結帳明細', text: '感謝您的蒞臨！附上本次的結帳明細。' }); } 
+            catch (error) { console.log('分享取消或失敗', error); }
+        } else {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = window.currentReceiptFileName; a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    };
+});
+
+async function processCart() {
+    if (cart.length === 0) return alert('結帳核對清單內無資料！');
+    
+    const btn = el('btnCheckout'); btn.innerText = '處理中，請稍候...'; btn.disabled = true;
+    const fid = 'F' + Date.now(); el('rId').innerText = fid;
+    
+    const fd = v('fDate'), ft = v('fTime');
+    let finalCheckoutTime = '';
+    if (fd && ft) { finalCheckoutTime = `${fd} ${ft}`; } 
+    else {
+        const nowObj = new Date(); const tzOffset = nowObj.getTimezoneOffset() * 60000;
+        finalCheckoutTime = (new Date(nowObj - tzOffset)).toISOString().slice(0, 16).replace('T', ' ');
+    }
+    el('rTm').innerText = finalCheckoutTime;
+    
+    const rawPayMethod = v('fPay'); let finalPayMethodStr = rawPayMethod;
+    if (rawPayMethod === '轉帳/匯款') finalPayMethodStr = `轉帳/匯款 (${v('fRecAcc')})`;
+    el('rMth').innerText = finalPayMethodStr; el('rCsh').innerText = v('fCash');
+    
+    const remVal = v('fRem');
+    if (rawPayMethod === '轉帳/匯款' && remVal) { el('rRemRow').style.display = 'flex'; el('rRemNote').innerText = remVal; } 
+    else { el('rRemRow').style.display = 'none'; }
+    
+    const genNote = v('fGenNote'); el('rGenNoteBox').style.display = genNote ? 'block' : 'none';
+    if (genNote) el('rGenNote').innerText = genNote;
+
+    el('rItems').innerHTML = ''; let grandTotal = 0;
+    
+    cart.forEach(i => {
+        grandTotal += Number(i.price);
+        const displayCourse = i.course.replace(/\(.*?\)/g, '');
+        el('rItems').innerHTML += `
+            <tr>
+                <td style="font-weight:bold;">
+                    ${i.name}<br>
+                    <small style="color:#666; font-weight:normal;">${displayCourse} ${i.note ? ' / ' + i.note : ''}</small>
+                </td>
+                <td style="text-align:center;">1</td>
+                <td style="text-align:right;">
+                    $${i.price}<br>
+                    <small style="color:#666;">(${i.hero})</small>
+                </td>
+            </tr>`;
+    });
+    
+    el('rSum').innerText = '$' + grandTotal;
+    
+    html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(async canvas => {
+        const base64Data = canvas.toDataURL('image/png');
+        const combinedNames = cart.map(c => c.name).join('_');
+        const safeFileName = `錦葳健康美學中心_結帳明細_${combinedNames}_${fid}.png`.replace(/[\/\\:*?"<>|]/g, '');
+        
+        window.currentReceiptBase64 = base64Data; window.currentReceiptFileName = safeFileName;
+        
+        const payload = { orderId: fid, paymentMethod: finalPayMethodStr, remittanceNote: remVal, cashier: v('fCash'), startTime: finalCheckoutTime, customerNames: combinedNames, cartItems: cart, generalNote: genNote, receiptImageBase64: base64Data };
+        try {
+            const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'createFinance', ...payload }) });
+            const r = await response.json();
+            btn.innerText = '確認合併結帳並產生電子明細圖'; btn.disabled = false;
+            if (r && r.status === 'success') {
+                el('finalReceiptImage').src = base64Data; el('receiptSaveModal').style.display = 'flex';
+                try { const a = document.createElement('a'); a.href = base64Data; a.download = safeFileName; a.click(); } catch(e) {}
+            } else alert('結帳線上存檔失敗：' + r.message);
+        } catch(e) { btn.innerText = '確認合併結帳並產生電子明細圖'; btn.disabled = false; alert('網路異常，結帳失敗'); }
+    });
+}
+
+function closeReceiptModal() { el('receiptSaveModal').style.display = 'none'; cart = []; renderCart(); el('fGenNote').value = ''; el('fRem').value = ''; el('packageStatusArea').innerHTML = ''; }
+
+async function fetchSum() {
+    el('sumData').classList.remove('hidden'); const r = await apiCall('getSummary', {});
+    if (r && r.status === 'success') { el('vD').innerText = '$' + r.summary.daily; el('vW').innerText = '$' + r.summary.weekly; el('vM').innerText = '$' + r.summary.monthly; }
+}
+
+async function loadRecentFinanceRecords() {
+    el('adjArea').innerHTML = '<p style="text-align:center; color:#94a3b8;">載入近期紀錄中...</p>';
+    try {
+        const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'fetchRecentFinanceRecords' }) });
+        const r = await response.json(); renderFinanceRecords(r.data, 'adjArea');
+    } catch(e) { el('adjArea').innerHTML = '<p style="text-align:center;">載入失敗</p>'; }
+}
+
+async function searchFin() {
+    const k = v('adjKw'); if (!k) return alert('請輸入會員姓名或手機');
+    const btn = el('btnSearchFinance'); btn.innerText = '調閱中...';
+    try {
+        const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'searchFinanceRecords', keyword: k }) });
+        const r = await response.json(); renderFinanceRecords(r.data, 'adjArea');
+    } catch(e) { console.error(e); } finally { btn.innerText = '手動搜尋歷史財務紀錄'; }
+}
+
+function renderFinanceRecords(dataArray, targetElId) {
+    const area = el(targetElId); area.innerHTML = '';
+    if (dataArray && dataArray.length > 0) {
+        dataArray.forEach(i => {
+            const displayCourse = i.course.replace(/\(.*?\)/g, '');
+            area.innerHTML += `
+                <div class="result-card" style="border-left-color:#f59e0b;" id="f-${i.orderId}">
+                    <strong>單號：${i.orderId}</strong> (${i.date})<br>
+                    客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>
+                    項目：${displayCourse}<br>
+                    備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br>
+                    <div class="result-actions" style="margin-top:10px;"><button class="btn-small btn-del" style="background:#f59e0b;" onclick="toggleVoidForm('${i.orderId}')">進行財務項目異動</button></div>
+                    <div id="voidForm-${i.orderId}" class="void-box"><label style="font-size:12px;">常規異動原因</label><select id="voidReason-${i.orderId}" style="margin-bottom:12px; padding:6px; font-size:14px;"><option value="金額調整/退還">金額調整/退還</option><option value="課程項目變更">課程項目變更</option><option value="重複結帳修正">重複結帳修正</option><option value="其他行政異動">其他行政異動</option></select><label style="font-size:12px;">異動備註細節</label><input type="text" id="voidNote-${i.orderId}" placeholder="輸入詳細調整原因 (選填)..." style="margin-bottom:12px; padding:6px; font-size:14px;"><button class="btn-submit" style="background:#f59e0b; color: white;" onclick="submitVoid('${i.rowIndex}', '${i.orderId}')">確認執行財務金額歸零</button></div>
+                </div>`;
+        });
+    } else area.innerHTML = '<p style="text-align:center;">查無符合紀錄</p>';
+}
+
+function toggleVoidForm(id) { const box = el(`voidForm-${id}`); box.style.display = box.style.display === 'block' ? 'none' : 'block'; }
+
+async function submitVoid(rowIndex, orderId) {
+    if (!confirm(`警告：確定要將單號 ${orderId} 進行財務調整歸零嗎？此動作將扣除當日/當月營收累計！`)) return;
+    try {
+        const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'voidFinanceRecord', rowIndex: rowIndex, orderId: orderId, reason: v(`voidReason-${orderId}`), note: v(`voidNote-${orderId}`) }) });
+        const r = await response.json();
+        if (r.status === 'success') {
+            alert('該筆款項已成功執行異動歸零！');
+            const rowEl = el(`f-${orderId}`); rowEl.style.opacity = '0.4';
+            rowEl.innerHTML = '<p style="color:#f59e0b;text-align:center;font-weight:bold;margin-top:10px;">[此項紀錄已完成財務異動歸零]</p>';
+        } else alert('異動失敗：' + r.message);
+    } catch(e) { alert('執行異動時發生網路錯誤'); }
+}
