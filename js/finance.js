@@ -134,20 +134,26 @@ function base64ToBlob(base64, mime) {
     return new Blob([ab], {type: mime});
 }
 
-// 在畫面載入完畢後綁定按鈕
+// 🌟 三重降落傘防阻擋機制：Web Share -> 本地強制下載 -> 提示預設瀏覽器開啟
 window.addEventListener('DOMContentLoaded', () => {
     el('btnUniversalShare').onclick = async () => {
         if (!window.currentReceiptBase64) return;
         const blob = base64ToBlob(window.currentReceiptBase64, 'image/png');
         const file = new File([blob], window.currentReceiptFileName, { type: 'image/png' });
+        
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try { await navigator.share({ files: [file], title: '錦葳健康美學中心_結帳明細', text: '感謝您的蒞臨！附上本次的結帳明細。' }); } 
-            catch (error) { console.log('分享取消或失敗', error); }
+            try { 
+                await navigator.share({ files: [file], title: '錦葳結帳明細', text: '感謝您的蒞臨！' }); 
+            } catch (error) { console.log('分享取消', error); }
         } else {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = window.currentReceiptFileName; a.click();
-            window.URL.revokeObjectURL(url);
+            try {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = window.currentReceiptFileName; a.click();
+                window.URL.revokeObjectURL(url);
+            } catch(e) {
+                alert('您的手機系統目前阻擋了直接下載功能。💡 請點擊右上角的選單，選擇「以預設瀏覽器開啟」後再試一次，或直接長按畫面上的收據圖片即可存檔！');
+            }
         }
     };
 });
@@ -199,6 +205,7 @@ async function processCart() {
     
     el('rSum').innerText = '$' + grandTotal;
     
+    // 將 html2canvas 背景強制設白，避免 PNG 去背圖變黑底
     html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(async canvas => {
         const base64Data = canvas.toDataURL('image/png');
         const combinedNames = cart.map(c => c.name).join('_');
@@ -231,7 +238,7 @@ async function loadRecentFinanceRecords() {
     try {
         const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'fetchRecentFinanceRecords' }) });
         const r = await response.json(); renderFinanceRecords(r.data, 'adjArea');
-    } catch(e) { el('adjArea').innerHTML = '<p style="text-align:center;">載入失敗</p>'; }
+    } catch(e) { el('adjArea').innerHTML = '<p style="text-align:center; color:#fca5a5;">自動載入近期紀錄失敗</p>'; }
 }
 
 async function searchFin() {
@@ -243,19 +250,74 @@ async function searchFin() {
     } catch(e) { console.error(e); } finally { btn.innerText = '手動搜尋歷史財務紀錄'; }
 }
 
+// 🌟 全面升級：紅色的全欄位異動面板
 function renderFinanceRecords(dataArray, targetElId) {
     const area = el(targetElId); area.innerHTML = '';
     if (dataArray && dataArray.length > 0) {
         dataArray.forEach(i => {
-            const displayCourse = i.course.replace(/\(.*?\)/g, '');
+            const c = i.course;
             area.innerHTML += `
-                <div class="result-card" style="border-left-color:#f59e0b;" id="f-${i.orderId}">
+                <div class="result-card" style="border-left-color:#ef4444;" id="f-${i.orderId}">
                     <strong>單號：${i.orderId}</strong> (${i.date})<br>
                     客戶：${i.name} | 金額：<span style="color:#f43f5e;font-weight:bold;">$${i.amount}</span> (${i.method})<br>
-                    項目：${displayCourse}<br>
+                    項目：${c.replace(/\(.*?\)/g, '')}<br>
                     備註：<span style="color:#94a3b8;">${i.note || '無'}</span><br>
-                    <div class="result-actions" style="margin-top:10px;"><button class="btn-small btn-del" style="background:#f59e0b;" onclick="toggleVoidForm('${i.orderId}')">進行財務項目異動</button></div>
-                    <div id="voidForm-${i.orderId}" class="void-box"><label style="font-size:12px;">常規異動原因</label><select id="voidReason-${i.orderId}" style="margin-bottom:12px; padding:6px; font-size:14px;"><option value="金額調整/退還">金額調整/退還</option><option value="課程項目變更">課程項目變更</option><option value="重複結帳修正">重複結帳修正</option><option value="其他行政異動">其他行政異動</option></select><label style="font-size:12px;">異動備註細節</label><input type="text" id="voidNote-${i.orderId}" placeholder="輸入詳細調整原因 (選填)..." style="margin-bottom:12px; padding:6px; font-size:14px;"><button class="btn-submit" style="background:#f59e0b; color: white;" onclick="submitVoid('${i.rowIndex}', '${i.orderId}')">確認執行財務金額歸零</button></div>
+                    
+                    <div class="result-actions" style="margin-top:10px;">
+                        <button class="btn-small btn-del" style="background:#ef4444;" onclick="toggleVoidForm('${i.orderId}')">進行財務項目異動</button>
+                    </div>
+                    
+                    <div id="voidForm-${i.orderId}" class="void-box" style="background:rgba(239, 68, 68, 0.1); padding:15px; border-radius:8px; border-left:4px solid #ef4444; margin-top:10px;">
+                        <p style="color:#fca5a5; font-size:12px; font-weight:bold; margin-top:0;">⚠️ 警告：請確實核對變更事項，此動作將作廢原單並產生一筆 -1 的新單覆蓋營收！</p>
+                        
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div style="flex:1;"><label style="font-size:12px;">日期時間</label><input type="datetime-local" id="fAdjDate-${i.orderId}" value="${i.date.replace(' ', 'T')}" style="padding:6px; font-size:13px;"></div>
+                            <div style="flex:1;"><label style="font-size:12px;">姓名</label><input type="text" id="fAdjName-${i.orderId}" value="${i.name}" style="padding:6px; font-size:13px;"></div>
+                            <div style="flex:1;"><label style="font-size:12px;">手機</label><input type="text" id="fAdjPhone-${i.orderId}" value="${i.phone || ''}" style="padding:6px; font-size:13px;"></div>
+                        </div>
+
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div style="flex:2;">
+                                <label style="font-size:12px;">消費項目</label>
+                                <select id="fAdjCourse-${i.orderId}" style="padding:6px; font-size:13px;">
+                                    <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${c.includes('無痛')?'selected':''}>無痛滑罐放鬆-30分鐘</option>
+                                    <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${c.includes('全方位')?'selected':''}>全方位滑罐放鬆-90分鐘</option>
+                                    <option value="單部位舒緩修復(精準調理)" ${c.includes('單部位')?'selected':''}>單部位舒緩修復</option>
+                                    <option value="全身結構養護(平衡調理)" ${c.includes('結構') || c.includes('平衡')?'selected':''}>全身結構養護</option>
+                                    <option value="全身全方位深度修復-60分鐘" ${c.includes('深度')?'selected':''}>全身全方位深度修復-60分鐘</option>
+                                    <option value="專案套票/多堂課程 (純購買)" ${c.includes('套票')?'selected':''}>專案套票/多堂課程</option>
+                                    <option value="其他" ${c === '其他'?'selected':''}>其他</option>
+                                </select>
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">實收金額</label>
+                                <input type="number" id="fAdjAmt-${i.orderId}" value="${i.amount}" style="padding:6px; font-size:13px;">
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">結帳方式</label>
+                                <select id="fAdjPay-${i.orderId}" style="padding:6px; font-size:13px;">
+                                    <option value="現金" ${i.method.includes('現金')?'selected':''}>現金</option>
+                                    <option value="轉帳/匯款" ${i.method.includes('轉帳')||i.method.includes('匯款')?'selected':''}>轉帳/匯款</option>
+                                    <option value="扣堂" ${i.method.includes('扣堂')?'selected':''}>扣堂</option>
+                                </select>
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">師傅</label>
+                                <select id="fAdjHero-${i.orderId}" style="padding:6px; font-size:13px;">
+                                    <option value="千芳" ${i.hero==='千芳'?'selected':''}>千芳</option>
+                                    <option value="奎元" ${i.hero==='奎元'?'selected':''}>奎元</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <label style="font-size:12px;">新備註</label>
+                        <input type="text" id="fAdjNote-${i.orderId}" value="${i.note}" style="padding:6px; font-size:13px;">
+
+                        <button class="btn-submit" style="background:#ef4444; color: white; margin-top:15px;" onclick="submitFinanceUpdate('${i.orderId}')">確認進行財務變動及檔案紀錄</button>
+                    </div>
                 </div>`;
         });
     } else area.innerHTML = '<p style="text-align:center;">查無符合紀錄</p>';
@@ -263,15 +325,30 @@ function renderFinanceRecords(dataArray, targetElId) {
 
 function toggleVoidForm(id) { const box = el(`voidForm-${id}`); box.style.display = box.style.display === 'block' ? 'none' : 'block'; }
 
-async function submitVoid(rowIndex, orderId) {
-    if (!confirm(`警告：確定要將單號 ${orderId} 進行財務調整歸零嗎？此動作將扣除當日/當月營收累計！`)) return;
+// 🌟 全欄位覆蓋式更新：送出變更請求
+async function submitFinanceUpdate(orderId) {
+    if (!confirm(`警告：確定要變更單號 ${orderId} 嗎？此動作將會作廢原單並產生一筆 -1 的新單！`)) return;
+    
+    const payload = {
+        action: 'updateFinanceRecord',
+        orderId: orderId,
+        newDate: v(`fAdjDate-${orderId}`),
+        newName: v(`fAdjName-${orderId}`),
+        newPhone: v(`fAdjPhone-${orderId}`),
+        newCourse: v(`fAdjCourse-${orderId}`),
+        newAmount: v(`fAdjAmt-${orderId}`),
+        newPayMethod: v(`fAdjPay-${orderId}`),
+        newHero: v(`fAdjHero-${orderId}`),
+        newNote: v(`fAdjNote-${orderId}`)
+    };
+
     try {
-        const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'voidFinanceRecord', rowIndex: rowIndex, orderId: orderId, reason: v(`voidReason-${orderId}`), note: v(`voidNote-${orderId}`) }) });
+        const response = await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
         const r = await response.json();
         if (r.status === 'success') {
-            alert('該筆款項已成功執行異動歸零！');
-            const rowEl = el(`f-${orderId}`); rowEl.style.opacity = '0.4';
-            rowEl.innerHTML = '<p style="color:#f59e0b;text-align:center;font-weight:bold;margin-top:10px;">[此項紀錄已完成財務異動歸零]</p>';
+            alert('該筆財務檔案已成功變更紀錄！');
+            const rowEl = el(`f-${orderId}`); rowEl.style.opacity = '0.5';
+            rowEl.innerHTML = '<p style="color:#ef4444;text-align:center;font-weight:bold;margin-top:10px;">[此項紀錄已完成修改，並產生了新的 -1 單號，請重新搜尋以載入最新資料]</p>';
         } else alert('異動失敗：' + r.message);
     } catch(e) { alert('執行異動時發生網路錯誤'); }
 }
