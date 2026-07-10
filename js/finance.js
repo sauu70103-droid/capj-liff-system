@@ -134,7 +134,6 @@ function base64ToBlob(base64, mime) {
     return new Blob([ab], {type: mime});
 }
 
-// 🌟 三重降落傘防阻擋機制：Web Share -> 本地強制下載 -> 提示預設瀏覽器開啟
 window.addEventListener('DOMContentLoaded', () => {
     el('btnUniversalShare').onclick = async () => {
         if (!window.currentReceiptBase64) return;
@@ -205,7 +204,6 @@ async function processCart() {
     
     el('rSum').innerText = '$' + grandTotal;
     
-    // 將 html2canvas 背景強制設白，避免 PNG 去背圖變黑底
     html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(async canvas => {
         const base64Data = canvas.toDataURL('image/png');
         const combinedNames = cart.map(c => c.name).join('_');
@@ -242,7 +240,7 @@ async function loadRecentFinanceRecords() {
 }
 
 async function searchFin() {
-    const k = v('adjKw'); if (!k) return alert('請輸入會員姓名或手機');
+    const k = v('adjKw'); if (!k) return alert('請輸入會員姓名或手機查詢');
     const btn = el('btnSearchFinance'); btn.innerText = '調閱中...';
     try {
         const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'searchFinanceRecords', keyword: k }) });
@@ -250,7 +248,6 @@ async function searchFin() {
     } catch(e) { console.error(e); } finally { btn.innerText = '手動搜尋歷史財務紀錄'; }
 }
 
-// 🌟 全面升級：紅色的全欄位異動面板
 function renderFinanceRecords(dataArray, targetElId) {
     const area = el(targetElId); area.innerHTML = '';
     if (dataArray && dataArray.length > 0) {
@@ -320,12 +317,11 @@ function renderFinanceRecords(dataArray, targetElId) {
                     </div>
                 </div>`;
         });
-    } else area.innerHTML = '<p style="text-align:center;">查無符合紀錄</p>';
+    } else area.innerHTML = '<p style="text-align:center;color:#fca5a5;">查無符合的財務紀錄</p>';
 }
 
 function toggleVoidForm(id) { const box = el(`voidForm-${id}`); box.style.display = box.style.display === 'block' ? 'none' : 'block'; }
 
-// 🌟 全欄位覆蓋式更新：送出變更請求
 async function submitFinanceUpdate(orderId) {
     if (!confirm(`警告：確定要變更單號 ${orderId} 嗎？此動作將會作廢原單並產生一筆 -1 的新單！`)) return;
     
