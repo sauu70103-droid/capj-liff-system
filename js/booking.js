@@ -33,7 +33,16 @@ function autoCalcEndTime() {
     const [outDate, outTime] = localISOTime.split('T');
     
     el('bkEndDate').value = outDate;
-    el('bkEndTime').value = outTime;
+    
+    const targetSelect = el('bkEndTime');
+    if(targetSelect) {
+        let hasOption = Array.from(targetSelect.options).some(opt => opt.value === outTime);
+        if(!hasOption) {
+            targetSelect.innerHTML = getTimeOptionsHTML(outTime);
+        } else {
+            targetSelect.value = outTime;
+        }
+    }
 }
 
 async function submitBookingData() {
@@ -111,12 +120,12 @@ async function searchBks() {
                             <label style="font-size:12px;">新開始時間</label>
                             <div style="display:flex; gap:5px; margin-bottom:10px;">
                                 <input type="date" id="nsD-${i.orderId}" value="${sDate}" style="flex:1; padding:8px;">
-                                <input type="time" id="nsT-${i.orderId}" value="${sTime}" style="flex:1; padding:8px;">
+                                <select id="nsT-${i.orderId}" style="flex:1; padding:8px;">${getTimeOptionsHTML(sTime)}</select>
                             </div>
                             <label style="font-size:12px;">新結束時間</label>
                             <div style="display:flex; gap:5px; margin-bottom:10px;">
                                 <input type="date" id="neD-${i.orderId}" value="${eDate}" style="flex:1; padding:8px;">
-                                <input type="time" id="neT-${i.orderId}" value="${eTime}" style="flex:1; padding:8px;">
+                                <select id="neT-${i.orderId}" style="flex:1; padding:8px;">${getTimeOptionsHTML(eTime)}</select>
                             </div>
                             <label style="font-size:12px;">備註</label>
                             <input type="text" id="rnote-${i.orderId}" value="${i.note}" style="margin-bottom:15px; padding:8px;">
@@ -134,6 +143,11 @@ async function submitReschedule(id) {
     const dS = v(`nsD-${id}`), tS = v(`nsT-${id}`), dE = v(`neD-${id}`), tE = v(`neT-${id}`);
     if (!dS || !tS || !dE || !tE) return alert('請完整選擇新的時間與日期'); 
     
+    // 禁用按鈕防連點
+    const submitBtn = el(`rBx-${id}`).querySelector('.btn-submit');
+    submitBtn.innerText = '🔄 系統變更中...';
+    submitBtn.disabled = true;
+
     const payload = {
         orderId: id, 
         newName: v(`rn-${id}`),
@@ -147,5 +161,11 @@ async function submitReschedule(id) {
     };
     
     const r = await apiCall('rescheduleBooking', payload); 
-    if (r && r.status === 'success') { alert('改期與變更已完成！'); searchBks(); } 
+    if (r && r.status === 'success') { 
+        alert('改期與變更已完成，新紀錄已產生！'); 
+        searchBks(); // 變更成功後自動重新搜尋，刷新畫面
+    } else {
+        submitBtn.innerText = '💾 儲存並同步日曆';
+        submitBtn.disabled = false;
+    }
 }
