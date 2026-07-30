@@ -1,5 +1,6 @@
 // ==========================================
 // 店務預約控制引擎
+// 核心：四步改期軌跡留存、防空白裝甲
 // ==========================================
 function changeBookingMode(mode) {
     currentBookingMode = mode;
@@ -73,16 +74,21 @@ async function searchBks() {
     const k = v('srchKw'); if (!k) return alert('請輸入會員姓名或手機號碼查詢');
     const btn = el('btnSearch'); btn.innerText = '搜尋中...';
     try {
-        const r = await apiCall('searchBookings', { keyword: k }); el('srchArea').innerHTML = '';
-        if (r && r.data.length > 0) {
+        const r = await apiCall('searchBookings', { keyword: k }); 
+        el('srchArea').innerHTML = ''; // 查詢前先清空
+        
+        if (r && r.data && r.data.length > 0) {
+            let htmlStr = '';
             r.data.forEach(i => {
+                const courseStr = i.course || '未註明項目';
+                const displayCourse = courseStr.replace(/\(.*?\)/g, '');
                 const [sDate, sTime] = (i.startTime || ' ').split(' ');
                 const [eDate, eTime] = (i.endTime || ' ').split(' ');
                 
-                el('srchArea').innerHTML += `
+                htmlStr += `
                     <div class="result-card" id="bk-${i.orderId}">
                         <div class="result-info">
-                            <strong>${i.name}</strong> - ${i.course.replace(/\(.*?\)/g, '')}<br>
+                            <strong>${i.name}</strong> - ${displayCourse}<br>
                             時間：${i.startTime} | 師傅：${i.hero}<br>
                             備註：<span style="color:#94a3b8;">${i.note || '無'}</span>
                         </div>
@@ -100,13 +106,13 @@ async function searchBks() {
                                 <div style="flex:2;">
                                     <label style="font-size:12px;">消費項目</label>
                                     <select id="rc-${i.orderId}" style="padding:8px; font-size:13px;">
-                                        <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${i.course.includes('無痛')?'selected':''}>無痛滑罐放鬆-30分鐘</option>
-                                        <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${i.course.includes('全方位')?'selected':''}>全方位滑罐放鬆-90分鐘</option>
-                                        <option value="單部位舒緩修復(精準調理)" ${i.course.includes('單部位')?'selected':''}>單部位舒緩修復</option>
-                                        <option value="全身結構養護(平衡調理)" ${i.course.includes('結構') || i.course.includes('平衡')?'selected':''}>全身結構養護</option>
-                                        <option value="全身全方位深度修復-60分鐘" ${i.course.includes('深度')?'selected':''}>全身全方位深度修復-60分鐘</option>
-                                        <option value="專案套票/多堂課程 (純購買)" ${i.course.includes('套票')?'selected':''}>專案套票/多堂課程</option>
-                                        <option value="其他" ${i.course === '其他'?'selected':''}>其他</option>
+                                        <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${courseStr.includes('無痛')?'selected':''}>無痛滑罐放鬆-30分鐘</option>
+                                        <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${courseStr.includes('全方位')?'selected':''}>全方位滑罐放鬆-90分鐘</option>
+                                        <option value="單部位舒緩修復(精準調理)" ${courseStr.includes('單部位')?'selected':''}>單部位舒緩修復</option>
+                                        <option value="全身結構養護(平衡調理)" ${courseStr.includes('結構') || courseStr.includes('平衡')?'selected':''}>全身結構養護</option>
+                                        <option value="全身全方位深度修復-60分鐘" ${courseStr.includes('深度')?'selected':''}>全身全方位深度修復-60分鐘</option>
+                                        <option value="專案套票/多堂課程 (純購買)" ${courseStr.includes('套票')?'selected':''}>專案套票/多堂課程</option>
+                                        <option value="其他" ${courseStr === '其他'?'selected':''}>其他</option>
                                     </select>
                                 </div>
                                 <div style="flex:1;">
@@ -133,8 +139,16 @@ async function searchBks() {
                         </div>
                     </div>`;
             });
-        } else el('srchArea').innerHTML = '<p style="text-align:center;color:#fca5a5;">查無目前生效的預約紀錄</p>';
-    } catch(e) { console.error(e); } finally { btn.innerText = '搜尋預約紀錄'; }
+            el('srchArea').innerHTML = htmlStr;
+        } else {
+            el('srchArea').innerHTML = '<p style="text-align:center;color:#fca5a5;">查無目前生效的預約紀錄</p>';
+        }
+    } catch(e) { 
+        console.error(e); 
+        el('srchArea').innerHTML = '<p style="text-align:center;color:#fca5a5;">系統防呆過濾中發生異常，請重新整理頁面再試</p>';
+    } finally { 
+        btn.innerText = '搜尋預約紀錄'; 
+    }
 }
 
 function toggleReschedule(id) { const box = el(`rBx-${id}`); box.style.display = box.style.display === 'block' ? 'none' : 'block'; }
@@ -143,9 +157,8 @@ async function submitReschedule(id) {
     const dS = v(`nsD-${id}`), tS = v(`nsT-${id}`), dE = v(`neD-${id}`), tE = v(`neT-${id}`);
     if (!dS || !tS || !dE || !tE) return alert('請完整選擇新的時間與日期'); 
     
-    // 禁用按鈕防連點
     const submitBtn = el(`rBx-${id}`).querySelector('.btn-submit');
-    submitBtn.innerText = '🔄 系統變更中...';
+    submitBtn.innerText = '🔄 系統改期中，請稍候...';
     submitBtn.disabled = true;
 
     const payload = {
@@ -162,8 +175,8 @@ async function submitReschedule(id) {
     
     const r = await apiCall('rescheduleBooking', payload); 
     if (r && r.status === 'success') { 
-        alert('改期與變更已完成，新紀錄已產生！'); 
-        searchBks(); // 變更成功後自動重新搜尋，刷新畫面
+        alert('✅ 改期與變更已完成！'); 
+        searchBks(); // 成功後直接刷新搜尋清單
     } else {
         submitBtn.innerText = '💾 儲存並同步日曆';
         submitBtn.disabled = false;
