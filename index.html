@@ -24,6 +24,7 @@
         <button class="tab-btn hidden" id="btnTabAdjust" onclick="switchTab('adjustTab', this)">財務異動</button>
     </div>
 
+    <!-- 頁籤一：店務預約系統 -->
     <div id="bookingTab" class="form-section active">
         
         <div class="form-group">
@@ -87,10 +88,10 @@
         </button>
 
         <div class="form-group">
-            <label>開始時間 (日期 / 時間)</label>
+            <label>開始時間 (日期 / 24小時制時間)</label>
             <div style="display: flex; gap: 10px;">
                 <input type="date" id="bkStartDate" style="flex: 1;" onchange="autoCalcEndTime()">
-                <input type="time" id="bkStartTime" style="flex: 1;" onchange="autoCalcEndTime()">
+                <select id="bkStartTime" style="flex: 1;" onchange="autoCalcEndTime()"></select>
             </div>
         </div>
         
@@ -98,7 +99,7 @@
             <label>結束時間 (可手動微調)</label>
             <div style="display: flex; gap: 10px;">
                 <input type="date" id="bkEndDate" style="flex: 1;">
-                <input type="time" id="bkEndTime" style="flex: 1;">
+                <select id="bkEndTime" style="flex: 1;"></select>
             </div>
         </div>
 
@@ -120,6 +121,7 @@
         <div id="srchArea"></div>
     </div>
 
+    <!-- 頁籤二：財務結帳系統 -->
     <div id="financeTab" class="form-section">
         <div id="summaryDashboard" class="hidden" style="background: rgba(45, 212, 191, 0.1); border: 1px solid #2dd4bf; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <button class="btn-cancel-action" style="color: #2dd4bf; border-color: #2dd4bf;" onclick="fetchSum()">📊 載入高階營收數據</button>
@@ -179,7 +181,7 @@
             <label>結帳時間 🕒 (預設為現在，補帳可手動修改)</label>
             <div style="display: flex; gap: 10px;">
                 <input type="date" id="fDate" style="flex: 1;">
-                <input type="time" id="fTime" style="flex: 1;">
+                <select id="fTime" style="flex: 1;"></select>
             </div>
         </div>
         
@@ -196,6 +198,7 @@
         <button id="btnCheckout" class="btn-submit" style="background: linear-gradient(to right, #10b981, #059669);" onclick="processCart()">確認合併結帳並產生電子明細圖</button>
     </div>
 
+    <!-- 頁籤三：財務異動系統 -->
     <div id="adjustTab" class="form-section">
         <h3 style="color: #fca5a5;">⚠️ 財務帳務異動調整</h3>
         <p style="font-size: 14px; color: #94a3b8;">預設顯示近 48 小時入帳明細，若需調閱更早資料請手動搜尋。</p>
@@ -210,27 +213,25 @@
     </div>
 </div>
 
+<!-- 收據儲存 Modal -->
 <div id="receiptSaveModal">
     <h3 style="color: #4ade80; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
     <p style="color: #cbd5e1; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
-        💡 提示：請點擊下方按鈕，將明細儲存至設備或直接分享給會員。<br>
-        <span style="color: #fca5a5;">(若按鈕無效請直接長按圖片儲存)</span>
+        💡 提示：請直接對著下方收據<b>「長按螢幕」</b>，即可儲存至手機相簿或分享給會員。<br>
     </p>
     
     <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
     
-    <button id="btnUniversalShare" style="margin-top: 25px; padding: 15px; background: linear-gradient(to right, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
-        📲 儲存至手機 / 分享給會員
-    </button>
-    
-    <button onclick="closeReceiptModal()" style="margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
+    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
         關閉並返回系統
     </button>
 </div>
 
+<!-- 實體收據圖渲染區 -->
 <div id="receiptCaptureArea">
     <div class="receipt-header">
-        <img src="./logo.jpg" crossorigin="anonymous" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
+        <!-- 🌟 乾淨讀取 JPG，跨域安全屬性確保截圖成功 -->
+        <img id="receiptLogoImg" src="./logo.jpg" crossorigin="anonymous" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
         <h3 class="receipt-title">錦葳健康美學中心 🌿</h3>
         <p class="receipt-subtitle">專業調理 · 結構修復 · 美學中心</p>
     </div>
@@ -275,6 +276,7 @@
     </div>
 </div>
 
+<!-- 🚨 嚴格依照順序掛載我們切割好的 JS 模組 -->
 <script src="./js/config.js"></script>
 <script src="./js/app.js"></script>
 <script src="./js/booking.js"></script>
