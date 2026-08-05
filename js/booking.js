@@ -1,16 +1,15 @@
 // ==========================================
 // 店務預約系統模組 (booking.js)
+// 核心更新：修復後端 replace 變數未定義當機問題
 // ==========================================
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 🌟 1. 初始化時間下拉選單 (解決卡住空白的問題)
+    // 初始化時間下拉選單
     if(el('bkStartTime')) el('bkStartTime').innerHTML = getTimeOptionsHTML();
     if(el('bkEndTime')) el('bkEndTime').innerHTML = getTimeOptionsHTML();
-    
-    // 順便確保財務頁面的時間選單也有載入
     if(el('fTime')) el('fTime').innerHTML = getTimeOptionsHTML();
 
-    // 🌟 2. 設定預設日期為「今天」
+    // 設定預設日期為「今天」
     const today = new Date();
     const tzOffset = today.getTimezoneOffset() * 60000;
     const localToday = (new Date(today - tzOffset)).toISOString().split('T')[0];
@@ -20,48 +19,38 @@ window.addEventListener('DOMContentLoaded', () => {
     if(el('fDate')) el('fDate').value = localToday;
 });
 
-// 🌟 核心升級：自動推算結束時間 (支援智慧讀取課程分鐘數)
+// 自動推算結束時間 (支援智慧讀取課程分鐘數)
 window.autoCalcEndTime = () => {
     const startDate = el('bkStartDate').value;
     const startTime = el('bkStartTime').value;
     
-    // 如果還沒選好開始時間，就不動作
     if (!startDate || !startTime) return;
 
-    // 取得目前選擇的消費項目
     const course = el('bkCourse').value || "";
-    
-    // 預設加 60 分鐘 (1小時)
     let addMinutes = 60;
     
-    // 智慧判斷：讀取最新菜單的字眼來決定自動推算的時間長度
     if(course.includes("10分鐘")) addMinutes = 10;
     else if(course.includes("15分鐘")) addMinutes = 15;
     else if(course.includes("30分鐘")) addMinutes = 30;
     else if(course.includes("60分鐘") || course.includes("單部位舒緩")) addMinutes = 60;
     else if(course.includes("90分鐘")) addMinutes = 90;
-    else if(course.includes("套票") || course.includes("純購")) addMinutes = 15; // 純購買抓個15分鐘緩衝
+    else if(course.includes("套票") || course.includes("純購")) addMinutes = 15;
 
-    // 解析開始日期與時間
     const [y, mo, d] = startDate.split('-');
     const [h, m] = startTime.split(':');
 
-    // 建立時間物件並加上推算的分鐘數 (原生支援跨日計算)
     let endObj = new Date(y, mo - 1, d, h, m);
     endObj.setMinutes(endObj.getMinutes() + addMinutes);
 
-    // 轉回 YYYY-MM-DD 格式
     const endY = endObj.getFullYear();
     const endMo = String(endObj.getMonth() + 1).padStart(2, '0');
     const endD = String(endObj.getDate()).padStart(2, '0');
     el('bkEndDate').value = `${endY}-${endMo}-${endD}`;
 
-    // 轉回 HH:mm 格式
     const endH = String(endObj.getHours()).padStart(2, '0');
     const endM = String(endObj.getMinutes()).padStart(2, '0');
     const finalEndTime = `${endH}:${endM}`;
 
-    // 更新結束時間下拉選單，並自動選中推算出來的時間
     el('bkEndTime').innerHTML = getTimeOptionsHTML(finalEndTime);
 };
 
@@ -98,6 +87,7 @@ window.submitBookingData = async () => {
     const startDateTime = `${startDate} ${startTime}`;
     const endDateTime = `${endDate} ${endTime}`;
 
+    // 🌟 核心修復區：雙重資料結構打包，絕對相容後端
     const payload = {
         mode: currentBookingMode,
         name: name,
@@ -105,9 +95,19 @@ window.submitBookingData = async () => {
         people: v('bkPeople'),
         course: v('bkCourse'),
         hero: v('bkHero'),
+        
+        // 新版合併時間格式
         startDateTime: startDateTime,
         endDateTime: endDateTime,
-        note: v('bkNote'),
+        
+        // 舊版分離時間格式 (防止後端 replace 抓不到變數而當機)
+        date: startDate,
+        time: startTime,
+        endDate: endDate,
+        endTime: endTime,
+        
+        // 確保 note 如果沒填也有空字串，防止 replace 當機
+        note: v('bkNote') || '', 
         repeatCount: v('bkRepeatCount') || 4
     };
 
@@ -219,11 +219,16 @@ window.submitBookingUpdate = async (id, eventId) => {
 
     if(!confirm('確定要修改此筆預約嗎？系統將進行舊單註記並重新建立新排程。')) return;
 
+    // 🌟 修改排程區：同樣採用雙重相容包裝
     const payload = {
         id: id,
         eventId: eventId,
         newStart: `${sD} ${sT}`,
         newEnd: `${eD} ${eT}`,
+        newDate: sD,
+        newTime: sT,
+        newEndDate: eD,
+        newEndTime: eT,
         newCourse: v(`ebCourse-${id}`)
     };
 
