@@ -1,15 +1,13 @@
 // ==========================================
 // 店務預約系統模組 (booking.js)
-// 終極修復：強制相容舊版 GAS 後端，避免 replace 當機
+// 終極版：乾淨資料流，與 GAS 後端完美對接
 // ==========================================
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 初始化時間下拉選單
     if(el('bkStartTime')) el('bkStartTime').innerHTML = getTimeOptionsHTML();
     if(el('bkEndTime')) el('bkEndTime').innerHTML = getTimeOptionsHTML();
     if(el('fTime')) el('fTime').innerHTML = getTimeOptionsHTML();
 
-    // 設定預設日期為「今天」
     const today = new Date();
     const tzOffset = today.getTimezoneOffset() * 60000;
     const localToday = (new Date(today - tzOffset)).toISOString().split('T')[0];
@@ -19,7 +17,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if(el('fDate')) el('fDate').value = localToday;
 });
 
-// 自動推算結束時間 (支援智慧讀取課程分鐘數)
 window.autoCalcEndTime = () => {
     const startDate = el('bkStartDate').value;
     const startTime = el('bkStartTime').value;
@@ -54,7 +51,6 @@ window.autoCalcEndTime = () => {
     el('bkEndTime').innerHTML = getTimeOptionsHTML(finalEndTime);
 };
 
-// 切換預約模式 (單次/多次)
 window.changeBookingMode = (mode) => {
     currentBookingMode = mode;
     if (mode === 'multiple') {
@@ -68,7 +64,6 @@ window.changeBookingMode = (mode) => {
     }
 };
 
-// 送出建立預約排程
 window.submitBookingData = async () => {
     const rawName = v('bkName');
     const rawPhone = v('bkPhone');
@@ -84,28 +79,17 @@ window.submitBookingData = async () => {
     btn.innerText = '預約排程寫入中...';
     btn.disabled = true;
 
-    // 🌟 核心修復區：暴力相容舊模式
-    // 把後端「所有可能」在找的變數名稱，一次全部塞進去，並強制轉為字串以防 replace 當機！
+    // 🌟 最純淨的新版資料結構
     const payload = {
-        // --- 舊模式核心參數 (完全模擬以前的資料結構) ---
-        date: String(rawStartDate),      // 舊後端最愛用這個來 replace('-','/')
-        time: String(rawStartTime),
-        name: String(rawName),
-        phone: String(rawPhone),
-        course: String(v('bkCourse') || '其他'),
-        hero: String(v('bkHero') || '奎元'),
-        people: String(v('bkPeople') || '1'),
-        note: String(v('bkNote') || ''),
-
-        // --- 新模式擴充參數 (保留給未來後端升級用) ---
-        startDate: String(rawStartDate),
-        startTime: String(rawStartTime),
-        endDate: String(rawEndDate),
-        endTime: String(rawEndTime),
-        startDateTime: `${rawStartDate} ${rawStartTime}`,
+        name: rawName,
+        phone: rawPhone,
+        people: v('bkPeople') || '1',
+        course: v('bkCourse') || '其他',
+        hero: v('bkHero') || '奎元',
+        startDateTime: `${rawStartDate} ${rawStartTime}`, 
         endDateTime: `${rawEndDate} ${rawEndTime}`,
-        
-        mode: String(currentBookingMode),
+        note: v('bkNote') || '',
+        mode: currentBookingMode,
         repeatCount: Number(v('bkRepeatCount') || 4)
     };
 
@@ -115,35 +99,21 @@ window.submitBookingData = async () => {
     btn.disabled = false;
 };
 
-// 搜尋預約紀錄
 window.searchBks = async () => {
     const kw = v('srchKw');
     if(!kw) return alert('請輸入搜尋關鍵字！');
-    
-    const btn = el('btnSearch');
-    btn.innerText = '調閱中...';
-
+    const btn = el('btnSearch'); btn.innerText = '調閱中...';
     try {
         const r = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'searchBookings', keyword: kw }) }).then(x=>x.json());
-        if(r.status === 'success') {
-            renderBks(r.data);
-        } else {
-            el('srchArea').innerHTML = '搜尋失敗：' + r.message;
-        }
-    } catch(e) {
-        el('srchArea').innerHTML = '網路連線異常，請稍後再試。';
-    }
+        if(r.status === 'success') renderBks(r.data);
+        else el('srchArea').innerHTML = '搜尋失敗：' + r.message;
+    } catch(e) { el('srchArea').innerHTML = '網路連線異常，請稍後再試。'; }
     btn.innerText = '搜尋預約紀錄';
 };
 
-// 渲染預約紀錄卡片
 window.renderBks = (data) => {
-    const area = el('srchArea');
-    area.innerHTML = '';
-    if(!data || data.length === 0) {
-        area.innerHTML = '<p style="text-align:center;">查無符合的預約紀錄。</p>';
-        return;
-    }
+    const area = el('srchArea'); area.innerHTML = '';
+    if(!data || data.length === 0) return area.innerHTML = '<p style="text-align:center;">查無符合的預約紀錄。</p>';
 
     data.forEach(i => {
         let sD = '', sT = '', eD = '', eT = '';
@@ -208,27 +178,17 @@ window.cancelBooking = async (id, eventId) => {
 };
 
 window.submitBookingUpdate = async (id, eventId) => {
-    const sD = v(`ebSDate-${id}`);
-    const sT = v(`ebSTime-${id}`);
-    const eD = v(`ebEDate-${id}`);
-    const eT = v(`ebETime-${id}`);
-
+    const sD = v(`ebSDate-${id}`); const sT = v(`ebSTime-${id}`);
+    const eD = v(`ebEDate-${id}`); const eT = v(`ebETime-${id}`);
     if(!sD || !sT || !eD || !eT) return alert('日期與時間必須完整填寫！');
-
     if(!confirm('確定要修改此筆預約嗎？系統將進行舊單註記並重新建立新排程。')) return;
 
-    // 修改排程一樣採用暴力相容舊模式
+    // 🌟 更新預約也是最純淨的資料
     const payload = {
         id: String(id),
         eventId: String(eventId),
-        date: String(sD),
-        time: String(sT),
         newStart: `${sD} ${sT}`,
         newEnd: `${eD} ${eT}`,
-        newDate: String(sD),
-        newTime: String(sT),
-        newEndDate: String(eD),
-        newEndTime: String(eT),
         newCourse: String(v(`ebCourse-${id}`) || '其他')
     };
 
