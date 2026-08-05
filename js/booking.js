@@ -1,6 +1,6 @@
 // ==========================================
 // 店務預約系統模組 (booking.js)
-// 核心更新：修復後端 replace 變數未定義當機問題
+// 終極修復：強制相容舊版 GAS 後端，避免 replace 當機
 // ==========================================
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -70,45 +70,43 @@ window.changeBookingMode = (mode) => {
 
 // 送出建立預約排程
 window.submitBookingData = async () => {
-    const name = v('bkName');
-    const phone = v('bkPhone');
-    const startDate = v('bkStartDate');
-    const startTime = v('bkStartTime');
-    const endDate = v('bkEndDate');
-    const endTime = v('bkEndTime');
+    const rawName = v('bkName');
+    const rawPhone = v('bkPhone');
+    const rawStartDate = v('bkStartDate');
+    const rawStartTime = v('bkStartTime');
+    const rawEndDate = v('bkEndDate');
+    const rawEndTime = v('bkEndTime');
 
-    if (!name || !phone) return alert('請填寫會員姓名與手機！');
-    if (!startDate || !startTime || !endDate || !endTime) return alert('請完整選擇開始與結束的日期時間！');
+    if (!rawName || !rawPhone) return alert('請填寫會員姓名與手機！');
+    if (!rawStartDate || !rawStartTime || !rawEndDate || !rawEndTime) return alert('請完整選擇開始與結束的日期時間！');
 
     const btn = document.querySelector('#bookingTab .btn-submit');
     btn.innerText = '預約排程寫入中...';
     btn.disabled = true;
 
-    const startDateTime = `${startDate} ${startTime}`;
-    const endDateTime = `${endDate} ${endTime}`;
-
-    // 🌟 核心修復區：雙重資料結構打包，絕對相容後端
+    // 🌟 核心修復區：暴力相容舊模式
+    // 把後端「所有可能」在找的變數名稱，一次全部塞進去，並強制轉為字串以防 replace 當機！
     const payload = {
-        mode: currentBookingMode,
-        name: name,
-        phone: phone,
-        people: v('bkPeople'),
-        course: v('bkCourse'),
-        hero: v('bkHero'),
+        // --- 舊模式核心參數 (完全模擬以前的資料結構) ---
+        date: String(rawStartDate),      // 舊後端最愛用這個來 replace('-','/')
+        time: String(rawStartTime),
+        name: String(rawName),
+        phone: String(rawPhone),
+        course: String(v('bkCourse') || '其他'),
+        hero: String(v('bkHero') || '奎元'),
+        people: String(v('bkPeople') || '1'),
+        note: String(v('bkNote') || ''),
+
+        // --- 新模式擴充參數 (保留給未來後端升級用) ---
+        startDate: String(rawStartDate),
+        startTime: String(rawStartTime),
+        endDate: String(rawEndDate),
+        endTime: String(rawEndTime),
+        startDateTime: `${rawStartDate} ${rawStartTime}`,
+        endDateTime: `${rawEndDate} ${rawEndTime}`,
         
-        // 新版合併時間格式
-        startDateTime: startDateTime,
-        endDateTime: endDateTime,
-        
-        // 舊版分離時間格式 (防止後端 replace 抓不到變數而當機)
-        date: startDate,
-        time: startTime,
-        endDate: endDate,
-        endTime: endTime,
-        
-        // 確保 note 如果沒填也有空字串，防止 replace 當機
-        note: v('bkNote') || '', 
-        repeatCount: v('bkRepeatCount') || 4
+        mode: String(currentBookingMode),
+        repeatCount: Number(v('bkRepeatCount') || 4)
     };
 
     await apiCall('createBooking', payload, '預約成功寫入行事曆與資料庫！');
@@ -219,17 +217,19 @@ window.submitBookingUpdate = async (id, eventId) => {
 
     if(!confirm('確定要修改此筆預約嗎？系統將進行舊單註記並重新建立新排程。')) return;
 
-    // 🌟 修改排程區：同樣採用雙重相容包裝
+    // 修改排程一樣採用暴力相容舊模式
     const payload = {
-        id: id,
-        eventId: eventId,
+        id: String(id),
+        eventId: String(eventId),
+        date: String(sD),
+        time: String(sT),
         newStart: `${sD} ${sT}`,
         newEnd: `${eD} ${eT}`,
-        newDate: sD,
-        newTime: sT,
-        newEndDate: eD,
-        newEndTime: eT,
-        newCourse: v(`ebCourse-${id}`)
+        newDate: String(sD),
+        newTime: String(sT),
+        newEndDate: String(eD),
+        newEndTime: String(eT),
+        newCourse: String(v(`ebCourse-${id}`) || '其他')
     };
 
     await apiCall('updateBooking', payload, '預約排程已成功修改與更新！');
