@@ -53,6 +53,7 @@ window.autoCalcEndTime = () => {
     el('bkEndTime').innerHTML = getTimeOptionsHTML(`${endH}:${endM}`);
 };
 
+// 🌟 升級版：單一卡片渲染多個時段選項，並加入橘紅取消按鈕
 window.loadOnlineRequests = async () => {
     const btn = el('btnLoadRequests');
     const area = el('onlineRequestsArea');
@@ -63,26 +64,61 @@ window.loadOnlineRequests = async () => {
         area.innerHTML = '';
         if (r.status === 'success' && r.data.length > 0) {
             r.data.forEach(i => {
+                // 將多個時間選項組合成多個按鈕
+                let timeButtonsHtml = '';
+                i.times.forEach((t, idx) => {
+                    if(t.date && t.time) {
+                        timeButtonsHtml += `
+                        <button type="button" class="btn-submit" style="padding:10px; font-size:14px; margin-top:8px; background:var(--primary); color:white; border-radius:6px; display:block; width:100%; text-align:left;" 
+                            onclick="approveRequest('${i.id}', '${i.name}', '${i.phone}', '${i.course}', '${t.date}', '${t.time}')">
+                            ✅ 帶入方案 ${idx + 1}：${t.date} ${t.time}
+                        </button>`;
+                    }
+                });
+
                 area.innerHTML += `
-                <div class="result-card" style="border-left-color:var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                <div class="result-card" style="border-left-color:var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                     <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
-                    希望日期：<span style="color:var(--primary); font-weight:bold;">${i.date} ${i.time}</span><br>
-                    項目：${i.course}<br>
-                    <button class="btn-submit" style="padding:10px; font-size:14px; margin-top:12px;" onclick="approveRequest('${i.id}', '${i.name}', '${i.phone}', '${i.course}', '${i.date}', '${i.time}')">帶入資料並安排排程</button>
+                    項目：<span style="color:var(--text-main); font-weight:bold;">${i.course}</span><br>
+                    <div style="margin-top:8px; margin-bottom: 12px;">
+                        ${timeButtonsHtml}
+                    </div>
+                    <button type="button" class="btn-cancel-action" style="padding:10px; font-size:14px; background:rgba(239, 68, 68, 0.1); color:#ef4444; border:1px solid #ef4444; width:100%; border-radius:6px; cursor:pointer;" 
+                        onclick="rejectRequest('${i.id}')">
+                        ❌ 無適合時間，取消預約申請，並於官方賴另行安排時間確認
+                    </button>
                 </div>`;
             });
         } else {
             area.innerHTML = '<p style="font-size:14px; color:var(--text-light); text-align:center;">目前無待處理的線上申請。</p>';
         }
-    } catch(e) { btn.innerText = '📥 載入最新預約申請'; alert('讀取失敗，請確認網路連線'); }
+    } catch(e) { 
+        btn.innerText = '📥 載入最新預約申請'; 
+        alert('讀取失敗，請確認網路連線'); 
+    }
 };
 
-// 🌟 智慧帶入並自動比對選單、平滑滾動
+// 🌟 新增：取消線上預約申請
+window.rejectRequest = async (reqId) => {
+    if(!confirm('確定要取消此申請，並標記為「無適合時間」嗎？')) return;
+    
+    const btn = el('btnLoadRequests');
+    btn.innerText = '正在註記...';
+    try {
+        const payload = { action: 'rejectOnlineBooking', onlineReqId: reqId };
+        await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
+        alert('已將該申請標記為取消。請記得透過官方 LINE 與顧客聯繫確認新時間！');
+        window.loadOnlineRequests(); // 重新整理列表
+    } catch (e) {
+        alert('註記失敗，請檢查網路狀態。');
+        btn.innerText = '📥 載入最新預約申請';
+    }
+};
+
 window.approveRequest = (reqId, name, phone, course, date, time) => {
     if(name) el('bkName').value = name;
     if(phone) el('bkPhone').value = phone;
     
-    // 模糊比對下拉選單
     if (course) {
         const opts = el('bkCourse').options;
         let matched = false;
@@ -102,14 +138,10 @@ window.approveRequest = (reqId, name, phone, course, date, time) => {
         el('bkStartTime').value = time;
     }
 
-    // 自動推算結束時間
     window.autoCalcEndTime();
     window.currentOnlineReqId = reqId; 
 
-    // 平滑滾動到預約表單，提升操作體驗
     el('bkName').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    
-    // 短暫延遲提示，確保滾動完成
     setTimeout(() => {
         alert('✅ 已將申請資料完美帶入！\n請確認「會員姓名」、「師傅」與「結束時間」後，點擊下方的【確認建立預約排程】即可。');
     }, 300);
@@ -139,7 +171,6 @@ window.submitBookingData = async () => {
 
     await apiCall('createBooking', payload, '✅ 預約已成功寫入系統與行事曆！');
     
-    // 清空暫存與畫面
     window.currentOnlineReqId = ''; 
     el('onlineRequestsArea').innerHTML = ''; 
     btn.innerText = originalText; btn.disabled = false;
