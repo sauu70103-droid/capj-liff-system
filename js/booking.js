@@ -34,7 +34,7 @@ window.autoCalcEndTime = () => {
     if(course.includes("10分鐘")) addMinutes = 10;
     else if(course.includes("15分鐘")) addMinutes = 15;
     else if(course.includes("30分鐘")) addMinutes = 30;
-    else if(course.includes("60分鐘") || course.includes("單部位舒緩")) addMinutes = 60;
+    else if(course.includes("60分鐘") || course.includes("單部位")) addMinutes = 60;
     else if(course.includes("90分鐘")) addMinutes = 90;
     else if(course.includes("套票") || course.includes("純購")) addMinutes = 15;
 
@@ -64,31 +64,55 @@ window.loadOnlineRequests = async () => {
         if (r.status === 'success' && r.data.length > 0) {
             r.data.forEach(i => {
                 area.innerHTML += `
-                <div class="result-card" style="border-left-color:#F37021;">
-                    <strong>${i.name}</strong> (${i.phone})<br>
-                    希望日期：<span style="color:#F37021; font-weight:bold;">${i.date} ${i.time}</span><br>
+                <div class="result-card" style="border-left-color:var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
+                    希望日期：<span style="color:var(--primary); font-weight:bold;">${i.date} ${i.time}</span><br>
                     項目：${i.course}<br>
-                    <button class="btn-small" style="background:#F37021; margin-top:10px; color:white;" onclick="approveRequest('${i.id}', '${i.name}', '${i.phone}', '${i.course}', '${i.date}', '${i.time}')">帶入審核</button>
+                    <button class="btn-submit" style="padding:10px; font-size:14px; margin-top:12px;" onclick="approveRequest('${i.id}', '${i.name}', '${i.phone}', '${i.course}', '${i.date}', '${i.time}')">帶入資料並安排排程</button>
                 </div>`;
             });
         } else {
-            area.innerHTML = '<p style="font-size:13px; color:#8A796D;">目前無待處理的線上申請。</p>';
+            area.innerHTML = '<p style="font-size:14px; color:var(--text-light); text-align:center;">目前無待處理的線上申請。</p>';
         }
-    } catch(e) { btn.innerText = '📥 載入最新預約申請'; alert('讀取失敗'); }
+    } catch(e) { btn.innerText = '📥 載入最新預約申請'; alert('讀取失敗，請確認網路連線'); }
 };
 
+// 🌟 智慧帶入並自動比對選單、平滑滾動
 window.approveRequest = (reqId, name, phone, course, date, time) => {
-    el('bkName').value = name;
-    el('bkPhone').value = phone;
-    const opts = el('bkCourse').options;
-    for(let i=0; i<opts.length; i++) {
-        if(opts[i].value.includes(course)) { el('bkCourse').selectedIndex = i; break; }
+    if(name) el('bkName').value = name;
+    if(phone) el('bkPhone').value = phone;
+    
+    // 模糊比對下拉選單
+    if (course) {
+        const opts = el('bkCourse').options;
+        let matched = false;
+        for(let i=0; i<opts.length; i++) {
+            if(opts[i].value.includes(course) || course.includes(opts[i].value.split('-')[0])) {
+                el('bkCourse').selectedIndex = i;
+                matched = true;
+                break;
+            }
+        }
+        if(!matched) el('bkCourse').value = '其他';
     }
-    el('bkStartDate').value = date.replace(/\//g, '-');
-    el('bkStartTime').value = time;
+
+    if (date) el('bkStartDate').value = date;
+    if (time) {
+        el('bkStartTime').innerHTML = getTimeOptionsHTML(time);
+        el('bkStartTime').value = time;
+    }
+
+    // 自動推算結束時間
     window.autoCalcEndTime();
     window.currentOnlineReqId = reqId; 
-    alert('已將申請資料帶入下方表單，請確認師傅與時間後點擊建立排程。');
+
+    // 平滑滾動到預約表單，提升操作體驗
+    el('bkName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // 短暫延遲提示，確保滾動完成
+    setTimeout(() => {
+        alert('✅ 已將申請資料完美帶入！\n請確認「會員姓名」、「師傅」與「結束時間」後，點擊下方的【確認建立預約排程】即可。');
+    }, 300);
 };
 
 window.submitBookingData = async () => {
@@ -100,6 +124,7 @@ window.submitBookingData = async () => {
     if (!rawStartDate || !rawStartTime || !rawEndDate || !rawEndTime) return alert('請完整選擇時間！');
 
     const btn = document.querySelector('#bookingTab .btn-submit');
+    const originalText = btn.innerText;
     btn.innerText = '排程寫入中...'; btn.disabled = true;
 
     const payload = {
@@ -112,10 +137,12 @@ window.submitBookingData = async () => {
         onlineReqId: window.currentOnlineReqId || ''
     };
 
-    await apiCall('createBooking', payload, '預約成功寫入系統！');
+    await apiCall('createBooking', payload, '✅ 預約已成功寫入系統與行事曆！');
+    
+    // 清空暫存與畫面
     window.currentOnlineReqId = ''; 
     el('onlineRequestsArea').innerHTML = ''; 
-    btn.innerText = '確認建立預約排程'; btn.disabled = false;
+    btn.innerText = originalText; btn.disabled = false;
 };
 
 window.searchBks = async () => {
@@ -132,7 +159,7 @@ window.searchBks = async () => {
 
 window.renderBks = (data) => {
     const area = el('srchArea'); area.innerHTML = '';
-    if(!data || data.length === 0) return area.innerHTML = '<p style="text-align:center;">查無符合的預約紀錄。</p>';
+    if(!data || data.length === 0) return area.innerHTML = '<p style="text-align:center; color:var(--text-light);">查無符合的預約紀錄。</p>';
 
     data.forEach(i => {
         let sD = '', sT = '', eD = '', eT = '';
@@ -142,17 +169,17 @@ window.renderBks = (data) => {
         area.innerHTML += `
         <div class="result-card" id="bk-${i.id}">
             <strong>${i.name}</strong> (${i.phone})<br>
-            時間：${i.start} ~ ${i.end}<br>
+            時間：<span style="color:var(--primary); font-weight:bold;">${i.start} ~ ${i.end}</span><br>
             項目：${i.course}<br>
             師傅：${i.hero}<br>
-            備註：<span style="color:#8A796D">${i.note || '無'}</span><br>
+            備註：<span style="color:var(--text-light);">${i.note || '無'}</span><br>
             
-            <div class="result-actions" style="margin-top:10px;">
-                <button class="btn-small" style="background:#F37021; color:white;" onclick="toggleBookingEditForm('${i.id}')">修改改期</button>
+            <div class="result-actions" style="margin-top:15px;">
+                <button class="btn-small" style="background:var(--primary); color:white;" onclick="toggleBookingEditForm('${i.id}')">修改改期</button>
                 <button class="btn-small" style="background:#ef4444; color:white;" onclick="cancelBooking('${i.id}', '${i.eventId}')">取消預約</button>
             </div>
 
-            <div id="editBk-${i.id}" style="display:none; background:#FAFAFA; padding:15px; border-radius:8px; border-left:4px solid #F37021; margin-top:10px;">
+            <div id="editBk-${i.id}" style="display:none; background:#FAFAFA; padding:15px; border-radius:8px; border:1px solid var(--border); margin-top:15px;">
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
                     <div style="flex:1;">
                         <label style="font-size:12px;">新開始時間</label>
@@ -170,16 +197,16 @@ window.renderBks = (data) => {
                     <select id="ebCourse-${i.id}" style="padding:6px; font-size:13px; width:100%;">
                         <option value="局部無痛滑罐(精準放鬆)-10分鐘" ${i.course.includes('10分鐘')?'selected':''}>局部無痛滑罐(精準放鬆)-10分鐘</option>
                         <option value="肩頸背套餐(滑罐＋定罐)-15分鐘" ${i.course.includes('15分鐘')?'selected':''}>肩頸背套餐(滑罐＋定罐)-15分鐘</option>
-                        <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${i.course.includes('30分鐘')?'selected':''}>無痛滑罐放鬆-30分鐘</option>
-                        <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${i.course.includes('90分鐘')?'selected':''}>全方位滑罐放鬆-90分鐘</option>
-                        <option value="單部位舒緩修復(精準調理)" ${i.course.includes('單部位')?'selected':''}>單部位舒緩修復</option>
-                        <option value="全身結構養護(平衡調理)" ${i.course.includes('結構')||i.course.includes('平衡')?'selected':''}>全身結構養護</option>
+                        <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${i.course.includes('30分鐘')?'selected':''}>無痛滑罐放鬆(快速修復)-30分鐘</option>
+                        <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${i.course.includes('90分鐘')?'selected':''}>全方位滑罐放鬆(全身修復)-90分鐘</option>
+                        <option value="單部位舒緩修復(精準調理)" ${i.course.includes('單部位')?'selected':''}>單部位舒緩修復(精準調理)</option>
+                        <option value="全身結構養護(平衡調理)" ${i.course.includes('結構')||i.course.includes('平衡')?'selected':''}>全身結構養護(平衡調理)</option>
                         <option value="全身全方位深度修復-60分鐘" ${i.course.includes('60分鐘')?'selected':''}>全身全方位深度修復-60分鐘</option>
                         <option value="專案套票/多堂課程 (純購買)" ${i.course.includes('套票')?'selected':''}>專案套票/多堂課程</option>
                         <option value="其他" ${i.course==='其他'?'selected':''}>其他</option>
                     </select>
                 </div>
-                <button class="btn-submit" style="background:#F37021; color:white; padding:10px; font-size:14px;" onclick="submitBookingUpdate('${i.id}', '${i.eventId}')">確認修改此排程</button>
+                <button class="btn-submit" style="background:var(--primary); color:white; padding:12px; font-size:14px;" onclick="submitBookingUpdate('${i.id}', '${i.eventId}')">確認修改此排程</button>
             </div>
         </div>`;
     });
