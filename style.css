@@ -1,42 +1,43 @@
 /* =========================================================
-   品牌視覺風格
+   品牌視覺風格 (奶茶色系 x 愛馬仕橘 頂級質感)
    ========================================================= */
-body {
-    margin: 0;
-    padding: 20px;
-    font-family: sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%);
-    color: #f8fafc;
-    min-height: 100vh;
+:root {
+    --bg-color: #FDF8F5;       /* 淺奶茶底色 */
+    --container-bg: #FFFFFF;   /* 容器純白 */
+    --primary: #F37021;        /* 愛馬仕橘 */
+    --primary-hover: #D95E1A;  /* 深橘色 */
+    --secondary: #EAD8C0;      /* 奶茶輔助色 */
+    --text-main: #4A3A31;      /* 深茶色字體，取代死黑 */
+    --text-light: #8A796D;     /* 淺茶色輔助字 */
+    --border: #EEDCCB;         /* 奶茶色邊框 */
+    --btn-text: #FFFFFF;       /* 按鈕白字 */
 }
 
-body::before {
-    content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: 
-        radial-gradient(2px 2px at 20px 30px, #ffffff, transparent),
-        radial-gradient(2px 2px at 150px 70px, #ffffff, transparent),
-        radial-gradient(2px 2px at 50px 160px, #ffffff, transparent);
-    background-size: 350px 350px;
-    opacity: 0.3;
-    z-index: -1;
+body {
+    margin: 0;
+    padding: 20px 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    min-height: 100vh;
 }
 
 .container {
     max-width: 600px;
     margin: 0 auto;
     position: relative;
+    background: var(--container-bg);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(74, 58, 49, 0.08);
 }
 
 h2 {
     text-align: center;
-    color: #c4b5fd;
-    text-shadow: 0 0 10px rgba(196, 181, 253, 0.3);
+    color: var(--primary);
     letter-spacing: 2px;
+    font-weight: 800;
+    margin-bottom: 25px;
 }
 
 #loadingOverlay {
@@ -45,14 +46,14 @@ h2 {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.9);
+    background: rgba(253, 248, 245, 0.9); /* 奶茶色半透明遮罩 */
     z-index: 10;
     border-radius: 12px;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 18px;
-    color: #2dd4bf;
+    color: var(--primary);
     font-weight: bold;
 }
 
@@ -66,45 +67,42 @@ h2 {
 .tab-btn {
     flex: 1;
     padding: 15px 5px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #cbd5e1;
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    color: var(--text-light);
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
     font-size: 15px;
     text-align: center;
+    transition: 0.3s;
 }
 
 .tab-btn.active {
-    background: rgba(139, 92, 246, 0.3);
-    color: #ddd6fe;
-    border-color: #8b5cf6;
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+    background: var(--primary);
+    color: var(--btn-text);
+    border-color: var(--primary);
+    box-shadow: 0 4px 10px rgba(243, 112, 33, 0.3);
 }
 
 .sub-toggle-btn {
     padding: 10px 20px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #cbd5e1;
+    background: #FAFAFA;
+    border: 1px solid var(--border);
+    color: var(--text-light);
     border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
+    transition: 0.3s;
 }
 
 .sub-toggle-btn.active {
-    background: #8b5cf6;
+    background: var(--primary);
     color: white;
-    border-color: #a78bfa;
+    border-color: var(--primary);
 }
 
 .form-section {
-    background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 25px;
-    border-radius: 12px;
     display: none;
 }
 
@@ -120,34 +118,37 @@ label {
     display: block;
     margin-bottom: 8px;
     font-size: 14px;
-    color: #cbd5e1;
+    color: var(--text-main);
+    font-weight: bold;
 }
 
 input, select, textarea {
     width: 100%;
     padding: 12px;
     box-sizing: border-box;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #FAFAFA;
+    border: 1px solid var(--border);
     border-radius: 6px;
-    color: #f8fafc;
+    color: var(--text-main);
     font-size: 16px;
+    transition: 0.3s;
 }
 
 input:focus, select:focus, textarea:focus {
     outline: none;
-    border-color: #8b5cf6;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(243, 112, 33, 0.1);
 }
 
 input[readonly] {
-    background: rgba(255, 255, 255, 0.05);
-    color: #94a3b8;
+    background: var(--bg-color);
+    color: var(--text-light);
     cursor: not-allowed;
 }
 
 option {
-    background: #1e1b4b;
-    color: #ffffff;
+    background: #FFFFFF;
+    color: var(--text-main);
 }
 
 /* 智慧浮動選單 Autocomplete */
@@ -161,31 +162,31 @@ option {
     left: 0;
     right: 0;
     z-index: 99;
-    background: #1e293b;
-    border: 1px solid #8b5cf6;
+    background: #FFFFFF;
+    border: 1px solid var(--primary);
     border-radius: 6px;
     max-height: 200px;
     overflow-y: auto;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     display: none;
 }
 
 .autocomplete-item {
     padding: 12px 15px;
     cursor: pointer;
-    color: #e2e8f0;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border);
     font-size: 15px;
 }
 
 .autocomplete-item:hover {
-    background: #4c1d95;
-    color: #ffffff;
+    background: var(--secondary);
+    color: var(--text-main);
 }
 
 /* 按鈕視覺 */
 .btn-submit {
-    background: linear-gradient(to right, #6366f1, #8b5cf6);
+    background: var(--primary);
     color: white;
     border: none;
     padding: 15px;
@@ -195,11 +196,16 @@ option {
     font-weight: bold;
     cursor: pointer;
     margin-top: 10px;
+    transition: 0.3s;
+}
+
+.btn-submit:hover {
+    background: var(--primary-hover);
 }
 
 .btn-cancel-action {
-    background: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
     border: 1px solid #ef4444;
     padding: 15px;
     width: 100%;
@@ -210,20 +216,26 @@ option {
 }
 
 .btn-search {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    color: var(--text-main);
     padding: 12px;
     width: 100%;
     border-radius: 8px;
     font-size: 16px;
+    font-weight: bold;
     cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-search:hover {
+    background: #DFCCB3;
 }
 
 .btn-calendar {
-    background: rgba(59, 130, 246, 0.2);
-    border: 1px solid #3b82f6;
-    color: #93c5fd;
+    background: rgba(243, 112, 33, 0.1);
+    border: 1px solid var(--primary);
+    color: var(--primary);
     padding: 12px;
     width: 100%;
     border-radius: 8px;
@@ -239,8 +251,8 @@ option {
 
 /* 財務模組 UI */
 .pending-box {
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid #8b5cf6;
+    background: #FAFAFA;
+    border: 1px solid var(--primary);
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
@@ -248,24 +260,26 @@ option {
 
 .pending-item {
     display: inline-block;
-    background: #4c1d95;
-    color: white;
+    background: #FFFFFF;
+    color: var(--primary);
     padding: 8px 12px;
     border-radius: 20px;
     margin: 5px;
     font-size: 14px;
     cursor: pointer;
-    border: 1px solid #6d28d9;
+    border: 1px solid var(--primary);
     transition: 0.2s;
+    font-weight: bold;
 }
 
 .pending-item:hover {
-    background: #6d28d9;
+    background: var(--primary);
+    color: white;
 }
 
 .cart-box {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid #4ade80;
+    background: #FAFAFA;
+    border: 1px solid var(--primary);
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 20px;
@@ -273,7 +287,7 @@ option {
 
 .cart-title {
     font-weight: bold;
-    color: #4ade80;
+    color: var(--primary);
     margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
@@ -281,12 +295,13 @@ option {
 }
 
 .cart-item-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #FFFFFF;
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 14px;
     margin-bottom: 12px;
     position: relative;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
 }
 
 .cart-item-row {
@@ -315,8 +330,9 @@ option {
 
 /* 店務查詢 / 高階儀表板 UI */
 .result-card {
-    background: rgba(0, 0, 0, 0.4);
-    border-left: 4px solid #8b5cf6;
+    background: #FAFAFA;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
     padding: 15px;
     border-radius: 6px;
     margin-top: 15px;
@@ -326,7 +342,7 @@ option {
     font-size: 14px;
     line-height: 1.6;
     margin-bottom: 15px;
-    color: #e2e8f0;
+    color: var(--text-main);
 }
 
 .result-actions {
@@ -343,7 +359,7 @@ option {
     cursor: pointer;
 }
 
-.btn-edit { background: #3b82f6; color: white; }
+.btn-edit { background: var(--primary); color: white; }
 .btn-del { background: #ef4444; color: white; }
 
 .summary-grid {
@@ -354,18 +370,23 @@ option {
 }
 
 .summary-item {
-    background: rgba(0, 0, 0, 0.3);
+    background: #FAFAFA;
+    border: 1px solid var(--border);
     padding: 10px;
     border-radius: 6px;
+    text-align: center;
 }
 
 .summary-val {
     display: block;
     font-size: 20px;
     font-weight: bold;
-    color: #2dd4bf;
+    color: var(--primary);
     margin-top: 5px;
 }
+
+/* 隱藏區域控制 */
+.hidden { display: none !important; }
 
 /* 儲存圖片用 Modal */
 #receiptSaveModal {
@@ -374,7 +395,7 @@ option {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(15, 23, 42, 0.95);
+    background: rgba(74, 58, 49, 0.95);
     z-index: 9999;
     display: none;
     flex-direction: column;
