@@ -1,8 +1,3 @@
-// ==========================================
-// 店務預約系統模組 (booking.js)
-// 終極版：乾淨資料流，與 GAS 後端完美對接
-// ==========================================
-
 window.addEventListener('DOMContentLoaded', () => {
     if(el('bkStartTime')) el('bkStartTime').innerHTML = getTimeOptionsHTML();
     if(el('bkEndTime')) el('bkEndTime').innerHTML = getTimeOptionsHTML();
@@ -17,15 +12,25 @@ window.addEventListener('DOMContentLoaded', () => {
     if(el('fDate')) el('fDate').value = localToday;
 });
 
+window.toggleMultipleBox = () => {
+    const box = el('multipleBox');
+    if (box.classList.contains('hidden')) {
+        box.classList.remove('hidden');
+        window.currentBookingMode = 'multiple';
+    } else {
+        box.classList.add('hidden');
+        el('bkRepeatCount').value = 1;
+        window.currentBookingMode = 'single';
+    }
+};
+
 window.autoCalcEndTime = () => {
     const startDate = el('bkStartDate').value;
     const startTime = el('bkStartTime').value;
-    
     if (!startDate || !startTime) return;
 
     const course = el('bkCourse').value || "";
     let addMinutes = 60;
-    
     if(course.includes("10分鐘")) addMinutes = 10;
     else if(course.includes("15分鐘")) addMinutes = 15;
     else if(course.includes("30分鐘")) addMinutes = 30;
@@ -35,7 +40,6 @@ window.autoCalcEndTime = () => {
 
     const [y, mo, d] = startDate.split('-');
     const [h, m] = startTime.split(':');
-
     let endObj = new Date(y, mo - 1, d, h, m);
     endObj.setMinutes(endObj.getMinutes() + addMinutes);
 
@@ -46,57 +50,72 @@ window.autoCalcEndTime = () => {
 
     const endH = String(endObj.getHours()).padStart(2, '0');
     const endM = String(endObj.getMinutes()).padStart(2, '0');
-    const finalEndTime = `${endH}:${endM}`;
-
-    el('bkEndTime').innerHTML = getTimeOptionsHTML(finalEndTime);
+    el('bkEndTime').innerHTML = getTimeOptionsHTML(`${endH}:${endM}`);
 };
 
-window.changeBookingMode = (mode) => {
-    currentBookingMode = mode;
-    if (mode === 'multiple') {
-        el('modeMultiple').classList.add('active');
-        el('modeSingle').classList.remove('active');
-        el('multipleBox').classList.remove('hidden');
-    } else {
-        el('modeSingle').classList.add('active');
-        el('modeMultiple').classList.remove('active');
-        el('multipleBox').classList.add('hidden');
+window.loadOnlineRequests = async () => {
+    const btn = el('btnLoadRequests');
+    const area = el('onlineRequestsArea');
+    btn.innerText = '連線讀取中...';
+    try {
+        const r = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'fetchOnlineBookings' }) }).then(x=>x.json());
+        btn.innerText = '📥 載入最新預約申請';
+        area.innerHTML = '';
+        if (r.status === 'success' && r.data.length > 0) {
+            r.data.forEach(i => {
+                area.innerHTML += `
+                <div class="result-card" style="border-left-color:#F37021;">
+                    <strong>${i.name}</strong> (${i.phone})<br>
+                    希望日期：<span style="color:#F37021; font-weight:bold;">${i.date} ${i.time}</span><br>
+                    項目：${i.course}<br>
+                    <button class="btn-small" style="background:#F37021; margin-top:10px; color:white;" onclick="approveRequest('${i.id}', '${i.name}', '${i.phone}', '${i.course}', '${i.date}', '${i.time}')">帶入審核</button>
+                </div>`;
+            });
+        } else {
+            area.innerHTML = '<p style="font-size:13px; color:#8A796D;">目前無待處理的線上申請。</p>';
+        }
+    } catch(e) { btn.innerText = '📥 載入最新預約申請'; alert('讀取失敗'); }
+};
+
+window.approveRequest = (reqId, name, phone, course, date, time) => {
+    el('bkName').value = name;
+    el('bkPhone').value = phone;
+    const opts = el('bkCourse').options;
+    for(let i=0; i<opts.length; i++) {
+        if(opts[i].value.includes(course)) { el('bkCourse').selectedIndex = i; break; }
     }
+    el('bkStartDate').value = date.replace(/\//g, '-');
+    el('bkStartTime').value = time;
+    window.autoCalcEndTime();
+    window.currentOnlineReqId = reqId; 
+    alert('已將申請資料帶入下方表單，請確認師傅與時間後點擊建立排程。');
 };
 
 window.submitBookingData = async () => {
-    const rawName = v('bkName');
-    const rawPhone = v('bkPhone');
-    const rawStartDate = v('bkStartDate');
-    const rawStartTime = v('bkStartTime');
-    const rawEndDate = v('bkEndDate');
-    const rawEndTime = v('bkEndTime');
+    const rawName = v('bkName'); const rawPhone = v('bkPhone');
+    const rawStartDate = v('bkStartDate'); const rawStartTime = v('bkStartTime');
+    const rawEndDate = v('bkEndDate'); const rawEndTime = v('bkEndTime');
 
     if (!rawName || !rawPhone) return alert('請填寫會員姓名與手機！');
-    if (!rawStartDate || !rawStartTime || !rawEndDate || !rawEndTime) return alert('請完整選擇開始與結束的日期時間！');
+    if (!rawStartDate || !rawStartTime || !rawEndDate || !rawEndTime) return alert('請完整選擇時間！');
 
     const btn = document.querySelector('#bookingTab .btn-submit');
-    btn.innerText = '預約排程寫入中...';
-    btn.disabled = true;
+    btn.innerText = '排程寫入中...'; btn.disabled = true;
 
-    // 🌟 最純淨的新版資料結構
     const payload = {
-        name: rawName,
-        phone: rawPhone,
-        people: v('bkPeople') || '1',
-        course: v('bkCourse') || '其他',
-        hero: v('bkHero') || '奎元',
+        name: rawName, phone: rawPhone, people: v('bkPeople') || '1',
+        course: v('bkCourse') || '其他', hero: v('bkHero') || '奎元',
         startDateTime: `${rawStartDate} ${rawStartTime}`, 
         endDateTime: `${rawEndDate} ${rawEndTime}`,
-        note: v('bkNote') || '',
-        mode: currentBookingMode,
-        repeatCount: Number(v('bkRepeatCount') || 4)
+        note: v('bkNote') || '', mode: window.currentBookingMode || 'single',
+        repeatCount: Number(v('bkRepeatCount') || 1),
+        onlineReqId: window.currentOnlineReqId || ''
     };
 
-    await apiCall('createBooking', payload, '預約成功寫入行事曆與資料庫！');
-
-    btn.innerText = '確認建立預約排程';
-    btn.disabled = false;
+    await apiCall('createBooking', payload, '預約成功寫入系統！');
+    window.currentOnlineReqId = ''; 
+    el('onlineRequestsArea').innerHTML = ''; 
+    btn.innerText = '確認建立預約排程'; btn.disabled = false;
 };
 
 window.searchBks = async () => {
@@ -108,7 +127,7 @@ window.searchBks = async () => {
         if(r.status === 'success') renderBks(r.data);
         else el('srchArea').innerHTML = '搜尋失敗：' + r.message;
     } catch(e) { el('srchArea').innerHTML = '網路連線異常，請稍後再試。'; }
-    btn.innerText = '搜尋預約紀錄';
+    btn.innerText = '搜尋當日及未來預約紀錄';
 };
 
 window.renderBks = (data) => {
@@ -126,14 +145,14 @@ window.renderBks = (data) => {
             時間：${i.start} ~ ${i.end}<br>
             項目：${i.course}<br>
             師傅：${i.hero}<br>
-            備註：<span style="color:#94a3b8">${i.note || '無'}</span><br>
+            備註：<span style="color:#8A796D">${i.note || '無'}</span><br>
             
             <div class="result-actions" style="margin-top:10px;">
-                <button class="btn-small" style="background:#3b82f6;" onclick="toggleBookingEditForm('${i.id}')">修改改期</button>
-                <button class="btn-small btn-del" style="background:#ef4444;" onclick="cancelBooking('${i.id}', '${i.eventId}')">取消預約</button>
+                <button class="btn-small" style="background:#F37021; color:white;" onclick="toggleBookingEditForm('${i.id}')">修改改期</button>
+                <button class="btn-small" style="background:#ef4444; color:white;" onclick="cancelBooking('${i.id}', '${i.eventId}')">取消預約</button>
             </div>
 
-            <div id="editBk-${i.id}" class="void-box" style="display:none; background:rgba(59, 130, 246, 0.1); padding:15px; border-radius:8px; border-left:4px solid #3b82f6; margin-top:10px;">
+            <div id="editBk-${i.id}" style="display:none; background:#FAFAFA; padding:15px; border-radius:8px; border-left:4px solid #F37021; margin-top:10px;">
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
                     <div style="flex:1;">
                         <label style="font-size:12px;">新開始時間</label>
@@ -160,7 +179,7 @@ window.renderBks = (data) => {
                         <option value="其他" ${i.course==='其他'?'selected':''}>其他</option>
                     </select>
                 </div>
-                <button class="btn-submit" style="background:#3b82f6; color:white;" onclick="submitBookingUpdate('${i.id}', '${i.eventId}')">確認修改此排程 (將同步更新行事曆)</button>
+                <button class="btn-submit" style="background:#F37021; color:white; padding:10px; font-size:14px;" onclick="submitBookingUpdate('${i.id}', '${i.eventId}')">確認修改此排程</button>
             </div>
         </div>`;
     });
@@ -172,7 +191,7 @@ window.toggleBookingEditForm = (id) => {
 };
 
 window.cancelBooking = async (id, eventId) => {
-    if(!confirm('確定要取消這筆預約嗎？這將會同步從 Google 行事曆中刪除。')) return;
+    if(!confirm('確定要取消這筆預約嗎？')) return;
     await apiCall('cancelBooking', { id: id, eventId: eventId }, '預約已成功取消！');
     searchBks(); 
 };
@@ -183,12 +202,9 @@ window.submitBookingUpdate = async (id, eventId) => {
     if(!sD || !sT || !eD || !eT) return alert('日期與時間必須完整填寫！');
     if(!confirm('確定要修改此筆預約嗎？系統將進行舊單註記並重新建立新排程。')) return;
 
-    // 🌟 更新預約也是最純淨的資料
     const payload = {
-        id: String(id),
-        eventId: String(eventId),
-        newStart: `${sD} ${sT}`,
-        newEnd: `${eD} ${eT}`,
+        id: String(id), eventId: String(eventId),
+        newStart: `${sD} ${sT}`, newEnd: `${eD} ${eT}`,
         newCourse: String(v(`ebCourse-${id}`) || '其他')
     };
 
