@@ -4,46 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>錦葳健康美學中心 - 店務與財務系統</title>
-    
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
-<datalist id="memberListDatalist"></datalist>
-
 <div class="container">
     <div id="loadingOverlay">系統連線驗證中...</div>
     
-    <h2>錦葳健康美學中心</h2>
+    <!-- 🌟 UI 頂部 Logo (PNG 支援) -->
+    <img src="./logo.png" alt="錦葳Logo" style="width: 160px; display: block; margin: 0 auto 15px; object-fit: contain;">
+    
+    <h2>店務與財務中台</h2>
     
     <div class="tabs">
         <button class="tab-btn active" id="btnTabBooking" onclick="switchTab('bookingTab', this)">店務預約</button>
-        <button class="tab-btn hidden" id="btnTabFinance" onclick="switchTab('financeTab', this)">財務結帳</button>
-        <button class="tab-btn hidden" id="btnTabAdjust" onclick="switchTab('adjustTab', this)">財務異動</button>
+        <button class="tab-btn" id="btnTabFinance" onclick="switchTab('financeTab', this)">財務結帳</button>
+        <button class="tab-btn" id="btnTabAdjust" onclick="switchTab('adjustTab', this)">財務異動</button>
     </div>
 
     <!-- 頁籤一：店務預約系統 -->
     <div id="bookingTab" class="form-section active">
         
-        <div class="form-group">
-            <label>預約模式 📅</label>
-            <div style="display: flex; gap: 10px;">
-                <button type="button" id="modeSingle" class="sub-toggle-btn active" onclick="changeBookingMode('single')">單次預約 📌</button>
-                <button type="button" id="modeMultiple" class="sub-toggle-btn" onclick="changeBookingMode('multiple')">多次預約 🔄 (常客週調)</button>
-            </div>
-        </div>
-
-        <div id="multipleBox" class="hidden" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #c4b5fd; margin-bottom: 18px;">
-            <label style="color: #c4b5fd; font-weight: bold;">🔄 多次連續預約設定 (每週固定時段)</label>
-            <div style="margin-top: 10px;">
-                <label style="font-size: 13px;">安排調理總次數 (最多 10 次)</label>
-                <input type="number" id="bkRepeatCount" value="4" min="1" max="10" style="padding: 8px;">
-                <p style="font-size: 12px; color: #94a3b8; margin-top: 6px; margin-bottom: 0;">
-                    💡 提示：系統會以您下方選取的「開始時間」當天為核心基準，自動每隔 7 天寫入店務排程。
-                </p>
-            </div>
+        <!-- 🌟 接收前端會員預約申請區塊 -->
+        <div style="background: rgba(243, 112, 33, 0.05); border: 1px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+            <label style="color: var(--primary); font-weight: bold; margin-bottom:10px; display:block;">🔔 前端會員線上預約申請</label>
+            <button type="button" id="btnLoadRequests" class="btn-search" style="background: var(--secondary); color: var(--text-main);" onclick="loadOnlineRequests()">📥 載入最新預約申請</button>
+            <div id="onlineRequestsArea" style="margin-top: 15px;"></div>
         </div>
 
         <div class="form-group autocomplete-container">
@@ -65,6 +53,8 @@
         <div class="form-group">
             <label>消費項目 (選取後自動推算結束時間)</label>
             <select id="bkCourse" onchange="autoCalcEndTime()">
+                <option value="局部無痛滑罐(精準放鬆)-10分鐘">局部無痛滑罐-10分鐘</option>
+                <option value="肩頸背套餐(滑罐＋定罐)-15分鐘">肩頸背套餐-15分鐘</option>
                 <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆-30分鐘</option>
                 <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆-90分鐘</option>
                 <option value="單部位舒緩修復(精準調理)">單部位舒緩修復</option>
@@ -105,26 +95,35 @@
 
         <div class="form-group">
             <label>預約備註細節 (選填，若課程選「其他」請務必填寫)</label>
-            <input type="text" id="bkNote" placeholder="例如：特別加強肩頸、或是固定週調行程...">
+            <input type="text" id="bkNote" placeholder="例如：特別加強肩頸...">
+        </div>
+
+        <!-- 🌟 收合的多次預約按鈕 -->
+        <button type="button" class="btn-search" style="margin-bottom: 15px; font-size:14px; background: transparent; border: 1px dashed var(--primary); color: var(--primary);" onclick="toggleMultipleBox()">➕ 展開多次連續預約設定 (常客週調)</button>
+        
+        <div id="multipleBox" class="hidden" style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); margin-bottom: 18px;">
+            <label style="font-size: 13px;">安排調理總次數 (最多 10 次)</label>
+            <input type="number" id="bkRepeatCount" value="1" min="1" max="10" style="padding: 8px;">
+            <p style="font-size: 12px; color: var(--text-light); margin-top: 6px; margin-bottom: 0;">填寫 >1 將自動每隔 7 天寫入店務排程。</p>
         </div>
         
         <button class="btn-submit" onclick="submitBookingData()">確認建立預約排程</button>
         
-        <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 30px 0;"></div>
+        <div style="height: 1px; background: var(--border); margin: 30px 0;"></div>
         
-        <h3 style="color: #cbd5e1; font-size: 16px;">🔍 查詢、改期與取消預約</h3>
+        <h3 style="color: var(--text-main); font-size: 16px;">🔍 查詢、改期與取消預約</h3>
         <div class="form-group autocomplete-container">
             <input type="text" id="srchKw" placeholder="請輸入會員姓名或手機" autocomplete="off" onkeyup="showAutocomplete('srchKw', 'srchKwList', null)" onfocus="showAutocomplete('srchKw', 'srchKwList', null)">
             <div id="srchKwList" class="autocomplete-list"></div>
         </div>
-        <button class="btn-search" id="btnSearch" onclick="searchBks()">搜尋預約紀錄</button>
-        <div id="srchArea"></div>
+        <button class="btn-search" id="btnSearch" onclick="searchBks()">搜尋當日及未來預約紀錄</button>
+        <div id="srchArea" style="margin-top:15px;"></div>
     </div>
 
     <!-- 頁籤二：財務結帳系統 -->
     <div id="financeTab" class="form-section">
-        <div id="summaryDashboard" class="hidden" style="background: rgba(45, 212, 191, 0.1); border: 1px solid #2dd4bf; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <button class="btn-cancel-action" style="color: #2dd4bf; border-color: #2dd4bf;" onclick="fetchSum()">📊 載入高階營收數據</button>
+        <div id="summaryDashboard" class="hidden" style="background: #FAFAFA; border: 1px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <button class="btn-cancel-action" style="color: var(--primary); border-color: var(--primary);" onclick="fetchSum()">📊 載入高階營收數據</button>
             <div class="summary-grid hidden" id="sumData">
                 <div class="summary-item">本日<span class="summary-val" id="vD">$0</span></div>
                 <div class="summary-item">本週<span class="summary-val" id="vW">$0</span></div>
@@ -133,13 +132,13 @@
         </div>
         
         <div class="pending-box">
-            <button class="btn-search" style="background: #8b5cf6;" id="btnFetchPending" onclick="loadPend()">📥 載入中台待結帳清單</button>
+            <button class="btn-search" style="background: var(--secondary); color: var(--text-main);" id="btnFetchPending" onclick="loadPend()">📥 載入中台待結帳清單</button>
             <div id="pendArea" style="margin-top: 15px;"></div>
         </div>
         
         <div class="cart-box">
             <div class="cart-title">
-                <span>🛒 結帳核對卡片 (支援多選合併)</span>
+                <span>🛒 結帳核對卡片 (支援多選與 88 折特約)</span>
                 <span id="cSum">$0</span>
             </div>
             <div id="cBody"></div>
@@ -154,16 +153,16 @@
             </select>
         </div>
         
-        <div id="packageBox" class="hidden" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 18px;">
-            <label style="color: #fcd34d; font-weight: bold; margin-bottom: 10px;">📖 會員扣堂數位存摺狀態</label>
-            <button type="button" class="btn-search" style="background: rgba(245, 158, 11, 0.2); border-color: #f59e0b; color: #fcd34d; padding: 8px; margin-bottom: 10px;" onclick="checkPackageAssets()">
+        <div id="packageBox" class="hidden" style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid #E8B48F; margin-bottom: 18px;">
+            <label style="color: var(--text-main); font-weight: bold; margin-bottom: 10px;">📖 會員扣堂數位存摺狀態</label>
+            <button type="button" class="btn-search" style="background: transparent; border: 1px solid #E8B48F; color: #E8B48F; padding: 8px; margin-bottom: 10px;" onclick="checkPackageAssets()">
                 🔍 讀取購物車會員存摺餘額
             </button>
-            <div id="packageStatusArea" style="font-size: 14px; color: #e2e8f0; line-height: 1.6;"></div>
+            <div id="packageStatusArea" style="font-size: 14px; color: var(--text-main); line-height: 1.6;"></div>
         </div>
 
         <div id="transferBox" class="hidden">
-            <div class="form-group" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #10b981;">
+            <div class="form-group" style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary);">
                 <label>我方收款帳戶</label>
                 <select id="fRecAcc" style="margin-bottom: 15px;">
                     <option value="Line pay轉帳">Line pay轉帳</option>
@@ -171,7 +170,6 @@
                     <option value="中信末碼06505">中信末碼06505</option>
                     <option value="國泰末碼88265">國泰末碼88265</option>
                 </select>
-                
                 <label>顧客匯款備註資料</label>
                 <input type="text" id="fRem" placeholder="請輸入後五碼或匯款日期">
             </div>
@@ -195,42 +193,39 @@
             <textarea id="fGenNote" placeholder="例如：開立統編、購課細節、特殊交代項目..." style="resize: vertical; height: 80px;"></textarea>
         </div>
         
-        <button id="btnCheckout" class="btn-submit" style="background: linear-gradient(to right, #10b981, #059669);" onclick="processCart()">確認合併結帳並產生電子明細圖</button>
+        <button id="btnCheckout" class="btn-submit" onclick="processCart()">確認合併結帳並產生電子明細圖</button>
     </div>
 
     <!-- 頁籤三：財務異動系統 -->
     <div id="adjustTab" class="form-section">
-        <h3 style="color: #fca5a5;">⚠️ 財務帳務異動調整</h3>
-        <p style="font-size: 14px; color: #94a3b8;">預設顯示近 48 小時入帳明細，若需調閱更早資料請手動搜尋。</p>
+        <h3 style="color: #ef4444;">⚠️ 財務帳務異動調整</h3>
+        <p style="font-size: 14px; color: var(--text-light);">預設顯示近 48 小時入帳明細，若需調閱更早資料請手動搜尋。</p>
         
         <div class="form-group autocomplete-container">
             <input type="text" id="adjKw" placeholder="請輸入會員姓名或手機" autocomplete="off" onkeyup="showAutocomplete('adjKw', 'adjKwList', null)" onfocus="showAutocomplete('adjKw', 'adjKwList', null)">
             <div id="adjKwList" class="autocomplete-list"></div>
         </div>
         
-        <button class="btn-search" id="btnSearchFinance" style="border-color: #ef4444; color: #fca5a5;" onclick="searchFin()">手動搜尋歷史財務紀錄</button>
+        <button class="btn-search" id="btnSearchFinance" style="border-color: #ef4444; color: #ef4444;" onclick="searchFin()">手動搜尋歷史財務紀錄</button>
         <div id="adjArea" style="margin-top: 20px;"></div>
     </div>
 </div>
 
 <!-- 收據儲存 Modal -->
 <div id="receiptSaveModal">
-    <h3 style="color: #4ade80; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
-    <p style="color: #cbd5e1; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
-        💡 提示：請直接對著下方收據<b>「長按螢幕」</b>，即可儲存至手機相簿或分享給會員。<br>
+    <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
+    <p style="color: #EAD8C0; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
+        💡 提示：請直接對著下方收據<b>「長按螢幕」</b>即可儲存存檔。<br>
     </p>
-    
     <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
-    
-    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
+    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
         關閉並返回系統
     </button>
 </div>
 
-<!-- 實體收據圖渲染區 -->
+<!-- 實體收據圖渲染區 (保留完整熱感印樣式) -->
 <div id="receiptCaptureArea">
     <div class="receipt-header">
-        <!-- 🌟 乾淨讀取 JPG，跨域安全屬性確保截圖成功 -->
         <img id="receiptLogoImg" src="./logo.jpg" crossorigin="anonymous" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
         <h3 class="receipt-title">錦葳健康美學中心 🌿</h3>
         <p class="receipt-subtitle">專業調理 · 結構修復 · 美學中心</p>
@@ -276,7 +271,6 @@
     </div>
 </div>
 
-<!-- 🚨 嚴格依照順序掛載我們切割好的 JS 模組 -->
 <script src="./js/config.js"></script>
 <script src="./js/app.js"></script>
 <script src="./js/booking.js"></script>
