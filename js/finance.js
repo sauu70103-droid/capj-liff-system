@@ -1,6 +1,6 @@
 // ==========================================
-// 財務收銀與數位資產引擎
-// 完整版：保留所有 UI 選單與作廢功能，結合 VIP 88 折邏輯
+// 財務收銀與數位資產引擎 (finance.js)
+// 完整展開版：保留所有 UI 選單、作廢功能與 VIP 88 折邏輯
 // ==========================================
 
 function toggleRem() {
@@ -18,24 +18,35 @@ function toggleRem() {
 }
 
 async function checkPackageAssets() {
-    if(cart.length === 0) return alert('購物車內目前無會員，請先帶入中台清單。');
+    if (cart.length === 0) {
+        return alert('購物車內目前無會員，請先帶入中台清單。');
+    }
+    
     const area = el('packageStatusArea'); 
     area.innerHTML = '連線讀取存摺中...';
+    
     const names = cart.map(c => c.name);
+    
     try {
-        const r = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'checkPackageStatus', names: names }) }).then(x => x.json());
-        if(r.status === 'success') {
-            if(r.data.length === 0) {
+        const response = await fetch(API, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'checkPackageStatus', names: names }) 
+        });
+        const r = await response.json();
+        
+        if (r.status === 'success') {
+            if (r.data.length === 0) {
                 area.innerHTML = '目前資料庫尚無此會員的購買紀錄。<br>💡 結帳將自動為新客開戶建檔。';
             } else {
                 let html = '';
                 r.data.forEach(m => {
-                    html += `<div style="margin-bottom:12px; padding-bottom:12px; border-bottom: 1px dashed var(--border);">
-                                <span style="font-size: 16px; font-weight: bold; color: var(--primary);">${m.name}</span><br>
-                                專案：${m.courseName}<br>
-                                堂數：已用 <span style="color:#ef4444; font-weight:bold;">${m.used}</span> / 剩餘 <span style="color:#4ade80; font-weight:bold;">${m.remain}</span><br>
-                                <span style="color:var(--text-light); font-size:12px;">(前次紀錄: ${m.lastRecord || '無'})</span>
-                             </div>`;
+                    html += `
+                    <div style="margin-bottom:12px; padding-bottom:12px; border-bottom: 1px dashed var(--border);">
+                        <span style="font-size: 16px; font-weight: bold; color: var(--primary);">${m.name}</span><br>
+                        專案：${m.courseName}<br>
+                        堂數：已用 <span style="color:#ef4444; font-weight:bold;">${m.used}</span> / 剩餘 <span style="color:#4ade80; font-weight:bold;">${m.remain}</span><br>
+                        <span style="color:var(--text-light); font-size:12px;">(前次紀錄: ${m.lastRecord || '無'})</span>
+                    </div>`;
                 });
                 area.innerHTML = html;
             }
@@ -43,16 +54,21 @@ async function checkPackageAssets() {
             area.innerHTML = '讀取失敗：' + r.message; 
         }
     } catch(e) { 
-        area.innerHTML = '網路連線異常。'; 
+        area.innerHTML = '網路連線異常，請稍後再試。'; 
     }
 }
 
 async function loadPend() {
     const btn = el('btnFetchPending'); 
     if (btn) btn.innerText = '讀取中...';
+    
     try {
         // 先抓取所有會員庫資料做對比，以辨識 VIP 身份
-        const memRes = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'fetchMembers' }) }).then(x=>x.json());
+        const memResponse = await fetch(API, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'fetchMembers' }) 
+        });
+        const memRes = await memResponse.json();
         const members = memRes.data || [];
         
         const r = await apiCall('fetchPendingCheckouts', {}); 
@@ -70,13 +86,28 @@ async function loadPend() {
                     let matchedPrice = 600;
                     const rawC = i.course || '';
                     
-                    if (rawC.includes('深度')) { matchedCourse = "全身全方位深度修復-60分鐘"; matchedPrice = 2000; }
-                    else if (rawC.includes('全方位')) { matchedCourse = "全方位滑罐放鬆(全身修復)-90分鐘"; matchedPrice = 1600; }
-                    else if (rawC.includes('單部位')) { matchedCourse = "單部位舒緩修復(精準調理)"; matchedPrice = 600; }
-                    else if (rawC.includes('結構') || rawC.includes('平衡')) { matchedCourse = "全身結構養護(平衡調理)"; matchedPrice = 1000; }
-                    else if (rawC.includes('套票') || rawC.includes('純購')) { matchedCourse = "專案套票/多堂課程 (純購買)"; matchedPrice = 0; }
-                    else if (rawC.includes('10分鐘')) { matchedCourse = "局部無痛滑罐(精準放鬆)-10分鐘"; matchedPrice = 200; }
-                    else if (rawC.includes('15分鐘')) { matchedCourse = "肩頸背套餐(滑罐＋定罐)-15分鐘"; matchedPrice = 300; }
+                    if (rawC.includes('深度')) { 
+                        matchedCourse = "全身全方位深度修復-60分鐘"; 
+                        matchedPrice = 2000; 
+                    } else if (rawC.includes('全方位')) { 
+                        matchedCourse = "全方位滑罐放鬆(全身修復)-90分鐘"; 
+                        matchedPrice = 1600; 
+                    } else if (rawC.includes('單部位')) { 
+                        matchedCourse = "單部位舒緩修復(精準調理)"; 
+                        matchedPrice = 600; 
+                    } else if (rawC.includes('結構') || rawC.includes('平衡')) { 
+                        matchedCourse = "全身結構養護(平衡調理)"; 
+                        matchedPrice = 1000; 
+                    } else if (rawC.includes('套票') || rawC.includes('純購')) { 
+                        matchedCourse = "專案套票/多堂課程 (純購買)"; 
+                        matchedPrice = 0; 
+                    } else if (rawC.includes('10分鐘')) { 
+                        matchedCourse = "局部無痛滑罐(精準放鬆)-10分鐘"; 
+                        matchedPrice = 200; 
+                    } else if (rawC.includes('15分鐘')) { 
+                        matchedCourse = "肩頸背套餐(滑罐＋定罐)-15分鐘"; 
+                        matchedPrice = 300; 
+                    }
 
                     // 自動辨識 VIP 狀態
                     const memData = members.find(m => m.name === i.name);
@@ -95,8 +126,12 @@ async function loadPend() {
                         isVip: isVip,
                         vipName: memData ? memData.vipName : ''
                     });
+                    
                     renderCart();
-                    if(v('fPay') === '扣堂') checkPackageAssets();
+                    
+                    if (v('fPay') === '扣堂') {
+                        checkPackageAssets();
+                    }
                 };
                 el('pendArea').appendChild(d);
             });
@@ -133,7 +168,7 @@ function renderCart() {
     
     window.toggleVip = (id, isChecked) => {
         const item = cart.find(x => x.id === id); 
-        if(item) {
+        if (item) {
             item.isVip = isChecked;
             item.price = isChecked ? Math.round(item.basePrice * 0.88) : item.basePrice;
             renderCart();
@@ -164,7 +199,10 @@ function renderCart() {
             </div>
             
             <div style="margin-bottom:10px; font-size:13px; color:var(--primary); font-weight:bold;">
-                <label style="display:inline;"><input type="checkbox" onchange="toggleVip('${i.id}', this.checked)" ${i.isVip ? 'checked' : ''}> 💎 啟用特約 88 折優惠</label>
+                <label style="display:inline;">
+                    <input type="checkbox" onchange="toggleVip('${i.id}', this.checked)" ${i.isVip ? 'checked' : ''}> 
+                    💎 啟用特約 88 折優惠
+                </label>
                 ${i.vipName ? `<span style="color:var(--text-light); font-size:12px; font-weight:normal;">(偵測：${i.vipName})</span>` : ''}
             </div>
 
@@ -172,8 +210,8 @@ function renderCart() {
                 <div style="flex:2;">
                     <label style="font-size:12px;margin-bottom:2px;">消費項目</label>
                     <select onchange="uc('${i.id}','course',this.value)" style="padding:6px;font-size:14px;">
-                        <option value="局部無痛滑罐(精準放鬆)-10分鐘" ${c.includes('10分鐘') ? 'selected' : ''}>局部無痛滑罐-10分鐘</option>
-                        <option value="肩頸背套餐(滑罐＋定罐)-15分鐘" ${c.includes('15分鐘') ? 'selected' : ''}>肩頸背套餐-15分鐘</option>
+                        <option value="局部無痛滑罐(精準放鬆)-10分鐘" ${c.includes('10分鐘') ? 'selected' : ''}>局部無痛滑罐(精準放鬆)-10分鐘</option>
+                        <option value="肩頸背套餐(滑罐＋定罐)-15分鐘" ${c.includes('15分鐘') ? 'selected' : ''}>肩頸背套餐(滑罐＋定罐)-15分鐘</option>
                         <option value="無痛滑罐放鬆(快速修復)-30分鐘" ${c.includes('30分鐘') ? 'selected' : ''}>無痛滑罐放鬆-30分鐘</option>
                         <option value="全方位滑罐放鬆(全身修復)-90分鐘" ${c.includes('90分鐘') ? 'selected' : ''}>全方位滑罐放鬆-90分鐘</option>
                         <option value="單部位舒緩修復(精準調理)" ${c.includes('單部位') ? 'selected' : ''}>單部位舒緩修復</option>
@@ -193,10 +231,10 @@ function renderCart() {
             </div>
         </div>`;
     });
+    
     el('cSum').innerText = '$' + totalSum;
 }
 
-// 產生分享圖片檔案用
 function base64ToBlob(base64, mime) {
     let byteString = atob(base64.split(',')[1]);
     let ab = new ArrayBuffer(byteString.length);
@@ -207,10 +245,9 @@ function base64ToBlob(base64, mime) {
     return new Blob([ab], {type: mime});
 }
 
-// 全域分享按鈕綁定 (若未來擴充需要)
 window.addEventListener('DOMContentLoaded', () => {
     const btnShare = el('btnUniversalShare');
-    if(btnShare) {
+    if (btnShare) {
         btnShare.onclick = async () => {
             if (!window.currentReceiptBase64) return;
             const blob = base64ToBlob(window.currentReceiptBase64, 'image/png');
@@ -219,12 +256,16 @@ window.addEventListener('DOMContentLoaded', () => {
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try { 
                     await navigator.share({ files: [file], title: '錦葳結帳明細', text: '感謝您的蒞臨！' }); 
-                } catch (error) { console.log('分享取消', error); }
+                } catch (error) { 
+                    console.log('分享取消', error); 
+                }
             } else {
                 try {
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url; a.download = window.currentReceiptFileName; a.click();
+                    a.href = url; 
+                    a.download = window.currentReceiptFileName; 
+                    a.click();
                     window.URL.revokeObjectURL(url);
                 } catch(e) {
                     alert('您的手機系統目前阻擋了直接下載功能。請直接長按畫面上的收據圖片即可存檔！');
@@ -244,8 +285,10 @@ async function processCart() {
     const fid = 'F' + Date.now(); 
     el('rId').innerText = fid;
     
-    const fd = v('fDate'), ft = v('fTime');
+    const fd = v('fDate');
+    const ft = v('fTime');
     let finalCheckoutTime = '';
+    
     if (fd && ft) { 
         finalCheckoutTime = `${fd} ${ft}`; 
     } else {
@@ -272,8 +315,12 @@ async function processCart() {
     }
     
     const genNote = v('fGenNote'); 
-    el('rGenNoteBox').style.display = genNote ? 'block' : 'none';
-    if (genNote) el('rGenNote').innerText = genNote;
+    if (genNote) {
+        el('rGenNoteBox').style.display = 'block';
+        el('rGenNote').innerText = genNote;
+    } else {
+        el('rGenNoteBox').style.display = 'none';
+    }
 
     el('rItems').innerHTML = ''; 
     let grandTotal = 0;
@@ -320,10 +367,15 @@ async function processCart() {
         };
         
         try {
-            const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'createFinance', ...payload }) });
+            const response = await fetch(API, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: 'createFinance', ...payload }) 
+            });
             const r = await response.json();
+            
             btn.innerText = '確認結帳並產生收據'; 
             btn.disabled = false;
+            
             if (r && r.status === 'success') {
                 el('finalReceiptImage').src = base64Data; 
                 el('receiptSaveModal').style.display = 'flex';
@@ -360,10 +412,15 @@ async function fetchSum() {
 async function searchFin() {
     const k = v('adjKw'); 
     if (!k) return alert('請輸入會員姓名或手機');
+    
     const btn = el('btnSearchFinance'); 
     btn.innerText = '調閱中...';
+    
     try {
-        const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'searchFinanceRecords', keyword: k }) });
+        const response = await fetch(API, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'searchFinanceRecords', keyword: k }) 
+        });
         const r = await response.json(); 
         renderFinanceRecords(r.data, 'adjArea');
     } catch(e) { 
@@ -383,7 +440,9 @@ function renderFinanceRecords(dataArray, targetElId) {
             let adjDate = '';
             let adjTime = '';
             if(i.date.includes(' ')) {
-                [adjDate, adjTime] = i.date.split(' ');
+                const parts = i.date.split(' ');
+                adjDate = parts[0];
+                adjTime = parts[1];
             }
             
             area.innerHTML += `
@@ -409,9 +468,16 @@ function renderFinanceRecords(dataArray, targetElId) {
                                 </div>
                             </div>
                         </div>
+                        
                         <div style="display:flex; gap:10px; margin-bottom:10px;">
-                            <div style="flex:1;"><label style="font-size:12px;">姓名</label><input type="text" id="fAdjName-${i.orderId}" value="${i.name}" style="padding:6px; font-size:13px;"></div>
-                            <div style="flex:1;"><label style="font-size:12px;">手機</label><input type="text" id="fAdjPhone-${i.orderId}" value="${i.phone || ''}" style="padding:6px; font-size:13px;"></div>
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">姓名</label>
+                                <input type="text" id="fAdjName-${i.orderId}" value="${i.name}" style="padding:6px; font-size:13px;">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">手機</label>
+                                <input type="text" id="fAdjPhone-${i.orderId}" value="${i.phone || ''}" style="padding:6px; font-size:13px;">
+                            </div>
                         </div>
 
                         <div style="display:flex; gap:10px; margin-bottom:10px;">
@@ -456,7 +522,7 @@ function renderFinanceRecords(dataArray, targetElId) {
                         <label style="font-size:12px;">新備註</label>
                         <input type="text" id="fAdjNote-${i.orderId}" value="${i.note}" style="padding:6px; font-size:13px;">
 
-                        <button class="btn-submit" style="background:#ef4444; color: white; margin-top:15px;" onclick="submitFinanceUpdate('${i.orderId}')">確認作廢並紀錄</button>
+                        <button class="btn-submit" style="background:#ef4444; color: white; margin-top:15px;" onclick="submitFinanceUpdate('${i.orderId}')">確認作廢並更新</button>
                     </div>
                 </div>`;
         });
@@ -467,11 +533,17 @@ function renderFinanceRecords(dataArray, targetElId) {
 
 function toggleVoidForm(id) { 
     const box = el(`voidForm-${id}`); 
-    box.style.display = box.style.display === 'block' ? 'none' : 'block'; 
+    if (box.style.display === 'block') {
+        box.style.display = 'none';
+    } else {
+        box.style.display = 'block';
+    }
 }
 
 async function submitFinanceUpdate(orderId) {
-    if (!confirm(`警告：確定要變更單號 ${orderId} 嗎？此動作將會作廢原單並產生一筆 -1 的新單！`)) return;
+    if (!confirm(`警告：確定要變更單號 ${orderId} 嗎？此動作將會作廢原單並產生一筆 -1 的新單！`)) {
+        return;
+    }
     
     const newDate = v(`fAdjDate-${orderId}`) + ' ' + v(`fAdjTime-${orderId}`);
 
@@ -489,8 +561,12 @@ async function submitFinanceUpdate(orderId) {
     };
 
     try {
-        const response = await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
+        const response = await fetch(API, { 
+            method: 'POST', 
+            body: JSON.stringify(payload) 
+        });
         const r = await response.json();
+        
         if (r.status === 'success') {
             alert('該筆財務檔案已成功變更紀錄！');
             const rowEl = el(`f-${orderId}`); 
