@@ -32,16 +32,15 @@ window.autoCalcEndTime = () => {
     const course = el('bkCourse').value || "";
     let addMinutes = 60;
     
-    // 強化推算邏輯
-    if(course.includes("10分鐘") || course.includes("局部")) {
+    if(course.includes("10分鐘")) {
         addMinutes = 10;
-    } else if(course.includes("15分鐘") || course.includes("肩頸")) {
+    } else if(course.includes("15分鐘")) {
         addMinutes = 15;
-    } else if(course.includes("30分鐘") || course === "無痛滑罐放鬆") {
+    } else if(course.includes("30分鐘")) {
         addMinutes = 30;
-    } else if(course.includes("60分鐘") || course.includes("單部位") || course.includes("深度")) {
+    } else if(course.includes("60分鐘") || course.includes("單部位舒緩") || course.includes("結構養護")) {
         addMinutes = 60;
-    } else if(course.includes("90分鐘") || course.includes("全方位滑罐")) {
+    } else if(course.includes("90分鐘")) {
         addMinutes = 90;
     } else if(course.includes("套票") || course.includes("純購")) {
         addMinutes = 15;
@@ -79,21 +78,49 @@ window.loadOnlineRequests = async () => {
         
         if (r.status === 'success' && r.data.length > 0) {
             r.data.forEach(i => {
-                const isCancel = i.status.includes('取消') || i.course.includes('取消') || (i.note && i.note.includes('取消'));
+                const isCancel = i.status.includes('要求取消') || i.status.includes('取消申請');
+                const isReschedule = i.status.includes('要求改期');
 
                 if (isCancel) {
                     let cancelTime = i.times.length > 0 ? `${i.times[0].date} ${i.times[0].time}` : '未知時間';
+                    let cancelReason = i.note ? `<br>取消原因：<span style="color:#ef4444;">${i.note}</span>` : '';
                     area.innerHTML += `
                     <div class="result-card" id="req-card-${i.id}" style="border-left-color:#ef4444; background: #fff5f5; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                         <strong style="color:#ef4444; font-size:16px;">🚨 顧客提出取消預約申請</strong><br>
                         <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
-                        欲取消時段：<span style="color:#ef4444; font-weight:bold; font-size:16px;">${cancelTime}</span><br>
+                        欲取消時段：<span style="color:#ef4444; font-weight:bold; font-size:16px;">${cancelTime}</span>${cancelReason}<br>
                         <button type="button" class="btn-submit" style="padding:10px; font-size:14px; margin-top:12px; background:#ef4444; color:white; border-radius:6px; display:block; width:100%; text-align:center;" 
                             onclick="approveOnlineCancel('${i.id}', '${i.phone}', '${cancelTime}')">
                             🗑️ 確認並直接取消原排程
                         </button>
                     </div>`;
+                } else if (isReschedule) {
+                    // 會員提出改期申請 🟡
+                    let newTimeHtml = '';
+                    i.times.forEach((t, idx) => {
+                        if(t.date && t.time) {
+                            newTimeHtml += `
+                            <button type="button" class="btn-submit" style="padding:10px; font-size:14px; margin-top:8px; background:#eab308; color:white; border-radius:6px; display:block; width:100%; text-align:left;" 
+                                onclick="approveRequest('${i.id}', '${i.name}', '${i.phone}', '${i.course}', '${t.date}', '${t.time}')">
+                                🔄 帶入期望新時間：${t.date} ${t.time}
+                            </button>`;
+                        }
+                    });
+                    area.innerHTML += `
+                    <div class="result-card" id="req-card-${i.id}" style="border-left-color:#eab308; background: #fefce8; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                        <strong style="color:#ca8a04; font-size:16px;">🔄 顧客提出改期申請</strong><br>
+                        <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
+                        項目：<span style="color:var(--text-main); font-weight:bold;">${i.course}</span><br>
+                        <div style="margin-top:8px; margin-bottom: 12px;">
+                            ${newTimeHtml}
+                        </div>
+                        <button type="button" class="btn-cancel-action" style="padding:10px; font-size:14px; background:rgba(239, 68, 68, 0.1); color:#ef4444; border:1px solid #ef4444; width:100%; border-radius:6px; cursor:pointer;" 
+                            onclick="rejectRequest('${i.id}')">
+                            ❌ 無適合時間，拒絕改期並取消原預約
+                        </button>
+                    </div>`;
                 } else {
+                    // 一般預約 
                     let timeButtonsHtml = '';
                     i.times.forEach((t, idx) => {
                         if(t.date && t.time) {
@@ -120,7 +147,7 @@ window.loadOnlineRequests = async () => {
                 }
             });
         } else {
-            area.innerHTML = '<p style="font-size:14px; color:var(--text-light); text-align:center;">目前無待處理的線上申請。</p>';
+            area.innerHTML = '<p style="font-size:14px; color:var(--text-light); text-align:center;">目前無待處理的線上申請或異動。</p>';
         }
     } catch(e) { 
         btn.innerText = '📥 載入最新預約申請'; 
@@ -135,7 +162,7 @@ window.approveOnlineCancel = async (reqId, phone, timeStr) => {
         const response = await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
         const res = await response.json();
         
-        alert('✅ 已成功取消該排程，並同步更新會員系統為紅燈標記！');
+        alert('✅ 已成功取消該排程，並同步更新會員系統為 🔴 取消狀態！');
         el(`req-card-${reqId}`).style.display = 'none'; 
     } catch(e) { 
         alert('取消失敗，請檢查網路連線。'); 
@@ -143,62 +170,44 @@ window.approveOnlineCancel = async (reqId, phone, timeStr) => {
 };
 
 window.rejectRequest = async (reqId) => {
-    if(!confirm('確定要取消此申請，並標記為「無適合時間」嗎？')) return;
+    if(!confirm('確定要拒絕此申請，並標記為「無適合時間」嗎？')) return;
     try {
         const payload = { action: 'rejectOnlineBooking', onlineReqId: reqId };
         await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
         
-        alert('已將該申請標記為取消。請記得透過官方 LINE 與顧客聯繫確認新時間！');
+        alert('已將該申請標記為無適合時間。請記得透過官方 LINE 與顧客聯繫！');
         el(`req-card-${reqId}`).style.display = 'none'; 
     } catch (e) {
         alert('註記失敗，請檢查網路狀態。');
     }
 };
 
-// 🌟 核心升級：智慧關鍵字映射引擎
 window.approveRequest = (reqId, name, phone, course, date, time) => {
     if(name) el('bkName').value = name;
     if(phone) el('bkPhone').value = phone;
     
     if (course) {
         let matched = false;
-        
-        // 建立智慧翻譯字典：把會員系統的字眼，翻譯成店務系統的標準名稱
         const keywordMap = {
-            '局部滑罐': '局部無痛滑罐-10分鐘',
-            '局部無痛': '局部無痛滑罐-10分鐘',
-            '肩頸背': '肩頸背套餐-15分鐘',
-            '肩頸套餐': '肩頸背套餐-15分鐘',
-            '無痛滑罐放鬆': '無痛滑罐放鬆-30分鐘',
-            '全方位滑罐': '全方位滑罐放鬆-90分鐘',
-            '單部位': '單部位舒緩修復',
-            '全身結構': '全身結構養護',
-            '深度修復': '全身全方位深度修復-60分鐘',
-            '套票': '專案套票/多堂課程 (純購買)'
+            '局部無痛滑罐-10分鐘': '局部無痛滑罐-10分鐘',
+            '肩頸背套餐-15分鐘': '肩頸背套餐-15分鐘',
+            '無痛滑罐放鬆-30分鐘': '無痛滑罐放鬆-30分鐘',
+            '全方位滑罐放鬆-90分鐘': '全方位滑罐放鬆-90分鐘',
+            '單部位舒緩修復': '單部位舒緩修復',
+            '全身結構養護': '全身結構養護',
+            '全身全方位深度修復-60分鐘': '全身全方位深度修復-60分鐘',
+            '專案套票/多堂課程 (純購買)': '專案套票/多堂課程 (純購買)',
+            '其他': '其他'
         };
 
         const opts = el('bkCourse').options;
-        
-        // 1. 先嘗試 100% 完全比對
         for (let i = 0; i < opts.length; i++) {
-            if (opts[i].value === course) {
+            if (opts[i].value === course || keywordMap[course] === opts[i].value) {
                 el('bkCourse').selectedIndex = i;
                 matched = true;
                 break;
             }
         }
-        
-        // 2. 如果不一致，啟動智慧翻譯引擎比對
-        if (!matched) {
-            for (let key in keywordMap) {
-                if (course.includes(key)) {
-                    el('bkCourse').value = keywordMap[key];
-                    matched = true;
-                    break;
-                }
-            }
-        }
-        
         if(!matched) {
             el('bkCourse').value = '其他';
         }
@@ -342,7 +351,7 @@ window.toggleBookingEditForm = (id) => {
 };
 
 window.cancelBooking = async (id, eventId) => {
-    if(!confirm('確定要取消這筆預約嗎？')) return;
+    if(!confirm('確定要取消這筆預約嗎？系統將同步標記會員表單。')) return;
     await apiCall('cancelBooking', { id: id, eventId: eventId }, '預約已成功取消！');
     searchBks(); 
 };
@@ -352,7 +361,7 @@ window.submitBookingUpdate = async (id, eventId) => {
     const eD = v(`ebEDate-${id}`); const eT = v(`ebETime-${id}`);
     
     if(!sD || !sT || !eD || !eT) return alert('日期與時間必須完整填寫！');
-    if(!confirm('確定要修改此筆預約嗎？系統將進行舊單註記並重新建立新排程。')) return;
+    if(!confirm('確定要修改此筆預約嗎？系統將進行舊單註記並寫回會員系統綠燈。')) return;
 
     const payload = {
         id: String(id), 
@@ -362,6 +371,6 @@ window.submitBookingUpdate = async (id, eventId) => {
         newCourse: String(v(`ebCourse-${id}`) || '其他')
     };
 
-    await apiCall('updateBooking', payload, '預約排程已成功修改與更新！');
+    await apiCall('updateBooking', payload, '預約排程已成功修改與同步！');
     searchBks();
 };
