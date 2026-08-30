@@ -53,7 +53,7 @@ window.autoCalcEndTime = () => {
     el('bkEndTime').innerHTML = getTimeOptionsHTML(`${endH}:${endM}`);
 };
 
-// 🌟 升級版：單一卡片渲染多個時段選項，並加入橘紅取消按鈕
+// 🌟 升級：自動辨識「新增預約」與「取消申請」，呈現對應卡片
 window.loadOnlineRequests = async () => {
     const btn = el('btnLoadRequests');
     const area = el('onlineRequestsArea');
@@ -64,30 +64,47 @@ window.loadOnlineRequests = async () => {
         area.innerHTML = '';
         if (r.status === 'success' && r.data.length > 0) {
             r.data.forEach(i => {
-                // 將多個時間選項組合成多個按鈕
-                let timeButtonsHtml = '';
-                i.times.forEach((t, idx) => {
-                    if(t.date && t.time) {
-                        timeButtonsHtml += `
-                        <button type="button" class="btn-submit" style="padding:10px; font-size:14px; margin-top:8px; background:var(--primary); color:white; border-radius:6px; display:block; width:100%; text-align:left;" 
-                            onclick="approveRequest('${i.id}', '${i.name}', '${i.phone}', '${i.course}', '${t.date}', '${t.time}')">
-                            ✅ 帶入方案 ${idx + 1}：${t.date} ${t.time}
-                        </button>`;
-                    }
-                });
+                // 判斷是否為顧客在前端提出的「取消申請」
+                const isCancel = i.status.includes('取消') || i.course.includes('取消') || (i.note && i.note.includes('取消'));
 
-                area.innerHTML += `
-                <div class="result-card" style="border-left-color:var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
-                    <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
-                    項目：<span style="color:var(--text-main); font-weight:bold;">${i.course}</span><br>
-                    <div style="margin-top:8px; margin-bottom: 12px;">
-                        ${timeButtonsHtml}
-                    </div>
-                    <button type="button" class="btn-cancel-action" style="padding:10px; font-size:14px; background:rgba(239, 68, 68, 0.1); color:#ef4444; border:1px solid #ef4444; width:100%; border-radius:6px; cursor:pointer;" 
-                        onclick="rejectRequest('${i.id}')">
-                        ❌ 無適合時間，取消預約申請，並於官方賴另行安排時間確認
-                    </button>
-                </div>`;
+                if (isCancel) {
+                    let cancelTime = i.times.length > 0 ? `${i.times[0].date} ${i.times[0].time}` : '未知時間';
+                    area.innerHTML += `
+                    <div class="result-card" style="border-left-color:#ef4444; background: #fff5f5; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                        <strong style="color:#ef4444; font-size:16px;">🚨 顧客提出取消預約申請</strong><br>
+                        <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
+                        欲取消時段：<span style="color:#ef4444; font-weight:bold; font-size:16px;">${cancelTime}</span><br>
+                        <button type="button" class="btn-submit" style="padding:10px; font-size:14px; margin-top:12px; background:#ef4444; color:white; border-radius:6px; display:block; width:100%; text-align:center;" 
+                            onclick="approveOnlineCancel('${i.id}', '${i.phone}', '${cancelTime}')">
+                            🗑️ 確認並直接取消原排程
+                        </button>
+                    </div>`;
+                } else {
+                    // 一般的新增預約申請
+                    let timeButtonsHtml = '';
+                    i.times.forEach((t, idx) => {
+                        if(t.date && t.time) {
+                            timeButtonsHtml += `
+                            <button type="button" class="btn-submit" style="padding:10px; font-size:14px; margin-top:8px; background:var(--primary); color:white; border-radius:6px; display:block; width:100%; text-align:left;" 
+                                onclick="approveRequest('${i.id}', '${i.name}', '${i.phone}', '${i.course}', '${t.date}', '${t.time}')">
+                                ✅ 帶入方案 ${idx + 1}：${t.date} ${t.time}
+                            </button>`;
+                        }
+                    });
+
+                    area.innerHTML += `
+                    <div class="result-card" style="border-left-color:var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                        <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
+                        項目：<span style="color:var(--text-main); font-weight:bold;">${i.course}</span><br>
+                        <div style="margin-top:8px; margin-bottom: 12px;">
+                            ${timeButtonsHtml}
+                        </div>
+                        <button type="button" class="btn-cancel-action" style="padding:10px; font-size:14px; background:rgba(239, 68, 68, 0.1); color:#ef4444; border:1px solid #ef4444; width:100%; border-radius:6px; cursor:pointer;" 
+                            onclick="rejectRequest('${i.id}')">
+                            ❌ 無適合時間，取消申請並另約
+                        </button>
+                    </div>`;
+                }
             });
         } else {
             area.innerHTML = '<p style="font-size:14px; color:var(--text-light); text-align:center;">目前無待處理的線上申請。</p>';
@@ -98,17 +115,31 @@ window.loadOnlineRequests = async () => {
     }
 };
 
-// 🌟 新增：取消線上預約申請
+// 🌟 一鍵執行線上取消申請
+window.approveOnlineCancel = async (reqId, phone, timeStr) => {
+    if(!confirm('確定要直接取消該客人的此筆排程嗎？系統將同步作廢並寫回紅燈狀態。')) return;
+    const btn = el('btnLoadRequests'); 
+    btn.innerText = '執行取消中...';
+    try {
+        const payload = { action: 'approveOnlineCancel', reqId: reqId, phone: phone, timeStr: timeStr };
+        const res = await fetch(API, { method: 'POST', body: JSON.stringify(payload) }).then(x=>x.json());
+        alert('✅ 已成功取消該排程，並同步更新會員系統為紅燈標記！');
+        window.loadOnlineRequests(); 
+    } catch(e) { 
+        alert('取消失敗，請檢查網路連線。'); 
+        btn.innerText = '📥 載入最新預約申請'; 
+    }
+};
+
 window.rejectRequest = async (reqId) => {
     if(!confirm('確定要取消此申請，並標記為「無適合時間」嗎？')) return;
-    
     const btn = el('btnLoadRequests');
     btn.innerText = '正在註記...';
     try {
         const payload = { action: 'rejectOnlineBooking', onlineReqId: reqId };
         await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
         alert('已將該申請標記為取消。請記得透過官方 LINE 與顧客聯繫確認新時間！');
-        window.loadOnlineRequests(); // 重新整理列表
+        window.loadOnlineRequests(); 
     } catch (e) {
         alert('註記失敗，請檢查網路狀態。');
         btn.innerText = '📥 載入最新預約申請';
