@@ -64,14 +64,13 @@ async function loadPend() {
                     let matchedPrice = 600;
                     const rawC = i.course || '';
                     
-                    // 🌟 智慧辨識價格與項目名稱
                     if (rawC.includes('深度') || rawC.includes('60分鐘')) { 
                         matchedCourse = "全身全方位深度修復-60分鐘"; matchedPrice = 2000; 
-                    } else if (rawC.includes('全方位滑罐') || rawC.includes('90分鐘')) { 
+                    } else if (rawC.includes('全方位') || rawC.includes('90分鐘')) { 
                         matchedCourse = "全方位滑罐放鬆-90分鐘"; matchedPrice = 1600; 
                     } else if (rawC.includes('單部位')) { 
                         matchedCourse = "單部位舒緩修復"; matchedPrice = 600; 
-                    } else if (rawC.includes('結構')) { 
+                    } else if (rawC.includes('結構') || rawC.includes('平衡')) { 
                         matchedCourse = "全身結構養護"; matchedPrice = 1000; 
                     } else if (rawC.includes('套票') || rawC.includes('純購')) { 
                         matchedCourse = "專案套票/多堂課程 (純購買)"; matchedPrice = 0; 
@@ -180,7 +179,7 @@ function renderCart() {
                         <option value="單部位舒緩修復" ${c.includes('單部位') ? 'selected' : ''}>單部位舒緩修復</option>
                         <option value="全身結構養護" ${c.includes('結構') || c.includes('平衡') ? 'selected' : ''}>全身結構養護</option>
                         <option value="全身全方位深度修復-60分鐘" ${c.includes('60分鐘') || c.includes('深度') ? 'selected' : ''}>全身全方位深度修復-60分鐘</option>
-                        <option value="專案套票/多堂課程 (純購買)" ${c.includes('套票') ? 'selected' : ''}>專案套票/多堂課程</option>
+                        <option value="專案套票/多堂課程 (純購買)" ${c.includes('套票') ? 'selected' : ''}>專案套票/多堂課程 (純購買)</option>
                         <option value="其他" ${c === '其他' ? 'selected' : ''}>其他</option>
                     </select>
                 </div>
@@ -218,7 +217,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try { 
                     await navigator.share({ files: [file], title: '錦葳結帳明細', text: '感謝您的蒞臨！' }); 
-                } catch (error) { console.log('分享取消', error); }
+                } catch (error) {}
             } else {
                 try {
                     const url = window.URL.createObjectURL(blob);
@@ -366,7 +365,6 @@ async function searchFin() {
         const r = await response.json(); 
         renderFinanceRecords(r.data, 'adjArea');
     } catch(e) { 
-        console.error(e); 
     } finally { 
         btn.innerText = '手動搜尋歷史財務紀錄'; 
     }
@@ -397,7 +395,7 @@ function renderFinanceRecords(dataArray, targetElId) {
                     </div>
                     
                     <div id="voidForm-${i.orderId}" class="void-box" style="display:none; background:rgba(239, 68, 68, 0.05); padding:15px; border-radius:8px; border-left:4px solid #ef4444; margin-top:10px;">
-                        <p style="color:#ef4444; font-size:12px; font-weight:bold; margin-top:0;">⚠️ 警告：請確實核對變更事項，此動作將作廢原單並產生一筆 -1 的新單覆蓋營收！</p>
+                        <p style="color:#ef4444; font-size:12px; font-weight:bold; margin-top:0;">⚠️ 警告：此動作將作廢原單並產生一筆 -1 的新單覆蓋營收！</p>
                         
                         <div style="display:flex; gap:10px; margin-bottom:10px;">
                             <div style="flex:1;">
@@ -422,9 +420,9 @@ function renderFinanceRecords(dataArray, targetElId) {
                                     <option value="無痛滑罐放鬆-30分鐘" ${c.includes('30分鐘')?'selected':''}>無痛滑罐放鬆-30分鐘</option>
                                     <option value="全方位滑罐放鬆-90分鐘" ${c.includes('90分鐘')?'selected':''}>全方位滑罐放鬆-90分鐘</option>
                                     <option value="單部位舒緩修復" ${c.includes('單部位')?'selected':''}>單部位舒緩修復</option>
-                                    <option value="全身結構養護" ${c.includes('結構') || c.includes('平衡')?'selected':''}>全身結構養護</option>
+                                    <option value="全身結構養護" ${c.includes('結構')||c.includes('平衡')?'selected':''}>全身結構養護</option>
                                     <option value="全身全方位深度修復-60分鐘" ${c.includes('60分鐘')?'selected':''}>全身全方位深度修復-60分鐘</option>
-                                    <option value="專案套票/多堂課程 (純購買)" ${c.includes('套票')?'selected':''}>專案套票/多堂課程</option>
+                                    <option value="專案套票/多堂課程 (純購買)" ${c.includes('套票')?'selected':''}>專案套票/多堂課程 (純購買)</option>
                                     <option value="其他" ${c === '其他'?'selected':''}>其他</option>
                                 </select>
                             </div>
@@ -460,7 +458,7 @@ function renderFinanceRecords(dataArray, targetElId) {
                 </div>`;
         });
     } else {
-        area.innerHTML = '<p style="text-align:center; color:var(--text-light);">查無符合紀錄</p>';
+        area.innerHTML = '<p style="text-align:center;">查無符合紀錄</p>';
     }
 }
 
@@ -494,7 +492,7 @@ async function submitFinanceUpdate(orderId) {
             alert('該筆財務檔案已成功變更紀錄！');
             const rowEl = el(`f-${orderId}`); 
             rowEl.style.opacity = '0.5';
-            rowEl.innerHTML = '<p style="color:#ef4444;text-align:center;font-weight:bold;margin-top:10px;">[此項紀錄已完成修改，並產生了新的 -1 單號，請重新搜尋以載入最新資料]</p>';
+            rowEl.innerHTML = '<p style="color:#ef4444;text-align:center;font-weight:bold;margin-top:10px;">[此項紀錄已完成修改，並產生了新的 -1 單號，請重新搜尋]</p>';
         } else {
             alert('異動失敗：' + r.message);
         }
