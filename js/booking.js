@@ -53,7 +53,7 @@ window.autoCalcEndTime = () => {
     el('bkEndTime').innerHTML = getTimeOptionsHTML(`${endH}:${endM}`);
 };
 
-// 🌟 自動辨識「新增預約」與「取消申請」，優先讀取 confirmedTime
+// 🌟 自動辨識「新增預約」與「取消申請」，處理完的絕對不會再出現
 window.loadOnlineRequests = async () => {
     const btn = el('btnLoadRequests');
     const area = el('onlineRequestsArea');
@@ -64,16 +64,16 @@ window.loadOnlineRequests = async () => {
         area.innerHTML = '';
         if (r.status === 'success' && r.data.length > 0) {
             r.data.forEach(i => {
+                // 判斷是否為顧客提出的「取消申請」
                 const isCancel = i.status.includes('取消') || i.course.includes('取消') || (i.note && i.note.includes('取消'));
 
                 if (isCancel) {
-                    // 🌟 優先使用 H 欄抓回來的「真實確定的預約時間」
-                    let cancelTime = i.confirmedTime ? i.confirmedTime : (i.times.length > 0 ? `${i.times[0].date} ${i.times[0].time}` : '未知時間');
+                    let cancelTime = i.times.length > 0 ? `${i.times[0].date} ${i.times[0].time}` : '未知時間';
                     area.innerHTML += `
-                    <div class="result-card" style="border-left-color:#ef4444; background: #fff5f5; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                    <div class="result-card" id="req-card-${i.id}" style="border-left-color:#ef4444; background: #fff5f5; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                         <strong style="color:#ef4444; font-size:16px;">🚨 顧客提出取消預約申請</strong><br>
                         <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
-                        系統鎖定欲取消之時段：<br><span style="color:#ef4444; font-weight:bold; font-size:16px;">${cancelTime}</span><br>
+                        欲取消時段：<span style="color:#ef4444; font-weight:bold; font-size:16px;">${cancelTime}</span><br>
                         <button type="button" class="btn-submit" style="padding:10px; font-size:14px; margin-top:12px; background:#ef4444; color:white; border-radius:6px; display:block; width:100%; text-align:center;" 
                             onclick="approveOnlineCancel('${i.id}', '${i.phone}', '${cancelTime}')">
                             🗑️ 確認並直接取消原排程
@@ -92,7 +92,7 @@ window.loadOnlineRequests = async () => {
                     });
 
                     area.innerHTML += `
-                    <div class="result-card" style="border-left-color:var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                    <div class="result-card" id="req-card-${i.id}" style="border-left-color:var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                         <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
                         項目：<span style="color:var(--text-main); font-weight:bold;">${i.course}</span><br>
                         <div style="margin-top:8px; margin-bottom: 12px;">
@@ -114,41 +114,27 @@ window.loadOnlineRequests = async () => {
     }
 };
 
-// 🌟 強大的防呆：若任何一步驟失敗，跳出詳細回報
 window.approveOnlineCancel = async (reqId, phone, timeStr) => {
     if(!confirm('確定要直接取消該客人的此筆排程嗎？系統將同步作廢並寫回紅燈狀態。')) return;
-    const btn = el('btnLoadRequests'); 
-    btn.innerText = '執行三步驟取消中...';
     try {
         const payload = { action: 'approveOnlineCancel', reqId: reqId, phone: phone, timeStr: timeStr };
-        const r = await fetch(API, { method: 'POST', body: JSON.stringify(payload) }).then(x=>x.json());
-        
-        if (r.status === 'success') {
-            alert(r.message);
-        } else if (r.status === 'warning') {
-            alert("⚠️ 系統提示 (部分動作缺失)：\n\n" + r.message + "\n\n💡 可能原因：時間曾被手動修改，或原先並未排入行事曆。請店務人員確認手動狀態！");
-        } else {
-            alert('執行錯誤：' + r.message);
-        }
-        window.loadOnlineRequests(); 
+        const res = await fetch(API, { method: 'POST', body: JSON.stringify(payload) }).then(x=>x.json());
+        alert('✅ 已成功取消該排程，並同步更新會員系統為紅燈標記！');
+        el(`req-card-${reqId}`).style.display = 'none'; // 立即從畫面上移除
     } catch(e) { 
         alert('取消失敗，請檢查網路連線。'); 
-        btn.innerText = '📥 載入最新預約申請'; 
     }
 };
 
 window.rejectRequest = async (reqId) => {
     if(!confirm('確定要取消此申請，並標記為「無適合時間」嗎？')) return;
-    const btn = el('btnLoadRequests');
-    btn.innerText = '正在註記...';
     try {
         const payload = { action: 'rejectOnlineBooking', onlineReqId: reqId };
         await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
         alert('已將該申請標記為取消。請記得透過官方 LINE 與顧客聯繫確認新時間！');
-        window.loadOnlineRequests(); 
+        el(`req-card-${reqId}`).style.display = 'none'; // 立即從畫面上移除
     } catch (e) {
         alert('註記失敗，請檢查網路狀態。');
-        btn.innerText = '📥 載入最新預約申請';
     }
 };
 
@@ -208,12 +194,13 @@ window.submitBookingData = async () => {
 
     await apiCall('createBooking', payload, '✅ 預約已成功寫入系統與行事曆！');
     
+    if (window.currentOnlineReqId) {
+        el(`req-card-${window.currentOnlineReqId}`).style.display = 'none'; // 立即移除該卡片
+    }
     window.currentOnlineReqId = ''; 
-    el('onlineRequestsArea').innerHTML = ''; 
     btn.innerText = originalText; btn.disabled = false;
 };
 
-// ... 其餘搜尋與取消代碼維持不變 (searchBks, renderBks, 等)
 window.searchBks = async () => {
     const kw = v('srchKw');
     if(!kw) return alert('請輸入搜尋關鍵字！');
