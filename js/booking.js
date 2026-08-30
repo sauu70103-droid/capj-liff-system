@@ -53,7 +53,7 @@ window.autoCalcEndTime = () => {
     el('bkEndTime').innerHTML = getTimeOptionsHTML(`${endH}:${endM}`);
 };
 
-// 🌟 升級：自動辨識「新增預約」與「取消申請」，呈現對應卡片
+// 🌟 自動辨識「新增預約」與「取消申請」，優先讀取 confirmedTime
 window.loadOnlineRequests = async () => {
     const btn = el('btnLoadRequests');
     const area = el('onlineRequestsArea');
@@ -64,23 +64,22 @@ window.loadOnlineRequests = async () => {
         area.innerHTML = '';
         if (r.status === 'success' && r.data.length > 0) {
             r.data.forEach(i => {
-                // 判斷是否為顧客在前端提出的「取消申請」
                 const isCancel = i.status.includes('取消') || i.course.includes('取消') || (i.note && i.note.includes('取消'));
 
                 if (isCancel) {
-                    let cancelTime = i.times.length > 0 ? `${i.times[0].date} ${i.times[0].time}` : '未知時間';
+                    // 🌟 優先使用 H 欄抓回來的「真實確定的預約時間」
+                    let cancelTime = i.confirmedTime ? i.confirmedTime : (i.times.length > 0 ? `${i.times[0].date} ${i.times[0].time}` : '未知時間');
                     area.innerHTML += `
                     <div class="result-card" style="border-left-color:#ef4444; background: #fff5f5; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                         <strong style="color:#ef4444; font-size:16px;">🚨 顧客提出取消預約申請</strong><br>
                         <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
-                        欲取消時段：<span style="color:#ef4444; font-weight:bold; font-size:16px;">${cancelTime}</span><br>
+                        系統鎖定欲取消之時段：<br><span style="color:#ef4444; font-weight:bold; font-size:16px;">${cancelTime}</span><br>
                         <button type="button" class="btn-submit" style="padding:10px; font-size:14px; margin-top:12px; background:#ef4444; color:white; border-radius:6px; display:block; width:100%; text-align:center;" 
                             onclick="approveOnlineCancel('${i.id}', '${i.phone}', '${cancelTime}')">
                             🗑️ 確認並直接取消原排程
                         </button>
                     </div>`;
                 } else {
-                    // 一般的新增預約申請
                     let timeButtonsHtml = '';
                     i.times.forEach((t, idx) => {
                         if(t.date && t.time) {
@@ -115,15 +114,22 @@ window.loadOnlineRequests = async () => {
     }
 };
 
-// 🌟 一鍵執行線上取消申請
+// 🌟 強大的防呆：若任何一步驟失敗，跳出詳細回報
 window.approveOnlineCancel = async (reqId, phone, timeStr) => {
     if(!confirm('確定要直接取消該客人的此筆排程嗎？系統將同步作廢並寫回紅燈狀態。')) return;
     const btn = el('btnLoadRequests'); 
-    btn.innerText = '執行取消中...';
+    btn.innerText = '執行三步驟取消中...';
     try {
         const payload = { action: 'approveOnlineCancel', reqId: reqId, phone: phone, timeStr: timeStr };
-        const res = await fetch(API, { method: 'POST', body: JSON.stringify(payload) }).then(x=>x.json());
-        alert('✅ 已成功取消該排程，並同步更新會員系統為紅燈標記！');
+        const r = await fetch(API, { method: 'POST', body: JSON.stringify(payload) }).then(x=>x.json());
+        
+        if (r.status === 'success') {
+            alert(r.message);
+        } else if (r.status === 'warning') {
+            alert("⚠️ 系統提示 (部分動作缺失)：\n\n" + r.message + "\n\n💡 可能原因：時間曾被手動修改，或原先並未排入行事曆。請店務人員確認手動狀態！");
+        } else {
+            alert('執行錯誤：' + r.message);
+        }
         window.loadOnlineRequests(); 
     } catch(e) { 
         alert('取消失敗，請檢查網路連線。'); 
@@ -207,6 +213,7 @@ window.submitBookingData = async () => {
     btn.innerText = originalText; btn.disabled = false;
 };
 
+// ... 其餘搜尋與取消代碼維持不變 (searchBks, renderBks, 等)
 window.searchBks = async () => {
     const kw = v('srchKw');
     if(!kw) return alert('請輸入搜尋關鍵字！');
