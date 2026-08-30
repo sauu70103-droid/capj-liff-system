@@ -13,7 +13,6 @@
 <div class="container">
     <div id="loadingOverlay">系統連線驗證中...</div>
     
-    <!-- 🌟 UI 頂部 Logo (PNG 支援) -->
     <img src="./logo.png" alt="錦葳Logo" style="width: 160px; display: block; margin: 0 auto 15px; object-fit: contain;">
     
     <h2>店務與財務系統</h2>
@@ -27,7 +26,6 @@
     <!-- 頁籤一：店務預約系統 -->
     <div id="bookingTab" class="form-section active">
         
-        <!-- 🌟 接收前端會員預約申請區塊 -->
         <div style="background: rgba(243, 112, 33, 0.05); border: 1px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 25px;">
             <label style="color: var(--primary); font-weight: bold; margin-bottom:10px; display:block;">🔔 前端會員線上預約申請</label>
             <button type="button" id="btnLoadRequests" class="btn-search" style="background: var(--secondary); color: var(--text-main);" onclick="loadOnlineRequests()">📥 載入最新預約申請</button>
@@ -53,12 +51,12 @@
         <div class="form-group">
             <label>消費項目 (選取後自動推算結束時間)</label>
             <select id="bkCourse" onchange="autoCalcEndTime()">
-                <option value="局部無痛滑罐(精準放鬆)-10分鐘">局部無痛滑罐-10分鐘</option>
-                <option value="肩頸背套餐(滑罐＋定罐)-15分鐘">肩頸背套餐-15分鐘</option>
-                <option value="無痛滑罐放鬆(快速修復)-30分鐘">無痛滑罐放鬆-30分鐘</option>
-                <option value="全方位滑罐放鬆(全身修復)-90分鐘">全方位滑罐放鬆-90分鐘</option>
-                <option value="單部位舒緩修復(精準調理)">單部位舒緩修復</option>
-                <option value="全身結構養護(平衡調理)">全身結構養護</option>
+                <option value="局部無痛滑罐-10分鐘">局部無痛滑罐-10分鐘</option>
+                <option value="肩頸背套餐-15分鐘">肩頸背套餐-15分鐘</option>
+                <option value="無痛滑罐放鬆-30分鐘">無痛滑罐放鬆-30分鐘</option>
+                <option value="全方位滑罐放鬆-90分鐘">全方位滑罐放鬆-90分鐘</option>
+                <option value="單部位舒緩修復">單部位舒緩修復</option>
+                <option value="全身結構養護">全身結構養護</option>
                 <option value="全身全方位深度修復-60分鐘">全身全方位深度修復-60分鐘</option>
                 <option value="專案套票/多堂課程 (純購買)">專案套票/多堂課程 (純購買)</option>
                 <option value="其他">其他</option>
@@ -98,7 +96,6 @@
             <input type="text" id="bkNote" placeholder="例如：特別加強肩頸...">
         </div>
 
-        <!-- 🌟 收合的多次預約按鈕 -->
         <button type="button" class="btn-search" style="margin-bottom: 15px; font-size:14px; background: transparent; border: 1px dashed var(--primary); color: var(--primary);" onclick="toggleMultipleBox()">➕ 展開多次連續預約設定 (常客週調)</button>
         
         <div id="multipleBox" class="hidden" style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); margin-bottom: 18px;">
@@ -211,7 +208,6 @@
     </div>
 </div>
 
-<!-- 收據儲存 Modal -->
 <div id="receiptSaveModal">
     <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
     <p style="color: #EAD8C0; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
@@ -223,7 +219,6 @@
     </button>
 </div>
 
-<!-- 實體收據圖渲染區 (保留完整熱感印樣式) -->
 <div id="receiptCaptureArea">
     <div class="receipt-header">
         <img id="receiptLogoImg" src="./logo.jpg" crossorigin="anonymous" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
