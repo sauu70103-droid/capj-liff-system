@@ -60,24 +60,26 @@ async function loadPend() {
                 d.innerText = `+ ${i.name} [${i.dateStr}] [${displayCourse}]`;
                 
                 d.onclick = () => {
-                    let matchedCourse = "無痛滑罐放鬆-30分鐘";
+                    // 🌟 核心升級：金流與最新 4 大方案對標
+                    let matchedCourse = "無痛滑罐放鬆 (快速修復)";
                     let matchedPrice = 600;
                     const rawC = i.course || '';
                     
-                    if (rawC.includes('深度') || rawC.includes('60分鐘')) { 
-                        matchedCourse = "全身全方位深度修復-60分鐘"; matchedPrice = 2000; 
-                    } else if (rawC.includes('全方位') || rawC.includes('90分鐘')) { 
-                        matchedCourse = "全方位滑罐放鬆-90分鐘"; matchedPrice = 1600; 
-                    } else if (rawC.includes('單部位')) { 
-                        matchedCourse = "單部位舒緩修復"; matchedPrice = 600; 
-                    } else if (rawC.includes('結構') || rawC.includes('平衡')) { 
-                        matchedCourse = "全身結構養護"; matchedPrice = 1000; 
+                    if (rawC.includes('全身深度') || rawC.includes('深度重整')) { 
+                        matchedCourse = "全身深度重整 (全身放鬆+全身傳統整復)"; 
+                        matchedPrice = 3600; 
+                    } else if (rawC.includes('重點平衡') || rawC.includes('平衡調理')) { 
+                        matchedCourse = "重點平衡調理 (半身放鬆+全身傳統整復)"; 
+                        matchedPrice = rawC.includes('滑罐') ? 2200 : 2000; // 保留加購滑罐 +200 邏輯
+                    } else if (rawC.includes('單部位') || rawC.includes('精準調理')) { 
+                        matchedCourse = "單部位舒緩修復 (精準調理)"; 
+                        matchedPrice = 600; 
+                    } else if (rawC.includes('無痛滑罐') || rawC.includes('快速修復')) { 
+                        matchedCourse = "無痛滑罐放鬆 (快速修復)"; 
+                        matchedPrice = 600; 
                     } else if (rawC.includes('套票') || rawC.includes('純購')) { 
-                        matchedCourse = "專案套票/多堂課程 (純購買)"; matchedPrice = 0; 
-                    } else if (rawC.includes('10分鐘') || rawC.includes('局部')) { 
-                        matchedCourse = "局部無痛滑罐-10分鐘"; matchedPrice = 200; 
-                    } else if (rawC.includes('15分鐘') || rawC.includes('肩頸')) { 
-                        matchedCourse = "肩頸背套餐-15分鐘"; matchedPrice = 300; 
+                        matchedCourse = "專案套票/多堂課程 (純購買)"; 
+                        matchedPrice = 0; 
                     }
 
                     const memData = members.find(m => m.name === i.name);
@@ -172,13 +174,10 @@ function renderCart() {
                 <div style="flex:2;">
                     <label style="font-size:12px;margin-bottom:2px;">消費項目</label>
                     <select onchange="uc('${i.id}','course',this.value)" style="padding:6px;font-size:14px;">
-                        <option value="局部無痛滑罐-10分鐘" ${c.includes('10分鐘') ? 'selected' : ''}>局部無痛滑罐-10分鐘</option>
-                        <option value="肩頸背套餐-15分鐘" ${c.includes('15分鐘') ? 'selected' : ''}>肩頸背套餐-15分鐘</option>
-                        <option value="無痛滑罐放鬆-30分鐘" ${c.includes('30分鐘') ? 'selected' : ''}>無痛滑罐放鬆-30分鐘</option>
-                        <option value="全方位滑罐放鬆-90分鐘" ${c.includes('90分鐘') ? 'selected' : ''}>全方位滑罐放鬆-90分鐘</option>
-                        <option value="單部位舒緩修復" ${c.includes('單部位') ? 'selected' : ''}>單部位舒緩修復</option>
-                        <option value="全身結構養護" ${c.includes('結構') || c.includes('平衡') ? 'selected' : ''}>全身結構養護</option>
-                        <option value="全身全方位深度修復-60分鐘" ${c.includes('60分鐘') || c.includes('深度') ? 'selected' : ''}>全身全方位深度修復-60分鐘</option>
+                        <option value="無痛滑罐放鬆 (快速修復)" ${c.includes('無痛滑罐放鬆') ? 'selected' : ''}>無痛滑罐放鬆 (快速修復)</option>
+                        <option value="單部位舒緩修復 (精準調理)" ${c.includes('單部位舒緩修復') ? 'selected' : ''}>單部位舒緩修復 (精準調理)</option>
+                        <option value="重點平衡調理 (半身放鬆+全身傳統整復)" ${c.includes('重點平衡調理') ? 'selected' : ''}>重點平衡調理 (半身放鬆+全身傳統整復)</option>
+                        <option value="全身深度重整 (全身放鬆+全身傳統整復)" ${c.includes('全身深度重整') ? 'selected' : ''}>全身深度重整 (全身放鬆+全身傳統整復)</option>
                         <option value="專案套票/多堂課程 (純購買)" ${c.includes('套票') ? 'selected' : ''}>專案套票/多堂課程 (純購買)</option>
                         <option value="其他" ${c === '其他' ? 'selected' : ''}>其他</option>
                     </select>
@@ -415,13 +414,10 @@ function renderFinanceRecords(dataArray, targetElId) {
                             <div style="flex:2;">
                                 <label style="font-size:12px;">消費項目</label>
                                 <select id="fAdjCourse-${i.orderId}" style="padding:6px; font-size:13px;">
-                                    <option value="局部無痛滑罐-10分鐘" ${c.includes('10分鐘')?'selected':''}>局部無痛滑罐-10分鐘</option>
-                                    <option value="肩頸背套餐-15分鐘" ${c.includes('15分鐘')?'selected':''}>肩頸背套餐-15分鐘</option>
-                                    <option value="無痛滑罐放鬆-30分鐘" ${c.includes('30分鐘')?'selected':''}>無痛滑罐放鬆-30分鐘</option>
-                                    <option value="全方位滑罐放鬆-90分鐘" ${c.includes('90分鐘')?'selected':''}>全方位滑罐放鬆-90分鐘</option>
-                                    <option value="單部位舒緩修復" ${c.includes('單部位')?'selected':''}>單部位舒緩修復</option>
-                                    <option value="全身結構養護" ${c.includes('結構')||c.includes('平衡')?'selected':''}>全身結構養護</option>
-                                    <option value="全身全方位深度修復-60分鐘" ${c.includes('60分鐘')?'selected':''}>全身全方位深度修復-60分鐘</option>
+                                    <option value="無痛滑罐放鬆 (快速修復)" ${c.includes('無痛滑罐放鬆')?'selected':''}>無痛滑罐放鬆 (快速修復)</option>
+                                    <option value="單部位舒緩修復 (精準調理)" ${c.includes('單部位舒緩修復')?'selected':''}>單部位舒緩修復 (精準調理)</option>
+                                    <option value="重點平衡調理 (半身放鬆+全身傳統整復)" ${c.includes('重點平衡調理')?'selected':''}>重點平衡調理 (半身放鬆+全身傳統整復)</option>
+                                    <option value="全身深度重整 (全身放鬆+全身傳統整復)" ${c.includes('全身深度重整')?'selected':''}>全身深度重整 (全身放鬆+全身傳統整復)</option>
                                     <option value="專案套票/多堂課程 (純購買)" ${c.includes('套票')?'selected':''}>專案套票/多堂課程 (純購買)</option>
                                     <option value="其他" ${c === '其他'?'selected':''}>其他</option>
                                 </select>
@@ -458,7 +454,7 @@ function renderFinanceRecords(dataArray, targetElId) {
                 </div>`;
         });
     } else {
-        area.innerHTML = '<p style="text-align:center;">查無符合紀錄</p>';
+        area.innerHTML = '<p style="text-align:center; color:var(--text-light);">查無符合紀錄</p>';
     }
 }
 
