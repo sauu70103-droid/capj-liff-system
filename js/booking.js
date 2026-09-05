@@ -30,18 +30,17 @@ window.autoCalcEndTime = () => {
     if (!startDate || !startTime) return;
 
     const course = el('bkCourse').value || "";
-    let addMinutes = 60;
+    let addMinutes = 60; // 預設 60 分鐘
     
-    if(course.includes("10分鐘")) {
-        addMinutes = 10;
-    } else if(course.includes("15分鐘")) {
+    // 🌟 中央規範：精準排程時長映射
+    if(course.includes("單部位舒緩修復")) {
         addMinutes = 15;
-    } else if(course.includes("30分鐘")) {
+    } else if(course.includes("無痛滑罐放鬆")) {
         addMinutes = 30;
-    } else if(course.includes("60分鐘") || course.includes("單部位舒緩") || course.includes("結構養護")) {
+    } else if(course.includes("重點平衡調理")) {
         addMinutes = 60;
-    } else if(course.includes("90分鐘")) {
-        addMinutes = 90;
+    } else if(course.includes("全身深度重整")) {
+        addMinutes = 120;
     } else if(course.includes("套票") || course.includes("純購")) {
         addMinutes = 15;
     }
@@ -95,7 +94,6 @@ window.loadOnlineRequests = async () => {
                         </button>
                     </div>`;
                 } else if (isReschedule) {
-                    // 會員提出改期申請 🟡
                     let newTimeHtml = '';
                     i.times.forEach((t, idx) => {
                         if(t.date && t.time) {
@@ -120,7 +118,6 @@ window.loadOnlineRequests = async () => {
                         </button>
                     </div>`;
                 } else {
-                    // 一般預約 
                     let timeButtonsHtml = '';
                     i.times.forEach((t, idx) => {
                         if(t.date && t.time) {
@@ -188,26 +185,39 @@ window.approveRequest = (reqId, name, phone, course, date, time) => {
     
     if (course) {
         let matched = false;
+        // 🌟 智慧關鍵字對齊最新 4 大核心方案
         const keywordMap = {
-            '局部無痛滑罐-10分鐘': '局部無痛滑罐-10分鐘',
-            '肩頸背套餐-15分鐘': '肩頸背套餐-15分鐘',
-            '無痛滑罐放鬆-30分鐘': '無痛滑罐放鬆-30分鐘',
-            '全方位滑罐放鬆-90分鐘': '全方位滑罐放鬆-90分鐘',
-            '單部位舒緩修復': '單部位舒緩修復',
-            '全身結構養護': '全身結構養護',
-            '全身全方位深度修復-60分鐘': '全身全方位深度修復-60分鐘',
-            '專案套票/多堂課程 (純購買)': '專案套票/多堂課程 (純購買)',
+            '無痛滑罐': '無痛滑罐放鬆 (快速修復)',
+            '快速修復': '無痛滑罐放鬆 (快速修復)',
+            '單部位': '單部位舒緩修復 (精準調理)',
+            '精準調理': '單部位舒緩修復 (精準調理)',
+            '重點平衡': '重點平衡調理 (半身放鬆+全身傳統整復)',
+            '平衡調理': '重點平衡調理 (半身放鬆+全身傳統整復)',
+            '全身深度': '全身深度重整 (全身放鬆+全身傳統整復)',
+            '深度重整': '全身深度重整 (全身放鬆+全身傳統整復)',
+            '套票': '專案套票/多堂課程 (純購買)',
             '其他': '其他'
         };
 
         const opts = el('bkCourse').options;
         for (let i = 0; i < opts.length; i++) {
-            if (opts[i].value === course || keywordMap[course] === opts[i].value) {
+            if (opts[i].value === course) {
                 el('bkCourse').selectedIndex = i;
                 matched = true;
                 break;
             }
         }
+        
+        if (!matched) {
+            for (let key in keywordMap) {
+                if (course.includes(key)) {
+                    el('bkCourse').value = keywordMap[key];
+                    matched = true;
+                    break;
+                }
+            }
+        }
+        
         if(!matched) {
             el('bkCourse').value = '其他';
         }
@@ -328,13 +338,10 @@ window.renderBks = (data) => {
                 <div style="margin-bottom:10px;">
                     <label style="font-size:12px;">新課程項目</label>
                     <select id="ebCourse-${i.id}" style="padding:6px; font-size:13px; width:100%;">
-                        <option value="局部無痛滑罐-10分鐘" ${i.course.includes('10分鐘')?'selected':''}>局部無痛滑罐-10分鐘</option>
-                        <option value="肩頸背套餐-15分鐘" ${i.course.includes('15分鐘')?'selected':''}>肩頸背套餐-15分鐘</option>
-                        <option value="無痛滑罐放鬆-30分鐘" ${i.course.includes('30分鐘')?'selected':''}>無痛滑罐放鬆-30分鐘</option>
-                        <option value="全方位滑罐放鬆-90分鐘" ${i.course.includes('90分鐘')?'selected':''}>全方位滑罐放鬆-90分鐘</option>
-                        <option value="單部位舒緩修復" ${i.course.includes('單部位')?'selected':''}>單部位舒緩修復</option>
-                        <option value="全身結構養護" ${i.course.includes('結構')||i.course.includes('平衡')?'selected':''}>全身結構養護</option>
-                        <option value="全身全方位深度修復-60分鐘" ${i.course.includes('60分鐘')||i.course.includes('深度')?'selected':''}>全身全方位深度修復-60分鐘</option>
+                        <option value="無痛滑罐放鬆 (快速修復)" ${i.course.includes('無痛滑罐放鬆')?'selected':''}>無痛滑罐放鬆 (快速修復)</option>
+                        <option value="單部位舒緩修復 (精準調理)" ${i.course.includes('單部位')?'selected':''}>單部位舒緩修復 (精準調理)</option>
+                        <option value="重點平衡調理 (半身放鬆+全身傳統整復)" ${i.course.includes('重點平衡調理')?'selected':''}>重點平衡調理 (半身放鬆+全身傳統整復)</option>
+                        <option value="全身深度重整 (全身放鬆+全身傳統整復)" ${i.course.includes('全身深度重整')?'selected':''}>全身深度重整 (全身放鬆+全身傳統整復)</option>
                         <option value="專案套票/多堂課程 (純購買)" ${i.course.includes('套票')?'selected':''}>專案套票/多堂課程</option>
                         <option value="其他" ${i.course==='其他'?'selected':''}>其他</option>
                     </select>
