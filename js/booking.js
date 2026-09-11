@@ -60,6 +60,7 @@ window.autoCalcEndTime = () => {
     el('bkEndTime').innerHTML = getTimeOptionsHTML(`${endH}:${endM}`);
 };
 
+// 🌟 三維定錨渲染：Order_ID, JW_ID, Client_Name
 window.loadOnlineRequests = async () => {
     const btn = el('btnLoadRequests');
     const area = el('onlineRequestsArea');
@@ -79,6 +80,9 @@ window.loadOnlineRequests = async () => {
             r.data.forEach(i => {
                 const isCancel = i.status.includes('要求取消') || i.status.includes('取消申請');
                 const isReschedule = i.status.includes('要求改期');
+                
+                // 產生三維標題： 姓名 (Order_ID)
+                const displayTitle = `${i.name || '未登錄姓名'} <span style="font-size:13px; color:#888; font-weight:normal;">(${i.orderId || '單號生成中'})</span>`;
 
                 if (isCancel) {
                     let cancelTime = i.times.length > 0 ? `${i.times[0].date} ${i.times[0].time}` : '未知時間';
@@ -86,7 +90,7 @@ window.loadOnlineRequests = async () => {
                     area.innerHTML += `
                     <div class="result-card" id="req-card-${i.id}" style="border-left-color:#ef4444; background: #fff5f5; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                         <strong style="color:#ef4444; font-size:16px;">🚨 顧客提出取消預約申請</strong><br>
-                        <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
+                        <strong style="color:var(--text-main); font-size:16px;">${displayTitle}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
                         欲取消時段：<span style="color:#ef4444; font-weight:bold; font-size:16px;">${cancelTime}</span>${cancelReason}<br>
                         <button type="button" class="btn-submit" style="padding:10px; font-size:14px; margin-top:12px; background:#ef4444; color:white; border-radius:6px; display:block; width:100%; text-align:center;" 
                             onclick="approveOnlineCancel('${i.id}', '${i.phone}', '${cancelTime}')">
@@ -107,7 +111,7 @@ window.loadOnlineRequests = async () => {
                     area.innerHTML += `
                     <div class="result-card" id="req-card-${i.id}" style="border-left-color:#eab308; background: #fefce8; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                         <strong style="color:#ca8a04; font-size:16px;">🔄 顧客提出改期申請</strong><br>
-                        <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
+                        <strong style="color:var(--text-main); font-size:16px;">${displayTitle}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
                         項目：<span style="color:var(--text-main); font-weight:bold;">${i.course}</span><br>
                         <div style="margin-top:8px; margin-bottom: 12px;">
                             ${newTimeHtml}
@@ -131,7 +135,7 @@ window.loadOnlineRequests = async () => {
 
                     area.innerHTML += `
                     <div class="result-card" id="req-card-${i.id}" style="border-left-color:var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
-                        <strong style="color:var(--text-main); font-size:16px;">${i.name || '未登錄姓名'}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
+                        <strong style="color:var(--text-main); font-size:16px;">${displayTitle}</strong> <span style="color:var(--text-light);">(${i.phone})</span><br>
                         項目：<span style="color:var(--text-main); font-weight:bold;">${i.course}</span><br>
                         <div style="margin-top:8px; margin-bottom: 12px;">
                             ${timeButtonsHtml}
@@ -185,7 +189,6 @@ window.approveRequest = (reqId, name, phone, course, date, time) => {
     
     if (course) {
         let matched = false;
-        // 🌟 智慧關鍵字對齊最新 4 大核心方案
         const keywordMap = {
             '無痛滑罐': '無痛滑罐放鬆 (快速修復)',
             '快速修復': '無痛滑罐放鬆 (快速修復)',
@@ -309,12 +312,18 @@ window.renderBks = (data) => {
         if(i.start && i.start.includes(' ')) { [sD, sT] = i.start.split(' '); }
         if(i.end && i.end.includes(' ')) { [eD, eT] = i.end.split(' '); }
 
+        // 🌟 渲染非同步狀態標籤 Badge
+        let finBadge = i.finStatus === '[已結帳]' ? `<span style="background:#16a34a; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:6px;">財務已結清</span>` : `<span style="background:#eab308; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:6px;">財務未結算</span>`;
+        let techBadge = i.techStatus === 'TRUE' ? `<span style="background:#0ea5e9; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:4px;">中台已核銷</span>` : `<span style="background:#94a3b8; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:4px;">中台未處理</span>`;
+
         area.innerHTML += `
         <div class="result-card" id="bk-${i.id}">
-            <strong>${i.name}</strong> (${i.phone})<br>
+            <strong style="font-size:16px;">${i.name} <span style="font-size:13px; color:#888; font-weight:normal;">(${i.orderId || '單號遺失'})</span></strong> 
+            <br><span style="color:var(--text-light); font-size:13px;">(${i.phone})</span><br>
             時間：<span style="color:var(--primary); font-weight:bold;">${i.start} ~ ${i.end}</span><br>
             項目：${i.course}<br>
             師傅：${i.hero}<br>
+            狀態追蹤：${finBadge} ${techBadge}<br>
             備註：<span style="color:var(--text-light);">${i.note || '無'}</span><br>
             
             <div class="result-actions" style="margin-top:15px;">
