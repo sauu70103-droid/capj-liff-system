@@ -21,13 +21,14 @@
         <button class="tab-btn active" id="btnTabBooking" onclick="switchTab('bookingTab', this)">店務預約</button>
         <button class="tab-btn" id="btnTabFinance" onclick="switchTab('financeTab', this)">財務結帳</button>
         <button class="tab-btn" id="btnTabAdjust" onclick="switchTab('adjustTab', this)">財務異動</button>
+        <button class="tab-btn" id="btnTabPoints" onclick="switchTab('pointsTab', this)">點數銀行</button>
     </div>
 
     <!-- 頁籤一：店務預約系統 -->
     <div id="bookingTab" class="form-section active">
         
         <div style="background: rgba(243, 112, 33, 0.05); border: 1px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 25px;">
-            <label style="color: var(--primary); font-weight: bold; margin-bottom:10px; display:block;">🔔 前端會員線上預約申請</label>
+            <label style="color: var(--primary); font-weight: bold; margin-bottom:10px; display:block;">🔔 前端會員線上預約申請 (三維狀態機監控)</label>
             <button type="button" id="btnLoadRequests" class="btn-search" style="background: var(--secondary); color: var(--text-main);" onclick="loadOnlineRequests()">📥 載入最新預約申請</button>
             <div id="onlineRequestsArea" style="margin-top: 15px;"></div>
         </div>
@@ -39,7 +40,7 @@
         </div>
 
         <div class="form-group">
-            <label>手機號碼</label>
+            <label>手機號碼 (JW_ID 映射鍵)</label>
             <input type="tel" id="bkPhone" placeholder="09xxxxxxxx">
         </div>
         
@@ -115,7 +116,7 @@
     </div>
 
     <!-- 頁籤二：財務結帳系統 -->
-    <div id="financeTab" class="form-section">
+    <div id="financeTab" class="form-section hidden">
         <div id="summaryDashboard" class="hidden" style="background: #FAFAFA; border: 1px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <button class="btn-cancel-action" style="color: var(--primary); border-color: var(--primary);" onclick="fetchSum()">📊 載入高階營收數據</button>
             <div class="summary-grid hidden" id="sumData">
@@ -132,18 +133,20 @@
         
         <div class="cart-box">
             <div class="cart-title">
-                <span>🛒 結帳核對卡片 (支援多選與 88 折特約)</span>
+                <span>🛒 結帳核對卡片 (支援多選與合併結帳)</span>
                 <span id="cSum">$0</span>
             </div>
             <div id="cBody"></div>
         </div>
         
         <div class="form-group">
-            <label>結帳方式 💰</label>
+            <label>結帳方式 💰 (支援分流支付)</label>
             <select id="fPay" onchange="toggleRem()">
-                <option value="現金">現金</option>
-                <option value="轉帳/匯款">轉帳/匯款</option>
-                <option value="扣堂">扣堂</option>
+                <option value="現金">現金 (實體支付)</option>
+                <option value="轉帳/匯款">轉帳/匯款 (實體支付)</option>
+                <option value="點數扣抵_實體">點數錢包扣抵 (店務代扣)</option>
+                <option value="點數代付_遠端">數位支付 (發送遠端代付Token)</option>
+                <option value="扣堂">傳統扣堂 (即將棄用)</option>
             </select>
         </div>
         
@@ -168,6 +171,12 @@
                 <input type="text" id="fRem" placeholder="請輸入後五碼或匯款日期">
             </div>
         </div>
+
+        <div id="remotePayBox" class="hidden" style="background: #e0f2fe; padding: 15px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin-bottom: 18px;">
+            <p style="font-size: 13px; color: #0284c7; margin-top: 0; font-weight: bold;">📲 遠端代付模式</p>
+            <p style="font-size: 12px; color: #0369a1;">系統將合併 Order_ID，並產生授權連結推播給代付者。等待對方簽名授權後，系統將自動扣除其錢包點數並核銷此單。</p>
+            <input type="text" id="fRemotePayerPhone" placeholder="請輸入代付者(付款人)手機號碼" style="margin-top:8px;">
+        </div>
         
         <div class="form-group">
             <label>結帳時間 🕒 (預設為現在，補帳可手動修改)</label>
@@ -187,11 +196,11 @@
             <textarea id="fGenNote" placeholder="例如：開立統編、購課細節、特殊交代項目..." style="resize: vertical; height: 80px;"></textarea>
         </div>
         
-        <button id="btnCheckout" class="btn-submit" onclick="processCart()">確認合併結帳並產生電子明細圖</button>
+        <button id="btnCheckout" class="btn-submit" onclick="processCart()">執行結帳動作</button>
     </div>
 
     <!-- 頁籤三：財務異動系統 -->
-    <div id="adjustTab" class="form-section">
+    <div id="adjustTab" class="form-section hidden">
         <h3 style="color: #ef4444;">⚠️ 財務帳務異動調整</h3>
         <p style="font-size: 14px; color: var(--text-light);">預設顯示近 48 小時入帳明細，若需調閱更早資料請手動搜尋。</p>
         
@@ -202,6 +211,48 @@
         
         <button class="btn-search" id="btnSearchFinance" style="border-color: #ef4444; color: #ef4444;" onclick="searchFin()">手動搜尋歷史財務紀錄</button>
         <div id="adjArea" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- 頁籤四：點數銀行 (Point Bank) -->
+    <div id="pointsTab" class="form-section hidden">
+        <h3 style="color: var(--primary);">🏦 點數銀行：發行與退費管理</h3>
+        
+        <div style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid #4ade80; margin-bottom: 20px;">
+            <h4 style="margin-top:0; color:#16a34a;">➕ 點數發行 (點數儲值 / 活動贈點)</h4>
+            <div class="form-group autocomplete-container">
+                <label>發行對象 (手機號碼 / JW_ID)</label>
+                <input type="text" id="ptIssuePhone" placeholder="輸入關鍵字自動搜尋舊會員" autocomplete="off" onkeyup="showAutocomplete('ptIssuePhone', 'ptIssueList', null)" onfocus="showAutocomplete('ptIssuePhone', 'ptIssueList', null)">
+                <div id="ptIssueList" class="autocomplete-list"></div>
+            </div>
+            <div class="form-group">
+                <label>儲值本金 (A類 - 1:1新台幣，無期限)</label>
+                <input type="number" id="ptIssueA" placeholder="例如：5000">
+            </div>
+            <div class="form-group">
+                <label>解鎖贈點 (B類 - 綁定本金批次，A類耗盡方啟用)</label>
+                <input type="number" id="ptIssueB" placeholder="例如：500">
+            </div>
+            <div class="form-group">
+                <label>短效贈點 (C類 - 分享/活動無償贈點，優先扣抵)</label>
+                <input type="number" id="ptIssueC" placeholder="例如：0">
+            </div>
+            <div class="form-group">
+                <label>發行備註/核准代碼</label>
+                <input type="text" id="ptIssueNote" placeholder="例如：週年慶儲值優惠">
+            </div>
+            <button class="btn-submit" style="background:#16a34a;" onclick="issuePoints()">確認發行並寫入點數錢包</button>
+        </div>
+
+        <div style="background: #fff5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+            <h4 style="margin-top:0; color:#ef4444;">⛔ 點數退費與強制校正作廢</h4>
+            <div class="form-group autocomplete-container">
+                <label>退費對象 (手機號碼 / JW_ID)</label>
+                <input type="text" id="ptRefundPhone" placeholder="輸入關鍵字自動搜尋會員" autocomplete="off" onkeyup="showAutocomplete('ptRefundPhone', 'ptRefundList', null)" onfocus="showAutocomplete('ptRefundPhone', 'ptRefundList', null)">
+                <div id="ptRefundList" class="autocomplete-list"></div>
+            </div>
+            <button class="btn-search" style="border-color:#ef4444; color:#ef4444;" onclick="fetchWalletForRefund()">查詢可退費本金與關聯贈點</button>
+            <div id="ptRefundArea" style="margin-top:15px;"></div>
+        </div>
     </div>
 </div>
 
@@ -229,8 +280,8 @@
         <div class="receipt-row"><span>結帳方式 💰：</span><span id="rMth"></span></div>
         <div class="receipt-row"><span>經手人員 👤：</span><span id="rCsh"></span></div>
         <div class="receipt-row" id="rRemRow" style="display: none; font-weight: bold;">
-            <span>匯款資料：</span>
-            <span><span id="rRemNote"></span> <span style="font-size: 13px; color: #666; font-weight: normal;">(轉帳末5碼/日期)</span></span>
+            <span>匯款/代付資料：</span>
+            <span><span id="rRemNote"></span></span>
         </div>
     </div>
     
