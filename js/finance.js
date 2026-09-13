@@ -8,7 +8,7 @@ function toggleRem() {
 
     if (method === '轉帳/匯款') {
         el('transferBox').classList.remove('hidden');
-    } else if (method === '扣堂') {
+    } else if (method === '扣堂' || method === '點數扣抵_實體') {
         el('packageBox').classList.remove('hidden');
     } else if (method === '點數代付_遠端') {
         el('remotePayBox').classList.remove('hidden');
@@ -63,6 +63,7 @@ async function loadPend() {
                 d.innerText = `+ ${i.name} [${i.dateStr}] [${displayCourse}]`;
                 
                 d.onclick = () => {
+                    // 🌟 核心升級：金流與最新 4 大方案對標
                     let matchedCourse = "無痛滑罐放鬆 (快速修復)";
                     let matchedPrice = 600;
                     const rawC = i.course || '';
@@ -102,7 +103,7 @@ async function loadPend() {
                         orderId: i.orderId || '' // 三維定錨依賴
                     });
                     renderCart();
-                    if(v('fPay') === '扣堂') checkPackageAssets();
+                    if(v('fPay') === '扣堂' || v('fPay') === '點數扣抵_實體') checkPackageAssets();
                 };
                 el('pendArea').appendChild(d);
             });
@@ -159,7 +160,7 @@ function renderCart() {
             <button class="cart-item-del" onclick="cart=cart.filter(x=>x.id!=='${i.id}');renderCart()">✕</button>
             <div class="cart-item-row" style="padding-right: 35px;">
                 <div>
-                    <label style="font-size:12px;margin-bottom:2px;">會員姓名 <span style="color:#888;">${i.orderId ? '('+i.orderId+')' : ''}</span></label>
+                    <label style="font-size:12px;margin-bottom:2px;">會員姓名 <span style="color:#888;">${i.orderId ? '['+i.orderId+']' : ''}</span></label>
                     <div class="autocomplete-container">
                         <input value="${i.name}" onkeyup="uc('${i.id}','name',this.value); showAutocomplete('cartName-${i.id}', 'cartDrop-${i.id}', null)" onfocus="showAutocomplete('cartName-${i.id}', 'cartDrop-${i.id}', null)" id="cartName-${i.id}" style="padding:6px;font-size:14px;" autocomplete="off">
                         <div id="cartDrop-${i.id}" class="autocomplete-list"></div>
@@ -208,9 +209,7 @@ function base64ToBlob(base64, mime) {
     let byteString = atob(base64.split(',')[1]);
     let ab = new ArrayBuffer(byteString.length);
     let ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) { 
-        ia[i] = byteString.charCodeAt(i); 
-    }
+    for (let i = 0; i < byteString.length; i++) { ia[i] = byteString.charCodeAt(i); }
     return new Blob([ab], {type: mime});
 }
 
@@ -221,11 +220,8 @@ window.addEventListener('DOMContentLoaded', () => {
             if (!window.currentReceiptBase64) return;
             const blob = base64ToBlob(window.currentReceiptBase64, 'image/png');
             const file = new File([blob], window.currentReceiptFileName, { type: 'image/png' });
-            
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try { 
-                    await navigator.share({ files: [file], title: '錦葳結帳明細', text: '感謝您的蒞臨！' }); 
-                } catch (error) {}
+                try { await navigator.share({ files: [file], title: '錦葳結帳明細', text: '感謝您的蒞臨！' }); } catch (error) {}
             } else {
                 try {
                     const url = window.URL.createObjectURL(blob);
@@ -270,8 +266,7 @@ async function processCart() {
     if (rawPayMethod === '點數代付_遠端') {
         const payerPhone = v('fRemotePayerPhone');
         if(!payerPhone) {
-            btn.innerText = '執行結帳動作'; 
-            btn.disabled = false;
+            btn.innerText = '執行結帳動作'; btn.disabled = false;
             return alert('遠端代付模式必須填寫代付者(付款人)的手機號碼！');
         }
         
@@ -288,43 +283,36 @@ async function processCart() {
         try {
             const response = await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
             const r = await response.json();
-            btn.innerText = '執行結帳動作'; 
-            btn.disabled = false;
+            btn.innerText = '執行結帳動作'; btn.disabled = false;
 
             if (r && r.status === 'success') {
                 alert(`✅ 遠端代付發起成功！\n系統已產生授權 Token，請通知付款人 (${payerPhone}) 透過官方 LINE 開啟並簽名授權，系統將自動完成扣點。`);
-                cart = []; 
-                renderCart(); 
-                el('fRemotePayerPhone').value = '';
-                el('fGenNote').value = ''; 
+                cart = []; renderCart(); 
+                el('fRemotePayerPhone').value = ''; el('fGenNote').value = ''; 
             } else {
                 alert('代付發起失敗：' + r.message);
             }
         } catch(e) { 
-            btn.innerText = '執行結帳動作'; 
-            btn.disabled = false; 
+            btn.innerText = '執行結帳動作'; btn.disabled = false; 
             alert('網路異常，發起代付失敗'); 
         }
-        return; // 遠端代付不直接產生實體收據，攔截於此
+        return; // 遠端代付不產生實體收據
     }
 
     // ==========================================
-    // 實體結帳 (現金/轉帳/實體扣點/扣堂) 與實體收據產生模式
+    // 實體結帳 (現金/轉帳/實體扣點) 與收據產生模式
     // ==========================================
     el('rId').innerText = fid;
     el('rTm').innerText = finalCheckoutTime;
     
     let finalPayMethodStr = rawPayMethod;
-    if (rawPayMethod === '轉帳/匯款') {
-        finalPayMethodStr = `轉帳/匯款 (${v('fRecAcc')})`;
-    }
+    if (rawPayMethod === '轉帳/匯款') { finalPayMethodStr = `轉帳/匯款 (${v('fRecAcc')})`; }
     el('rMth').innerText = finalPayMethodStr; 
     el('rCsh').innerText = v('fCash');
     
     const remVal = v('fRem');
     if (rawPayMethod === '轉帳/匯款' && remVal) { 
-        el('rRemRow').style.display = 'flex'; 
-        el('rRemNote').innerText = remVal; 
+        el('rRemRow').style.display = 'flex'; el('rRemNote').innerText = remVal; 
     } else { 
         el('rRemRow').style.display = 'none'; 
     }
@@ -350,7 +338,6 @@ async function processCart() {
                 </td>
             </tr>`;
     });
-    
     el('rSum').innerText = '$' + grandTotal;
     
     html2canvas(el('receiptCaptureArea'), { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' }).then(async canvas => {
@@ -362,44 +349,29 @@ async function processCart() {
         window.currentReceiptFileName = safeFileName;
         
         const payload = { 
-            orderId: fid, 
-            paymentMethod: finalPayMethodStr, 
-            remittanceNote: remVal, 
-            cashier: v('fCash'), 
-            startTime: finalCheckoutTime, 
-            customerNames: combinedNames, 
-            cartItems: cart, 
-            generalNote: genNote, 
-            receiptImageBase64: base64Data 
+            orderId: fid, paymentMethod: finalPayMethodStr, remittanceNote: remVal, cashier: v('fCash'), 
+            startTime: finalCheckoutTime, customerNames: combinedNames, cartItems: cart, generalNote: genNote, receiptImageBase64: base64Data 
         };
         
         try {
             const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'createFinance', ...payload }) });
             const r = await response.json();
-            btn.innerText = '執行結帳動作'; 
-            btn.disabled = false;
+            btn.innerText = '執行結帳動作'; btn.disabled = false;
             if (r && r.status === 'success') {
                 el('finalReceiptImage').src = base64Data; 
                 el('receiptSaveModal').style.display = 'flex';
-                cart = []; 
-                renderCart(); 
-                el('fGenNote').value = ''; 
-                el('fRem').value = ''; 
-                el('packageStatusArea').innerHTML = '';
+                cart = []; renderCart(); el('fGenNote').value = ''; el('fRem').value = ''; el('packageStatusArea').innerHTML = '';
             } else {
                 alert('結帳線上存檔/扣點失敗：' + r.message);
             }
         } catch(e) { 
-            btn.innerText = '執行結帳動作'; 
-            btn.disabled = false; 
+            btn.innerText = '執行結帳動作'; btn.disabled = false; 
             alert('網路異常，結帳失敗'); 
         }
     });
 }
 
-function closeReceiptModal() { 
-    el('receiptSaveModal').style.display = 'none'; 
-}
+function closeReceiptModal() { el('receiptSaveModal').style.display = 'none'; }
 
 async function fetchSum() {
     el('sumData').classList.remove('hidden'); 
@@ -407,9 +379,7 @@ async function fetchSum() {
         const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'getSummary' }) });
         const r = await response.json();
         if (r && r.status === 'success') { 
-            el('vD').innerText = '$' + r.summary.daily; 
-            el('vW').innerText = '$' + r.summary.weekly; 
-            el('vM').innerText = '$' + r.summary.monthly; 
+            el('vD').innerText = '$' + r.summary.daily; el('vW').innerText = '$' + r.summary.weekly; el('vM').innerText = '$' + r.summary.monthly; 
         }
     } catch(e) { console.error('無法取得營收總計'); }
 }
@@ -417,16 +387,13 @@ async function fetchSum() {
 async function searchFin() {
     const k = v('adjKw'); 
     if (!k) return alert('請輸入會員姓名或手機');
-    const btn = el('btnSearchFinance'); 
-    btn.innerText = '調閱中...';
+    const btn = el('btnSearchFinance'); btn.innerText = '調閱中...';
     try {
         const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'searchFinanceRecords', keyword: k }) });
         const r = await response.json(); 
         renderFinanceRecords(r.data, 'adjArea');
     } catch(e) { 
-    } finally { 
-        btn.innerText = '手動搜尋歷史財務紀錄'; 
-    }
+    } finally { btn.innerText = '手動搜尋歷史財務紀錄'; }
 }
 
 function renderFinanceRecords(dataArray, targetElId) {
@@ -436,11 +403,8 @@ function renderFinanceRecords(dataArray, targetElId) {
     if (dataArray && dataArray.length > 0) {
         dataArray.forEach(i => {
             const c = i.course;
-            let adjDate = '';
-            let adjTime = '';
-            if(i.date.includes(' ')) {
-                [adjDate, adjTime] = i.date.split(' ');
-            }
+            let adjDate = ''; let adjTime = '';
+            if(i.date.includes(' ')) { [adjDate, adjTime] = i.date.split(' '); }
             
             area.innerHTML += `
                 <div class="result-card" style="border-left-color:var(--primary);" id="f-${i.orderId}">
@@ -515,7 +479,7 @@ function renderFinanceRecords(dataArray, targetElId) {
                 </div>`;
         });
     } else {
-        area.innerHTML = '<p style="text-align:center;">查無符合紀錄</p>';
+        area.innerHTML = '<p style="text-align:center; color:var(--text-light);">查無符合紀錄</p>';
     }
 }
 
@@ -526,36 +490,22 @@ function toggleVoidForm(id) {
 
 async function submitFinanceUpdate(orderId) {
     if (!confirm(`警告：確定要變更單號 ${orderId} 嗎？此動作將會作廢原單並產生一筆 -1 的新單！`)) return;
-    
     const newDate = v(`fAdjDate-${orderId}`) + ' ' + v(`fAdjTime-${orderId}`);
-
     const payload = {
-        action: 'updateFinanceRecord',
-        orderId: orderId,
-        newDate: newDate,
-        newName: v(`fAdjName-${orderId}`),
-        newPhone: v(`fAdjPhone-${orderId}`),
-        newCourse: v(`fAdjCourse-${orderId}`),
-        newAmount: v(`fAdjAmt-${orderId}`),
-        newPayMethod: v(`fAdjPay-${orderId}`),
-        newHero: v(`fAdjHero-${orderId}`),
-        newNote: v(`fAdjNote-${orderId}`)
+        action: 'updateFinanceRecord', orderId: orderId, newDate: newDate,
+        newName: v(`fAdjName-${orderId}`), newPhone: v(`fAdjPhone-${orderId}`),
+        newCourse: v(`fAdjCourse-${orderId}`), newAmount: v(`fAdjAmt-${orderId}`),
+        newPayMethod: v(`fAdjPay-${orderId}`), newHero: v(`fAdjHero-${orderId}`), newNote: v(`fAdjNote-${orderId}`)
     };
-
     try {
         const response = await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
         const r = await response.json();
         if (r.status === 'success') {
             alert('該筆財務檔案已成功變更紀錄！');
-            const rowEl = el(`f-${orderId}`); 
-            rowEl.style.opacity = '0.5';
+            const rowEl = el(`f-${orderId}`); rowEl.style.opacity = '0.5';
             rowEl.innerHTML = '<p style="color:#ef4444;text-align:center;font-weight:bold;margin-top:10px;">[此項紀錄已完成修改，並產生了新的 -1 單號，請重新搜尋]</p>';
-        } else {
-            alert('異動失敗：' + r.message);
-        }
-    } catch(e) { 
-        alert('執行異動時發生網路錯誤'); 
-    }
+        } else { alert('異動失敗：' + r.message); }
+    } catch(e) { alert('執行異動時發生網路錯誤'); }
 }
 
 // ==========================================
@@ -580,17 +530,10 @@ async function issuePoints() {
         
         if (res.status === 'success') {
             alert('✅ 點數發行成功，已寫入點數錢包！');
-            el('ptIssuePhone').value = '';
-            el('ptIssueA').value = '';
-            el('ptIssueB').value = '';
-            el('ptIssueC').value = '';
-            el('ptIssueNote').value = '';
-        } else {
-            alert('點數發行失敗：' + res.message);
-        }
-    } catch(e) {
-        alert('點數發行失敗，請檢查網路連線。');
-    }
+            el('ptIssuePhone').value = ''; el('ptIssueA').value = '';
+            el('ptIssueB').value = ''; el('ptIssueC').value = ''; el('ptIssueNote').value = '';
+        } else { alert('點數發行失敗：' + res.message); }
+    } catch(e) { alert('點數發行失敗，請檢查網路連線。'); }
 }
 
 async function fetchWalletForRefund() {
@@ -607,8 +550,7 @@ async function fetchWalletForRefund() {
         if(r.status === 'success') {
             const data = r.data;
             if(!data || data.refundableA === 0) {
-                area.innerHTML = '<p style="color:#ef4444; font-weight:bold;">查無該會員可退費之 A 類本金點數。</p>';
-                return;
+                area.innerHTML = '<p style="color:#ef4444; font-weight:bold;">查無該會員可退費之 A 類本金點數。</p>'; return;
             }
             area.innerHTML = `
                 <div style="background:#fff; border:1px solid #ef4444; border-radius:8px; padding:15px; margin-top:10px;">
@@ -618,28 +560,18 @@ async function fetchWalletForRefund() {
                     <button class="btn-submit" style="background:#ef4444; margin-top:15px; width:100%; padding:12px;" onclick="executeRefund('${data.jwId}', ${data.refundableA}, ${data.voidableBC})">確認結算並執行退費作廢</button>
                 </div>
             `;
-        } else {
-            area.innerHTML = '查詢失敗：' + r.message;
-        }
-    } catch(e) {
-        area.innerHTML = '網路異常，無法結算。';
-    }
+        } else { area.innerHTML = '查詢失敗：' + r.message; }
+    } catch(e) { area.innerHTML = '網路異常，無法結算。'; }
 }
 
 async function executeRefund(jwId, refundA, voidBC) {
     if(!confirm(`【不可逆操作警告】\n確定退還 ${refundA} 元本金，並作廢 ${voidBC} 點無償贈點嗎？\n此動作將寫入不可篡改之作廢流水！`)) return;
-    
     try {
         const response = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'refundPoints', jwId: jwId }) });
         const r = await response.json();
         if (r.status === 'success') {
             alert('✅ 退費與點數作廢已成功執行！');
-            el('ptRefundArea').innerHTML = '';
-            el('ptRefundPhone').value = '';
-        } else {
-            alert('退費執行失敗：' + r.message);
-        }
-    } catch(e) {
-        alert('執行失敗，請檢查網路狀態。');
-    }
+            el('ptRefundArea').innerHTML = ''; el('ptRefundPhone').value = '';
+        } else { alert('退費執行失敗：' + r.message); }
+    } catch(e) { alert('執行失敗，請檢查網路狀態。'); }
 }
