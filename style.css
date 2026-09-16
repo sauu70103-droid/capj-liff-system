@@ -1,157 +1,154 @@
-/* =========================================================
-   品牌視覺風格 (奶茶色系 x 愛馬仕橘 頂級質感)
-   ========================================================= */
 :root {
-    --bg-color: #FDF8F5;       /* 淺奶茶底色 */
-    --container-bg: #FFFFFF;   /* 容器純白 */
-    --primary: #F37021;        /* 愛馬仕橘 */
-    --primary-hover: #D95E1A;  /* 深橘色 */
-    --secondary: #EAD8C0;      /* 奶茶輔助色 */
-    --text-main: #4A3A31;      /* 深茶色字體，取代死黑 */
-    --text-light: #8A796D;     /* 淺茶色輔助字 */
-    --border: #EEDCCB;         /* 奶茶色邊框 */
-    --btn-text: #FFFFFF;       /* 按鈕白字 */
+    --primary: #f97316; /* 亮橘色 */
+    --primary-hover: #ea580c;
+    --secondary: #fff7ed;
+    --text-main: #1f2937;
+    --text-light: #6b7280;
+    --bg-main: #f3f4f6;
+    --border: #e5e7eb;
 }
 
 body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
     margin: 0;
     padding: 20px 10px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    min-height: 100vh;
 }
 
 .container {
     max-width: 600px;
     margin: 0 auto;
-    position: relative;
-    background: var(--container-bg);
-    padding: 25px;
+    background: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(74, 58, 49, 0.08);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    padding: 20px;
+    position: relative;
+    overflow: hidden; /* 確保內容不會溢出圓角 */
 }
 
 h2 {
     text-align: center;
     color: var(--primary);
-    letter-spacing: 2px;
-    font-weight: 800;
+    margin-top: 0;
     margin-bottom: 25px;
+    font-size: 22px;
 }
 
-#loadingOverlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(253, 248, 245, 0.9); /* 奶茶色半透明遮罩 */
-    z-index: 10;
-    border-radius: 12px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 18px;
-    color: var(--primary);
-    font-weight: bold;
-}
-
-/* 導覽頁籤與輸入欄位 */
+/* 導覽按鈕列優化：強制 2x2 排版 */
 .tabs {
     display: flex;
+    justify-content: space-between;
     gap: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 15px 5px;
-    background: var(--secondary);
-    border: 1px solid var(--border);
-    color: var(--text-light);
+    background: #f0f0f0;
+    color: #555;
+    border: none;
+    padding: 10px 5px; /* 上下調整空間 */
     border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
     font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    line-height: 1.3; /* 強制文字換行時行距緊湊 */
     text-align: center;
-    transition: 0.3s;
 }
 
 .tab-btn.active {
     background: var(--primary);
-    color: var(--btn-text);
-    border-color: var(--primary);
-    box-shadow: 0 4px 10px rgba(243, 112, 33, 0.3);
-}
-
-.sub-toggle-btn {
-    padding: 10px 20px;
-    background: #FAFAFA;
-    border: 1px solid var(--border);
-    color: var(--text-light);
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.3s;
-}
-
-.sub-toggle-btn.active {
-    background: var(--primary);
     color: white;
-    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
 }
 
+/* 表單區塊顯示邏輯修復：依賴 .active 切換 */
 .form-section {
-    display: none;
+    display: none; /* 預設全部隱藏 */
+    animation: fadeIn 0.3s ease-in-out;
 }
 
 .form-section.active {
-    display: block;
+    display: block; /* 加上 active 類別時才顯示 */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 隱藏輔助類別 (強制權重) */
+.hidden {
+    display: none !important;
 }
 
 .form-group {
-    margin-bottom: 18px;
+    margin-bottom: 15px;
 }
 
-label {
+.form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     font-size: 14px;
     color: var(--text-main);
     font-weight: bold;
 }
 
-input, select, textarea {
+.form-group input, .form-group select, .form-group textarea {
     width: 100%;
-    padding: 12px;
-    box-sizing: border-box;
-    background: #FAFAFA;
+    padding: 10px;
     border: 1px solid var(--border);
     border-radius: 6px;
-    color: var(--text-main);
-    font-size: 16px;
-    transition: 0.3s;
+    font-size: 15px;
+    box-sizing: border-box;
 }
 
-input:focus, select:focus, textarea:focus {
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(243, 112, 33, 0.1);
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
 }
 
-input[readonly] {
-    background: var(--bg-color);
-    color: var(--text-light);
-    cursor: not-allowed;
+.btn-submit {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 14px;
+    width: 100%;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.3s;
 }
 
-option {
-    background: #FFFFFF;
+.btn-submit:hover {
+    background: var(--primary-hover);
+}
+
+.btn-search, .btn-cancel-action {
+    background: transparent;
     color: var(--text-main);
+    border: 1px solid var(--border);
+    padding: 10px;
+    width: 100%;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 10px;
 }
 
-/* 智慧浮動選單 Autocomplete */
+.btn-small {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
 .autocomplete-container {
     position: relative;
 }
@@ -161,289 +158,184 @@ option {
     top: 100%;
     left: 0;
     right: 0;
-    z-index: 99;
-    background: #FFFFFF;
-    border: 1px solid var(--primary);
-    border-radius: 6px;
+    background: white;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
     max-height: 200px;
     overflow-y: auto;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     display: none;
 }
 
 .autocomplete-item {
-    padding: 12px 15px;
+    padding: 10px;
     cursor: pointer;
-    color: var(--text-main);
-    border-bottom: 1px solid var(--border);
-    font-size: 15px;
+    font-size: 14px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .autocomplete-item:hover {
     background: var(--secondary);
-    color: var(--text-main);
-}
-
-/* 按鈕視覺 */
-.btn-submit {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 15px;
-    width: 100%;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 10px;
-    transition: 0.3s;
-}
-
-.btn-submit:hover {
-    background: var(--primary-hover);
-}
-
-.btn-cancel-action {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    border: 1px solid #ef4444;
-    padding: 15px;
-    width: 100%;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn-search {
-    background: var(--secondary);
-    border: 1px solid var(--border);
-    color: var(--text-main);
-    padding: 12px;
-    width: 100%;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-search:hover {
-    background: #DFCCB3;
-}
-
-.btn-calendar {
-    background: rgba(243, 112, 33, 0.1);
-    border: 1px solid var(--primary);
     color: var(--primary);
-    padding: 12px;
-    width: 100%;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-bottom: 15px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
 }
 
-/* 財務模組 UI */
-.pending-box {
+.result-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.pending-box, .cart-box {
     background: #FAFAFA;
-    border: 1px solid var(--primary);
+    border: 1px solid var(--border);
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
 }
 
 .pending-item {
-    display: inline-block;
-    background: #FFFFFF;
-    color: var(--primary);
-    padding: 8px 12px;
-    border-radius: 20px;
-    margin: 5px;
-    font-size: 14px;
+    padding: 12px;
+    border-bottom: 1px dashed var(--border);
     cursor: pointer;
-    border: 1px solid var(--primary);
-    transition: 0.2s;
+    color: var(--primary);
     font-weight: bold;
+    transition: background 0.2s;
 }
 
-.pending-item:hover {
-    background: var(--primary);
-    color: white;
-}
-
-.cart-box {
-    background: #FAFAFA;
-    border: 1px solid var(--primary);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-}
+.pending-item:hover { background: #fff7ed; }
+.pending-item:last-child { border-bottom: none; }
 
 .cart-title {
     font-weight: bold;
     color: var(--primary);
-    margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
+    margin-bottom: 15px;
     font-size: 16px;
 }
 
 .cart-item-card {
-    background: #FFFFFF;
+    background: #fff;
     border: 1px solid var(--border);
+    padding: 12px;
     border-radius: 8px;
-    padding: 14px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     position: relative;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.cart-item-del {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .cart-item-row {
     display: flex;
     gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
-
-.cart-item-row > div {
-    flex: 1;
-}
-
-.cart-item-del {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    background: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-/* 店務查詢 / 高階儀表板 UI */
-.result-card {
-    background: #FAFAFA;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--primary);
-    padding: 15px;
-    border-radius: 6px;
-    margin-top: 15px;
-}
-
-.result-info {
-    font-size: 14px;
-    line-height: 1.6;
-    margin-bottom: 15px;
-    color: var(--text-main);
-}
-
-.result-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.btn-small {
-    flex: 1;
-    padding: 10px;
-    border-radius: 6px;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn-edit { background: var(--primary); color: white; }
-.btn-del { background: #ef4444; color: white; }
 
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    margin-top: 10px;
+    text-align: center;
 }
 
 .summary-item {
-    background: #FAFAFA;
-    border: 1px solid var(--border);
+    background: white;
     padding: 10px;
     border-radius: 6px;
-    text-align: center;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-light);
 }
 
 .summary-val {
     display: block;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
     color: var(--primary);
     margin-top: 5px;
 }
 
-/* 隱藏區域控制 */
-.hidden { display: none !important; }
+#loadingOverlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.9);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--primary);
+}
 
-/* 儲存圖片用 Modal */
 #receiptSaveModal {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(74, 58, 49, 0.95);
-    z-index: 9999;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 10000;
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    box-sizing: border-box;
 }
 
-/* =========================================================
-   實體收據圖渲染區 (Thermal Receipt Style)
-   ========================================================= */
 #receiptCaptureArea {
     position: absolute;
-    left: -9999px;
+    left: -9999px; /* 隱藏於畫面外，供 html2canvas 擷取 */
     top: 0;
-    width: 480px;
-    background: #ffffff; 
-    color: #1a1a1a;
-    padding: 40px;
-    font-family: "Courier New", Courier, monospace;
-    box-sizing: border-box;
+    width: 380px;
+    background: #ffffff;
+    padding: 25px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #000;
 }
 
 .receipt-header {
     text-align: center;
-    border-bottom: 2px dashed #000;
-    padding-bottom: 20px;
     margin-bottom: 20px;
+    border-bottom: 2px dashed #000;
+    padding-bottom: 15px;
 }
 
 .receipt-title {
-    margin: 0;
-    font-size: 28px;
-    font-weight: 900;
-    letter-spacing: 1px;
+    font-size: 22px;
+    font-weight: bold;
+    margin: 0 0 5px 0;
 }
 
 .receipt-subtitle {
-    margin: 8px 0 0 0;
-    font-size: 16px;
-    color: #444;
+    font-size: 14px;
+    color: #666;
+    margin: 0;
 }
 
 .receipt-info-group {
-    font-size: 15px;
-    line-height: 1.8;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    font-size: 14px;
 }
 
 .receipt-row {
@@ -455,47 +347,35 @@ option {
 .receipt-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    font-size: 14px;
 }
 
 .receipt-table th {
-    text-align: left;
     border-bottom: 1px solid #000;
-    padding: 10px 0;
-    font-size: 15px;
+    padding: 8px 0;
+    text-align: left;
 }
 
 .receipt-table td {
-    padding: 12px 0;
-    font-size: 15px;
+    padding: 10px 0;
+    border-bottom: 1px dashed #ccc;
     vertical-align: top;
-    border-bottom: 1px dashed #eee;
 }
 
 .receipt-total-section {
     border-top: 2px solid #000;
-    padding-top: 15px;
-    margin-top: 10px;
-    text-align: right;
-}
-
-.receipt-total-label {
-    font-size: 20px;
+    padding-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
     font-weight: bold;
-}
-
-.receipt-total-val {
-    font-size: 24px;
-    font-weight: 900;
-    margin-left: 10px;
 }
 
 .receipt-footer-msg {
     text-align: center;
     margin-top: 30px;
-    font-size: 14px;
-    line-height: 1.6;
-    color: #333;
-    border-top: 1px dashed #000;
-    padding-top: 20px;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
 }
