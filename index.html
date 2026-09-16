@@ -18,10 +18,10 @@
     <h2>店務與財務系統</h2>
     
     <div class="tabs">
-        <button class="tab-btn active" id="btnTabBooking" onclick="switchTab('bookingTab', this)">店務預約</button>
-        <button class="tab-btn" id="btnTabFinance" onclick="switchTab('financeTab', this)">財務結帳</button>
-        <button class="tab-btn" id="btnTabAdjust" onclick="switchTab('adjustTab', this)">財務異動</button>
-        <button class="tab-btn" id="btnTabPoints" onclick="switchTab('pointsTab', this)">點數銀行</button>
+        <button class="tab-btn active" id="btnTabBooking" onclick="switchTab('bookingTab', this)">店務<br>預約</button>
+        <button class="tab-btn" id="btnTabFinance" onclick="switchTab('financeTab', this)">財務<br>結帳</button>
+        <button class="tab-btn" id="btnTabAdjust" onclick="switchTab('adjustTab', this)">財務<br>異動</button>
+        <button class="tab-btn" id="btnTabPoints" onclick="switchTab('pointsTab', this)">點數<br>銀行</button>
     </div>
 
     <!-- 頁籤一：店務預約系統 -->
@@ -116,7 +116,7 @@
     </div>
 
     <!-- 頁籤二：財務結帳系統 -->
-    <div id="financeTab" class="form-section hidden">
+    <div id="financeTab" class="form-section">
         <div id="summaryDashboard" class="hidden" style="background: #FAFAFA; border: 1px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
             <button class="btn-cancel-action" style="color: var(--primary); border-color: var(--primary);" onclick="fetchSum()">📊 載入高階營收數據</button>
             <div class="summary-grid hidden" id="sumData">
@@ -199,7 +199,7 @@
     </div>
 
     <!-- 頁籤三：財務異動系統 -->
-    <div id="adjustTab" class="form-section hidden">
+    <div id="adjustTab" class="form-section">
         <h3 style="color: #ef4444;">⚠️ 財務帳務異動調整</h3>
         <p style="font-size: 14px; color: var(--text-light);">預設顯示近 48 小時入帳明細，若需調閱更早資料請手動搜尋。</p>
         
@@ -213,7 +213,7 @@
     </div>
 
     <!-- 頁籤四：點數銀行 (Point Bank) -->
-    <div id="pointsTab" class="form-section hidden">
+    <div id="pointsTab" class="form-section">
         <h3 style="color: var(--primary);">🏦 點數銀行：發行與退費管理</h3>
         
         <div style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid #4ade80; margin-bottom: 20px;">
@@ -255,15 +255,12 @@
     </div>
 </div>
 
+<!-- 收據區域省略，維持原功能 -->
 <div id="receiptSaveModal">
     <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
-    <p style="color: #EAD8C0; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">
-        💡 提示：請直接對著下方收據<b>「長按螢幕」</b>即可儲存存檔。<br>
-    </p>
+    <p style="color: #EAD8C0; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">💡 提示：請直接對著下方收據<b>「長按螢幕」</b>即可儲存存檔。<br></p>
     <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
-    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">
-        關閉並返回系統
-    </button>
+    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">關閉並返回系統</button>
 </div>
 
 <div id="receiptCaptureArea">
@@ -272,45 +269,22 @@
         <h3 class="receipt-title">錦葳健康美學中心 🌿</h3>
         <p class="receipt-subtitle">專業調理 · 結構修復 · 美學中心</p>
     </div>
-    
     <div class="receipt-info-group">
         <div class="receipt-row"><span>交易單號：</span><span id="rId"></span></div>
         <div class="receipt-row"><span>結帳時間：</span><span id="rTm"></span></div>
         <div class="receipt-row"><span>結帳方式 💰：</span><span id="rMth"></span></div>
         <div class="receipt-row"><span>經手人員 👤：</span><span id="rCsh"></span></div>
         <div class="receipt-row" id="rRemRow" style="display: none; font-weight: bold;">
-            <span>匯款/代付資料：</span>
-            <span><span id="rRemNote"></span></span>
+            <span>匯款/代付資料：</span><span><span id="rRemNote"></span></span>
         </div>
     </div>
-    
     <table class="receipt-table">
-        <thead>
-            <tr>
-                <th style="width: 50%;">消費項目 / 會員</th>
-                <th style="width: 15%; text-align: center;">數量</th>
-                <th style="width: 35%; text-align: right;">金額 (師傅)</th>
-            </tr>
-        </thead>
+        <thead><tr><th style="width: 50%;">消費項目 / 會員</th><th style="width: 15%; text-align: center;">數量</th><th style="width: 35%; text-align: right;">金額 (師傅)</th></tr></thead>
         <tbody id="rItems"></tbody>
     </table>
-    
-    <div class="receipt-total-section">
-        <span class="receipt-total-label">總計金額：</span>
-        <span class="receipt-total-val" id="rSum"></span>
-    </div>
-    
-    <div id="rGenNoteBox" style="display: none; font-size: 14px; border-top: 1px dashed #000; margin-top: 15px; padding-top: 10px;">
-        <strong>結帳備註：</strong><br>
-        <span id="rGenNote"></span>
-    </div>
-    
-    <div class="receipt-footer-msg">
-        🧖 調理完畢後會有兩到三天的恢復期，<br>
-        💧 請多喝開水，避免劇烈運動，<br>
-        ✨ 若有任何情況歡迎隨時官方賴詢問。<br><br>
-        -- 感謝您的蒞臨與信任 --
-    </div>
+    <div class="receipt-total-section"><span class="receipt-total-label">總計金額：</span><span class="receipt-total-val" id="rSum"></span></div>
+    <div id="rGenNoteBox" style="display: none; font-size: 14px; border-top: 1px dashed #000; margin-top: 15px; padding-top: 10px;"><strong>結帳備註：</strong><br><span id="rGenNote"></span></div>
+    <div class="receipt-footer-msg">🧖 調理完畢後會有兩到三天的恢復期，<br>💧 請多喝開水，避免劇烈運動，<br>✨ 若有任何情況歡迎隨時官方賴詢問。<br><br>-- 感謝您的蒞臨與信任 --</div>
 </div>
 
 <script src="./js/config.js"></script>
