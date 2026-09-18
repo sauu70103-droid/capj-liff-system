@@ -1,5 +1,5 @@
 :root {
-    --primary: #f97316; /* 亮橘色 */
+    --primary: #f97316; 
     --primary-hover: #ea580c;
     --secondary: #fff7ed;
     --text-main: #1f2937;
@@ -24,7 +24,7 @@ body {
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     padding: 20px;
     position: relative;
-    overflow: hidden; /* 確保內容不會溢出圓角 */
+    overflow: hidden; 
 }
 
 h2 {
@@ -35,7 +35,6 @@ h2 {
     font-size: 22px;
 }
 
-/* 導覽按鈕列優化：強制 2x2 排版 */
 .tabs {
     display: flex;
     justify-content: space-between;
@@ -48,13 +47,13 @@ h2 {
     background: #f0f0f0;
     color: #555;
     border: none;
-    padding: 10px 5px; /* 上下調整空間 */
+    padding: 10px 5px; 
     border-radius: 8px;
     font-size: 15px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
-    line-height: 1.3; /* 強制文字換行時行距緊湊 */
+    line-height: 1.3; 
     text-align: center;
 }
 
@@ -64,14 +63,13 @@ h2 {
     box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
 }
 
-/* 表單區塊顯示邏輯修復：依賴 .active 切換 */
 .form-section {
-    display: none; /* 預設全部隱藏 */
+    display: none; 
     animation: fadeIn 0.3s ease-in-out;
 }
 
 .form-section.active {
-    display: block; /* 加上 active 類別時才顯示 */
+    display: block; 
 }
 
 @keyframes fadeIn {
@@ -79,204 +77,47 @@ h2 {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 隱藏輔助類別 (強制權重) */
 .hidden {
     display: none !important;
 }
 
-.form-group {
-    margin-bottom: 15px;
+/* 🌟 V2.5 UI Guard 鎖定狀態 */
+.ui-guard-locked {
+    display: none !important;
+    pointer-events: none;
 }
 
-.form-group label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 14px;
-    color: var(--text-main);
-    font-weight: bold;
-}
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--text-main); font-weight: bold; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; box-sizing: border-box; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2); }
 
-.form-group input, .form-group select, .form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 15px;
-    box-sizing: border-box;
-}
+.btn-submit { background: var(--primary); color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.3s; }
+.btn-submit:hover { background: var(--primary-hover); }
 
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
-}
+.btn-search, .btn-cancel-action { background: transparent; color: var(--text-main); border: 1px solid var(--border); padding: 10px; width: 100%; border-radius: 8px; font-size: 14px; cursor: pointer; margin-bottom: 10px; }
+.btn-small { padding: 8px 12px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; }
 
-.btn-submit {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 14px;
-    width: 100%;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 10px;
-    transition: background 0.3s;
-}
+.autocomplete-container { position: relative; }
+.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+.autocomplete-item { padding: 10px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+.autocomplete-item:hover { background: var(--secondary); color: var(--primary); }
 
-.btn-submit:hover {
-    background: var(--primary-hover);
-}
+.result-card { background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; line-height: 1.5; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 
-.btn-search, .btn-cancel-action {
-    background: transparent;
-    color: var(--text-main);
-    border: 1px solid var(--border);
-    padding: 10px;
-    width: 100%;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    margin-bottom: 10px;
-}
-
-.btn-small {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.autocomplete-container {
-    position: relative;
-}
-
-.autocomplete-list {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 1px solid var(--border);
-    border-top: none;
-    border-radius: 0 0 6px 6px;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    display: none;
-}
-
-.autocomplete-item {
-    padding: 10px;
-    cursor: pointer;
-    font-size: 14px;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.autocomplete-item:hover {
-    background: var(--secondary);
-    color: var(--primary);
-}
-
-.result-card {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--primary);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    font-size: 14px;
-    line-height: 1.5;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-}
-
-.pending-box, .cart-box {
-    background: #FAFAFA;
-    border: 1px solid var(--border);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.pending-item {
-    padding: 12px;
-    border-bottom: 1px dashed var(--border);
-    cursor: pointer;
-    color: var(--primary);
-    font-weight: bold;
-    transition: background 0.2s;
-}
-
+.pending-box, .cart-box { background: #FAFAFA; border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+.pending-item { padding: 12px; border-bottom: 1px dashed var(--border); cursor: pointer; color: var(--primary); font-weight: bold; transition: background 0.2s; }
 .pending-item:hover { background: #fff7ed; }
 .pending-item:last-child { border-bottom: none; }
 
-.cart-title {
-    font-weight: bold;
-    color: var(--primary);
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 15px;
-    font-size: 16px;
-}
+.cart-title { font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 16px; }
+.cart-item-card { background: #fff; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 10px; position: relative; }
+.cart-item-del { position: absolute; top: 5px; right: 5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.cart-item-row { display: flex; gap: 10px; margin-bottom: 8px; }
 
-.cart-item-card {
-    background: #fff;
-    border: 1px solid var(--border);
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    position: relative;
-}
-
-.cart-item-del {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    font-size: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.cart-item-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 8px;
-}
-
-.summary-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    text-align: center;
-}
-
-.summary-item {
-    background: white;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--text-light);
-}
-
-.summary-val {
-    display: block;
-    font-size: 18px;
-    font-weight: bold;
-    color: var(--primary);
-    margin-top: 5px;
-}
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+.summary-item { background: white; padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; color: var(--text-light); }
+.summary-val { display: block; font-size: 18px; font-weight: bold; color: var(--primary); margin-top: 5px; }
 
 #loadingOverlay {
     position: fixed;
@@ -291,91 +132,15 @@ h2 {
     color: var(--primary);
 }
 
-#receiptSaveModal {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 10000;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-#receiptCaptureArea {
-    position: absolute;
-    left: -9999px; /* 隱藏於畫面外，供 html2canvas 擷取 */
-    top: 0;
-    width: 380px;
-    background: #ffffff;
-    padding: 25px;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    color: #000;
-}
-
-.receipt-header {
-    text-align: center;
-    margin-bottom: 20px;
-    border-bottom: 2px dashed #000;
-    padding-bottom: 15px;
-}
-
-.receipt-title {
-    font-size: 22px;
-    font-weight: bold;
-    margin: 0 0 5px 0;
-}
-
-.receipt-subtitle {
-    font-size: 14px;
-    color: #666;
-    margin: 0;
-}
-
-.receipt-info-group {
-    margin-bottom: 15px;
-    font-size: 14px;
-}
-
-.receipt-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
-}
-
-.receipt-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 15px;
-    font-size: 14px;
-}
-
-.receipt-table th {
-    border-bottom: 1px solid #000;
-    padding: 8px 0;
-    text-align: left;
-}
-
-.receipt-table td {
-    padding: 10px 0;
-    border-bottom: 1px dashed #ccc;
-    vertical-align: top;
-}
-
-.receipt-total-section {
-    border-top: 2px solid #000;
-    padding-top: 10px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.receipt-footer-msg {
-    text-align: center;
-    margin-top: 30px;
-    font-size: 13px;
-    color: #555;
-    line-height: 1.5;
-}
+#receiptSaveModal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+#receiptCaptureArea { position: absolute; left: -9999px; top: 0; width: 380px; background: #ffffff; padding: 25px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #000; }
+.receipt-header { text-align: center; margin-bottom: 20px; border-bottom: 2px dashed #000; padding-bottom: 15px; }
+.receipt-title { font-size: 22px; font-weight: bold; margin: 0 0 5px 0; }
+.receipt-subtitle { font-size: 14px; color: #666; margin: 0; }
+.receipt-info-group { margin-bottom: 15px; font-size: 14px; }
+.receipt-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.receipt-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px; }
+.receipt-table th { border-bottom: 1px solid #000; padding: 8px 0; text-align: left; }
+.receipt-table td { padding: 10px 0; border-bottom: 1px dashed #ccc; vertical-align: top; }
+.receipt-total-section { border-top: 2px solid #000; padding-top: 10px; display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; }
+.receipt-footer-msg { text-align: center; margin-top: 30px; font-size: 13px; color: #555; line-height: 1.5; }
