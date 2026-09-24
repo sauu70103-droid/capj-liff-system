@@ -4,18 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>錦葳健康美學中心 - 店務與財務系統</title>
+    <!-- 引入 SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
-<div class="container">
-    <div id="loadingOverlay">系統連線驗證中...</div>
+<!-- 🌟 V3.5：移除預設的系統連線遮罩，將主容器預設隱藏 (靜默載入)，等待 SSO 驗證通過後才解除隱藏 -->
+<div class="container ui-guard-locked" id="mainAppContainer">
     
     <img src="./logo.png" alt="錦葳健康美學中心 Logo" style="width: 160px; display: block; margin: 0 auto 15px; object-fit: contain;">
     
-    <h2>店務與財務系統</h2>
+    <!-- 顯示登入者戳記 -->
+    <h2 style="margin-bottom: 5px;">店務與財務系統</h2>
+    <p style="text-align: center; color: var(--primary); font-size: 13px; font-weight: bold; margin-top: 0; margin-bottom: 25px;" id="staffBadge">操作員：未登入</p>
     
     <div class="tabs">
         <button class="tab-btn active" id="btnTabBooking" onclick="switchTab('bookingTab', this)">店務<br>預約</button>
@@ -255,6 +259,7 @@
     </div>
 </div>
 
+<!-- 收據區域省略，維持原功能 -->
 <div id="receiptSaveModal">
     <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
     <p style="color: #EAD8C0; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">💡 提示：請直接對著下方收據<b>「長按螢幕」</b>即可儲存存檔。<br></p>
