@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V3.5 權限升級版：SSO 雙軌登入驗證、UI Guard 防護與共用 API 路由
+ * V3.8 權限升級版：SSO 雙軌登入驗證、三維權限獨立分流
  * ============================================================================
  */
 
@@ -12,14 +12,13 @@ if (typeof API === 'undefined') {
 function el(id) { return document.getElementById(id); }
 function v(id) { return el(id) ? el(id).value : ''; }
 
-// ==========================================
-// 🌟 V3.5：SSO 極速雙軌登入模組 (核心啟動器)
-// ==========================================
+// 🌟 指定系統權限代號為 store (後台店務系統)
+const SYSTEM_AUTH_TYPE = "store"; 
+
 function initSystemAuth() {
   const urlParams = new URLSearchParams(window.location.search);
   const isSso = urlParams.get('sso_auth') === 'true';
 
-  // 取得 LINE_ID (支援 LIFF)
   liff.init({ liffId: window.LIFF_ID || "YOUR_LIFF_ID_HERE" }).then(() => {
     if (!liff.isLoggedIn()) {
       liff.login();
@@ -28,16 +27,13 @@ function initSystemAuth() {
         window.userLineUid = profile.userId;
         
         if (isSso) {
-          // 🚀 SSO 免密背景極速核對通道
           ssoFastLogin(window.userLineUid);
         } else {
-          // 🔒 外部直連密碼鎖通道
           promptExternalPinLogin();
         }
       });
     }
   }).catch((err) => {
-      // 若 LIFF 初始化失敗 (例如在電腦瀏覽器測試)，降級為純密碼驗證
       console.warn("LIFF 載入失敗，降級為純密碼模式", err);
       promptExternalPinLogin();
   });
@@ -49,8 +45,7 @@ function ssoFastLogin(uid) {
     body: JSON.stringify({ action: "ssoFastCheck", lineUid: uid })
   }).then(res => res.json()).then(data => {
     if (data.status === "success") {
-      // ✅ 瞬間放行：渲染後台並套用權限
-      renderBackendPlatform(data.staff);
+      checkSystemPermissionAndRender(data.staff);
     } else {
       Swal.fire('驗證失效', data.message, 'error').then(promptExternalPinLogin);
     }
@@ -61,7 +56,7 @@ function ssoFastLogin(uid) {
 
 function promptExternalPinLogin() {
   Swal.fire({
-    title: '錦葳店務系統 - 安全鎖',
+    title: '錦葳系統 - 安全鎖',
     input: 'password',
     inputPlaceholder: '請輸入您的專屬密碼',
     allowOutsideClick: false,
@@ -83,39 +78,46 @@ function promptExternalPinLogin() {
     }
   }).then((result) => {
     if (result.isConfirmed && result.value.status === "success") {
-      // ✅ 密碼解鎖放行
-      renderBackendPlatform(result.value.staff);
+      checkSystemPermissionAndRender(result.value.staff);
     } else {
       Swal.fire('錯誤', result.value.message || '驗證失敗', 'error').then(promptExternalPinLogin);
     }
   });
 }
 
-// ==========================================
-// 🌟 主渲染引擎與 UI Guard 對接
-// ==========================================
+// 🌟 V3.8 嚴格攔截：核對通過後，確認是否擁有本系統專屬權限
+function checkSystemPermissionAndRender(staff) {
+  if (SYSTEM_AUTH_TYPE === "store" && !staff.Auth_Store) {
+    Swal.fire({
+        title: '權限不足', 
+        text: '您無權訪問後台店務系統，即將退回安全鎖。', 
+        icon: 'error',
+        allowOutsideClick: false
+    }).then(promptExternalPinLogin);
+    return;
+  }
+  renderBackendPlatform(staff); 
+}
+
 function renderBackendPlatform(staffData) {
-    // 1. 寫入本地端與戳記
     localStorage.setItem('Staff_Name', staffData.Staff_Name);
-    localStorage.setItem('Auth_Shop', staffData.Auth_Shop);
+    localStorage.setItem('Auth_Store', staffData.Auth_Store);
     localStorage.setItem('Auth_Finance', staffData.Auth_Finance);
 
     if(el('fCash')) el('fCash').value = staffData.Staff_Name;
     if(el('staffBadge')) el('staffBadge').innerText = `操作員：${staffData.Staff_Name}`;
 
-    // 2. UI Guard 財務權限防護 (若無權限，鎖死並隱藏三大頁籤)
+    // UI Guard 財務權限防護：獨立依賴 Auth_Finance 進行渲染
     if (!staffData.Auth_Finance) {
         if(el('btnTabFinance')) el('btnTabFinance').classList.add('ui-guard-locked');
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.add('ui-guard-locked');
         if(el('btnTabPoints')) el('btnTabPoints').classList.add('ui-guard-locked');
     } else {
-        // 確保解鎖狀態
         if(el('btnTabFinance')) el('btnTabFinance').classList.remove('ui-guard-locked');
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.remove('ui-guard-locked');
         if(el('btnTabPoints')) el('btnTabPoints').classList.remove('ui-guard-locked');
     }
 
-    // 3. 解除靜默：顯示主容器，並強制切換到第一個頁籤
     const appContainer = el('mainAppContainer');
     if(appContainer) appContainer.classList.remove('ui-guard-locked');
     
@@ -125,9 +127,7 @@ function renderBackendPlatform(staffData) {
     }
 }
 
-// 系統載入時，直接啟動登入驗證程序
 window.addEventListener("DOMContentLoaded", initSystemAuth);
-
 
 // ==========================================
 // 共用工具庫
