@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V3.8 權限升級版：SSO 雙軌登入驗證、三維權限獨立分流
+ * V3.8 權限升級版：SSO 雙軌登入驗證、三維權限獨立分流 (緊急修復版)
  * ============================================================================
  */
 
@@ -15,22 +15,27 @@ function v(id) { return el(id) ? el(id).value : ''; }
 // 🌟 指定系統權限代號為 store (後台店務系統)
 const SYSTEM_AUTH_TYPE = "store"; 
 
+// 🌟 權限容錯檢驗器：相容布林值與字串
+const isAllowed = (val) => val === true || val === "允許" || String(val).toLowerCase() === "true";
+
 function initSystemAuth() {
   const urlParams = new URLSearchParams(window.location.search);
   const isSso = urlParams.get('sso_auth') === 'true';
 
+  // 🚨 緊急修復：若無 SSO 參數 (外部直連)，直接呼叫密碼鎖，避免 LIFF 載入失敗導致白畫面
+  if (!isSso) {
+      promptExternalPinLogin();
+      return;
+  }
+
+  // 僅 SSO 跳轉通道才需初始化 LIFF
   liff.init({ liffId: window.LIFF_ID || "YOUR_LIFF_ID_HERE" }).then(() => {
     if (!liff.isLoggedIn()) {
       liff.login();
     } else {
       liff.getProfile().then(profile => {
         window.userLineUid = profile.userId;
-        
-        if (isSso) {
-          ssoFastLogin(window.userLineUid);
-        } else {
-          promptExternalPinLogin();
-        }
+        ssoFastLogin(window.userLineUid);
       });
     }
   }).catch((err) => {
@@ -85,9 +90,9 @@ function promptExternalPinLogin() {
   });
 }
 
-// 🌟 V3.8 嚴格攔截：核對通過後，確認是否擁有本系統專屬權限
+// 🌟 V3.8 嚴格攔截：核對通過後，確認是否擁有本系統專屬權限 (含容錯判定)
 function checkSystemPermissionAndRender(staff) {
-  if (SYSTEM_AUTH_TYPE === "store" && !staff.Auth_Store) {
+  if (SYSTEM_AUTH_TYPE === "store" && !isAllowed(staff.Auth_Store)) {
     Swal.fire({
         title: '權限不足', 
         text: '您無權訪問後台店務系統，即將退回安全鎖。', 
@@ -101,14 +106,14 @@ function checkSystemPermissionAndRender(staff) {
 
 function renderBackendPlatform(staffData) {
     localStorage.setItem('Staff_Name', staffData.Staff_Name);
-    localStorage.setItem('Auth_Store', staffData.Auth_Store);
-    localStorage.setItem('Auth_Finance', staffData.Auth_Finance);
+    localStorage.setItem('Auth_Store', isAllowed(staffData.Auth_Store));
+    localStorage.setItem('Auth_Finance', isAllowed(staffData.Auth_Finance));
 
     if(el('fCash')) el('fCash').value = staffData.Staff_Name;
     if(el('staffBadge')) el('staffBadge').innerText = `操作員：${staffData.Staff_Name}`;
 
     // UI Guard 財務權限防護：獨立依賴 Auth_Finance 進行渲染
-    if (!staffData.Auth_Finance) {
+    if (!isAllowed(staffData.Auth_Finance)) {
         if(el('btnTabFinance')) el('btnTabFinance').classList.add('ui-guard-locked');
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.add('ui-guard-locked');
         if(el('btnTabPoints')) el('btnTabPoints').classList.add('ui-guard-locked');
