@@ -81,7 +81,7 @@ h2 {
     display: none !important;
 }
 
-/* 🌟 V2.5 UI Guard 鎖定狀態 */
+/* UI Guard 鎖定狀態 */
 .ui-guard-locked {
     display: none !important;
     pointer-events: none;
@@ -119,15 +119,16 @@ h2 {
 .summary-item { background: white; padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; color: var(--text-light); }
 .summary-val { display: block; font-size: 18px; font-weight: bold; color: var(--primary); margin-top: 5px; }
 
+/* 🌟 V3.1 防白畫面保護層 */
 #loadingOverlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(255,255,255,0.9);
-    z-index: 9999;
+    background: rgba(255,255,255,0.95);
+    z-index: 100; /* 層級需低於 SweetAlert2 (通常 z-index > 1000) */
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
     color: var(--primary);
 }
