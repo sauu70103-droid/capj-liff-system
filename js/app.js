@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V3.8 權限升級版：SSO 雙軌登入驗證、三維權限獨立分流 (緊急修復版)
+ * V3.1 防白畫面降級版：全面 Try-Catch 包覆與 Boolean 嚴格檢驗
  * ============================================================================
  */
 
@@ -15,48 +15,56 @@ function v(id) { return el(id) ? el(id).value : ''; }
 // 🌟 指定系統權限代號為 store (後台店務系統)
 const SYSTEM_AUTH_TYPE = "store"; 
 
-// 🌟 權限容錯檢驗器：相容布林值與字串
+// 🌟 V3.1 極致防呆：無論傳入什麼，只認 true 布林值
 const isAllowed = (val) => val === true || val === "允許" || String(val).toLowerCase() === "true";
 
-function initSystemAuth() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const isSso = urlParams.get('sso_auth') === 'true';
+async function initSystemAuth() {
+  try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isSso = urlParams.get('sso_auth') === 'true';
 
-  // 🚨 緊急修復：若無 SSO 參數 (外部直連)，直接呼叫密碼鎖，避免 LIFF 載入失敗導致白畫面
-  if (!isSso) {
+      // 若無 SSO 參數 (外部直連)，100% 降級彈出密碼鎖
+      if (!isSso) {
+          promptExternalPinLogin();
+          return;
+      }
+
+      // 🌟 LIFF 初始化加入 Promise.race 防呆，避免永久掛起
+      const liffInitPromise = liff.init({ liffId: window.LIFF_ID || "YOUR_LIFF_ID_HERE" });
+      const liffTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('LIFF_TIMEOUT')), 5000));
+      
+      await Promise.race([liffInitPromise, liffTimeout]);
+      
+      if (!liff.isLoggedIn()) {
+          liff.login();
+      } else {
+          const profile = await liff.getProfile();
+          window.userLineUid = profile.userId;
+          ssoFastLogin(window.userLineUid);
+      }
+  } catch (err) {
+      console.warn("啟動異常，降級為密碼模式防護", err);
       promptExternalPinLogin();
-      return;
   }
-
-  // 僅 SSO 跳轉通道才需初始化 LIFF
-  liff.init({ liffId: window.LIFF_ID || "YOUR_LIFF_ID_HERE" }).then(() => {
-    if (!liff.isLoggedIn()) {
-      liff.login();
-    } else {
-      liff.getProfile().then(profile => {
-        window.userLineUid = profile.userId;
-        ssoFastLogin(window.userLineUid);
-      });
-    }
-  }).catch((err) => {
-      console.warn("LIFF 載入失敗，降級為純密碼模式", err);
-      promptExternalPinLogin();
-  });
 }
 
-function ssoFastLogin(uid) {
-  fetch(API, {
-    method: 'POST',
-    body: JSON.stringify({ action: "ssoFastCheck", lineUid: uid })
-  }).then(res => res.json()).then(data => {
-    if (data.status === "success") {
-      checkSystemPermissionAndRender(data.staff);
-    } else {
-      Swal.fire('驗證失效', data.message, 'error').then(promptExternalPinLogin);
-    }
-  }).catch(() => {
+async function ssoFastLogin(uid) {
+  try {
+      const res = await fetch(API, {
+          method: 'POST',
+          body: JSON.stringify({ action: "ssoFastCheck", lineUid: uid })
+      });
+      const data = await res.json();
+      
+      if (data.status === "success") {
+          checkSystemPermissionAndRender(data.staff);
+      } else {
+          Swal.fire('驗證失效', data.message, 'error').then(promptExternalPinLogin);
+      }
+  } catch (err) {
+      console.warn("SSO 驗證網路異常", err);
       Swal.fire('連線錯誤', '網路異常，無法進行免密核對。', 'error').then(promptExternalPinLogin);
-  });
+  }
 }
 
 function promptExternalPinLogin() {
@@ -69,29 +77,33 @@ function promptExternalPinLogin() {
     confirmButtonText: '解鎖',
     confirmButtonColor: '#ea580c',
     showLoaderOnConfirm: true,
-    preConfirm: (pin) => {
+    preConfirm: async (pin) => {
       if(!pin) {
           Swal.showValidationMessage('請輸入密碼');
           return false;
       }
-      return fetch(API, {
-        method: 'POST',
-        body: JSON.stringify({ action: "staffLogin", lineUid: window.userLineUid || "", pin: pin })
-      }).then(res => res.json()).catch(() => {
-          Swal.showValidationMessage('網路連線失敗');
-      });
+      try {
+          const res = await fetch(API, {
+              method: 'POST',
+              body: JSON.stringify({ action: "staffLogin", lineUid: window.userLineUid || "", pin: pin })
+          });
+          return await res.json();
+      } catch (err) {
+          Swal.showValidationMessage('網路連線失敗，請檢查網路狀態');
+          return false;
+      }
     }
   }).then((result) => {
-    if (result.isConfirmed && result.value.status === "success") {
+    if (result.isConfirmed && result.value && result.value.status === "success") {
       checkSystemPermissionAndRender(result.value.staff);
-    } else {
+    } else if (result.isConfirmed) {
       Swal.fire('錯誤', result.value.message || '驗證失敗', 'error').then(promptExternalPinLogin);
     }
   });
 }
 
-// 🌟 V3.8 嚴格攔截：核對通過後，確認是否擁有本系統專屬權限 (含容錯判定)
 function checkSystemPermissionAndRender(staff) {
+  // 🌟 V3.1 使用嚴格 Boolean 檢驗
   if (SYSTEM_AUTH_TYPE === "store" && !isAllowed(staff.Auth_Store)) {
     Swal.fire({
         title: '權限不足', 
@@ -112,7 +124,7 @@ function renderBackendPlatform(staffData) {
     if(el('fCash')) el('fCash').value = staffData.Staff_Name;
     if(el('staffBadge')) el('staffBadge').innerText = `操作員：${staffData.Staff_Name}`;
 
-    // UI Guard 財務權限防護：獨立依賴 Auth_Finance 進行渲染
+    // 依據財務權限決定是否鎖定對應頁籤
     if (!isAllowed(staffData.Auth_Finance)) {
         if(el('btnTabFinance')) el('btnTabFinance').classList.add('ui-guard-locked');
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.add('ui-guard-locked');
@@ -123,8 +135,14 @@ function renderBackendPlatform(staffData) {
         if(el('btnTabPoints')) el('btnTabPoints').classList.remove('ui-guard-locked');
     }
 
+    // ✅ 驗證與權限派發完成，安全解鎖 UI 並隱藏載入遮罩
+    const loadingOverlay = el('loadingOverlay');
+    if(loadingOverlay) loadingOverlay.style.display = 'none';
+
     const appContainer = el('mainAppContainer');
-    if(appContainer) appContainer.classList.remove('ui-guard-locked');
+    if(appContainer) {
+        appContainer.style.display = 'block';
+    }
     
     const defaultTabBtn = document.getElementById('btnTabBooking');
     if (defaultTabBtn) {
@@ -134,56 +152,28 @@ function renderBackendPlatform(staffData) {
 
 window.addEventListener("DOMContentLoaded", initSystemAuth);
 
-// ==========================================
-// 共用工具庫
-// ==========================================
+// 共用工具庫維持原樣
 window.switchTab = function(tabId, btn) {
-    document.querySelectorAll('.form-section').forEach(el => {
-        el.classList.remove('active');
-        el.style.display = 'none'; 
-    });
-    document.querySelectorAll('.tab-btn').forEach(el => {
-        el.classList.remove('active');
-    });
-    
+    document.querySelectorAll('.form-section').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
+    document.querySelectorAll('.tab-btn').forEach(el => { el.classList.remove('active'); });
     const target = document.getElementById(tabId);
-    if (target) {
-        target.classList.add('active');
-        target.style.display = 'block'; 
-    }
+    if (target) { target.classList.add('active'); target.style.display = 'block'; }
     if (btn) btn.classList.add('active');
 };
 
 window.apiCall = async function(action, payload, successMsg) {
     const staffName = localStorage.getItem('Staff_Name') || '未授權操作員';
     const finalPayload = { action: action, operator: staffName, ...payload };
-
-    const fetchPromise = fetch(API, {
-        method: 'POST',
-        body: JSON.stringify(finalPayload)
-    });
-
-    const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 5000)
-    );
-
+    const fetchPromise = fetch(API, { method: 'POST', body: JSON.stringify(finalPayload) });
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 5000));
     try {
         const response = await Promise.race([fetchPromise, timeoutPromise]);
         const r = await response.json();
-        if (r.status === 'success') {
-            if (successMsg) Swal.fire('成功', successMsg, 'success');
-            return r;
-        } else {
-            Swal.fire('操作失敗', r.message, 'warning');
-            return null;
-        }
+        if (r.status === 'success') { if (successMsg) Swal.fire('成功', successMsg, 'success'); return r; } 
+        else { Swal.fire('操作失敗', r.message, 'warning'); return null; }
     } catch(e) {
-        if (e.message === 'TIMEOUT') {
-            Swal.fire('連線逾時', '⚠️ 系統連線逾時 (Timeout 5s)！\n已自動攔截卡死狀態，請檢查網路連線後重試。', 'error');
-        } else {
-            Swal.fire('網路異常', '系統網路異常，請稍後再試。', 'error');
-        }
-        console.error(e);
+        if (e.message === 'TIMEOUT') { Swal.fire('連線逾時', '系統連線逾時 (Timeout 5s)！', 'error'); } 
+        else { Swal.fire('網路異常', '系統網路異常，請稍後再試。', 'error'); }
         return null;
     }
 };
@@ -203,23 +193,14 @@ window.getTimeOptionsHTML = function(selectedTime = '') {
 window.showAutocomplete = function(inputId, listId, phoneInputId) {
     const input = el(inputId); const list = el(listId);
     if (!input || !list) return;
-
     if (window.membersData && window.membersData.length > 0) {
-        const val = input.value.trim();
-        list.innerHTML = '';
+        const val = input.value.trim(); list.innerHTML = '';
         if (!val) { list.style.display = 'none'; return; }
-        
         const filtered = window.membersData.filter(m => m.name.includes(val) || m.phone.includes(val)).slice(0, 5);
         if (filtered.length > 0) {
             filtered.forEach(m => {
-                const item = document.createElement('div');
-                item.className = 'autocomplete-item';
-                item.innerText = `${m.name} (${m.phone})`;
-                item.onclick = () => {
-                    input.value = m.name;
-                    if(phoneInputId && el(phoneInputId)) el(phoneInputId).value = m.phone;
-                    list.style.display = 'none';
-                };
+                const item = document.createElement('div'); item.className = 'autocomplete-item'; item.innerText = `${m.name} (${m.phone})`;
+                item.onclick = () => { input.value = m.name; if(phoneInputId && el(phoneInputId)) el(phoneInputId).value = m.phone; list.style.display = 'none'; };
                 list.appendChild(item);
             });
             list.style.display = 'block';
@@ -229,8 +210,6 @@ window.showAutocomplete = function(inputId, listId, phoneInputId) {
 
 document.addEventListener('click', function (e) {
     document.querySelectorAll('.autocomplete-list').forEach(list => {
-        if (!list.contains(e.target) && e.target.tagName !== 'INPUT') {
-            list.style.display = 'none';
-        }
+        if (!list.contains(e.target) && e.target.tagName !== 'INPUT') { list.style.display = 'none'; }
     });
 });
