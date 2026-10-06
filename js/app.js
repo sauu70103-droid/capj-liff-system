@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V3.2 致命錯誤搶修版：API 連線死鎖解除與強制降級防護
+ * V3.3 實名追蹤與 SSO 接收版：全域實名蓋章與降級防護
  * ============================================================================
  */
 
@@ -15,6 +15,9 @@ function v(id) { return el(id) ? el(id).value : ''; }
 const SYSTEM_AUTH_TYPE = "store"; 
 
 const isAllowed = (val) => val === true || val === "允許" || String(val).toLowerCase() === "true";
+
+// 🌟 全域變數：操作員實名綁定
+window.currentOperator = '未登入';
 
 async function initSystemAuth() {
   try {
@@ -55,20 +58,17 @@ async function ssoFastLogin(uid) {
       if (data.status === "success") {
           checkSystemPermissionAndRender(data.staff);
       } else {
-          // 🔴 發生邏輯錯誤：隱藏護航遮罩，彈出密碼鎖
           if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
           Swal.fire('驗證失效', data.message, 'error').then(promptExternalPinLogin);
       }
   } catch (err) {
       console.error("SSO 驗證網路異常", err);
-      // 🔴 致命錯誤搶修：發生網路層級異常時，絕對強制隱藏遮罩，根絕無限死鎖！
       if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
       Swal.fire('連線錯誤', '網路異常，無法進行免密核對。', 'error').then(promptExternalPinLogin);
   }
 }
 
 function promptExternalPinLogin() {
-  // 🔴 雙重保險：呼叫密碼鎖前，無論如何先強制作廢護航遮罩
   if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
 
   Swal.fire({
@@ -120,12 +120,14 @@ function checkSystemPermissionAndRender(staff) {
 }
 
 function renderBackendPlatform(staffData) {
-    localStorage.setItem('Staff_Name', staffData.Staff_Name);
+    // 🌟 實名追蹤綁定與 UI 渲染
+    window.currentOperator = staffData.name || staffData.Staff_Name || '未登入操作員';
+    localStorage.setItem('Staff_Name', window.currentOperator);
     localStorage.setItem('Auth_Store', isAllowed(staffData.Auth_Store));
     localStorage.setItem('Auth_Finance', isAllowed(staffData.Auth_Finance));
 
-    if(el('fCash')) el('fCash').value = staffData.Staff_Name;
-    if(el('staffBadge')) el('staffBadge').innerText = `操作員：${staffData.Staff_Name}`;
+    if(el('fCash')) el('fCash').value = window.currentOperator;
+    if(el('staffBadge')) el('staffBadge').innerText = `目前操作員：${window.currentOperator}`;
 
     if (!isAllowed(staffData.Auth_Finance)) {
         if(el('btnTabFinance')) el('btnTabFinance').classList.add('ui-guard-locked');
@@ -140,7 +142,6 @@ function renderBackendPlatform(staffData) {
     const appContainer = el('mainAppContainer');
     if(appContainer) appContainer.classList.remove('ui-guard-locked');
     
-    // 第三重保險：介面渲染成功後再次確保遮罩消滅
     if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
 
     const defaultTabBtn = document.getElementById('btnTabBooking');
@@ -163,10 +164,13 @@ window.switchTab = function(tabId, btn) {
 };
 
 window.apiCall = async function(action, payload, successMsg) {
-    const staffName = localStorage.getItem('Staff_Name') || '未授權操作員';
-    const finalPayload = { action: action, operator: staffName, ...payload };
+    // 🌟 強制蓋章：所有的操作自動夾帶全域操作員名稱，落實實名追蹤
+    const finalOperator = window.currentOperator !== '未登入' ? window.currentOperator : (localStorage.getItem('Staff_Name') || '系統');
+    const finalPayload = { action: action, operator: finalOperator, ...payload };
+    
     const fetchPromise = fetch(API, { method: 'POST', body: JSON.stringify(finalPayload) });
     const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 5000));
+    
     try {
         const response = await Promise.race([fetchPromise, timeoutPromise]);
         const r = await response.json();
