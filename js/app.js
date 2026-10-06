@@ -1,21 +1,19 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V3.1 防白畫面降級版：全面 Try-Catch 包覆與 Boolean 嚴格檢驗
+ * V3.2 致命錯誤搶修版：API 連線死鎖解除與強制降級防護
  * ============================================================================
  */
 
 if (typeof API === 'undefined') {
-    window.API = 'YOUR_GAS_WEB_APP_URL_HERE'; 
+    window.API = 'YOUR_GAS_WEB_APP_URL_HERE'; // ⚠️ 請確保中央發布的網址結尾包含 /exec
 }
 
 function el(id) { return document.getElementById(id); }
 function v(id) { return el(id) ? el(id).value : ''; }
 
-// 🌟 指定系統權限代號為 store (後台店務系統)
 const SYSTEM_AUTH_TYPE = "store"; 
 
-// 🌟 V3.1 極致防呆：無論傳入什麼，只認 true 布林值
 const isAllowed = (val) => val === true || val === "允許" || String(val).toLowerCase() === "true";
 
 async function initSystemAuth() {
@@ -23,13 +21,11 @@ async function initSystemAuth() {
       const urlParams = new URLSearchParams(window.location.search);
       const isSso = urlParams.get('sso_auth') === 'true';
 
-      // 若無 SSO 參數 (外部直連)，100% 降級彈出密碼鎖
       if (!isSso) {
           promptExternalPinLogin();
           return;
       }
 
-      // 🌟 LIFF 初始化加入 Promise.race 防呆，避免永久掛起
       const liffInitPromise = liff.init({ liffId: window.LIFF_ID || "YOUR_LIFF_ID_HERE" });
       const liffTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('LIFF_TIMEOUT')), 5000));
       
@@ -59,15 +55,22 @@ async function ssoFastLogin(uid) {
       if (data.status === "success") {
           checkSystemPermissionAndRender(data.staff);
       } else {
+          // 🔴 發生邏輯錯誤：隱藏護航遮罩，彈出密碼鎖
+          if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
           Swal.fire('驗證失效', data.message, 'error').then(promptExternalPinLogin);
       }
   } catch (err) {
-      console.warn("SSO 驗證網路異常", err);
+      console.error("SSO 驗證網路異常", err);
+      // 🔴 致命錯誤搶修：發生網路層級異常時，絕對強制隱藏遮罩，根絕無限死鎖！
+      if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
       Swal.fire('連線錯誤', '網路異常，無法進行免密核對。', 'error').then(promptExternalPinLogin);
   }
 }
 
 function promptExternalPinLogin() {
+  // 🔴 雙重保險：呼叫密碼鎖前，無論如何先強制作廢護航遮罩
+  if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
+
   Swal.fire({
     title: '錦葳系統 - 安全鎖',
     input: 'password',
@@ -89,6 +92,7 @@ function promptExternalPinLogin() {
           });
           return await res.json();
       } catch (err) {
+          console.error("Login API 呼叫失敗", err);
           Swal.showValidationMessage('網路連線失敗，請檢查網路狀態');
           return false;
       }
@@ -103,7 +107,6 @@ function promptExternalPinLogin() {
 }
 
 function checkSystemPermissionAndRender(staff) {
-  // 🌟 V3.1 使用嚴格 Boolean 檢驗
   if (SYSTEM_AUTH_TYPE === "store" && !isAllowed(staff.Auth_Store)) {
     Swal.fire({
         title: '權限不足', 
@@ -124,7 +127,6 @@ function renderBackendPlatform(staffData) {
     if(el('fCash')) el('fCash').value = staffData.Staff_Name;
     if(el('staffBadge')) el('staffBadge').innerText = `操作員：${staffData.Staff_Name}`;
 
-    // 依據財務權限決定是否鎖定對應頁籤
     if (!isAllowed(staffData.Auth_Finance)) {
         if(el('btnTabFinance')) el('btnTabFinance').classList.add('ui-guard-locked');
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.add('ui-guard-locked');
@@ -135,15 +137,12 @@ function renderBackendPlatform(staffData) {
         if(el('btnTabPoints')) el('btnTabPoints').classList.remove('ui-guard-locked');
     }
 
-    // ✅ 驗證與權限派發完成，安全解鎖 UI 並隱藏載入遮罩
-    const loadingOverlay = el('loadingOverlay');
-    if(loadingOverlay) loadingOverlay.style.display = 'none';
-
     const appContainer = el('mainAppContainer');
-    if(appContainer) {
-        appContainer.style.display = 'block';
-    }
+    if(appContainer) appContainer.classList.remove('ui-guard-locked');
     
+    // 第三重保險：介面渲染成功後再次確保遮罩消滅
+    if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
+
     const defaultTabBtn = document.getElementById('btnTabBooking');
     if (defaultTabBtn) {
         window.switchTab('bookingTab', defaultTabBtn);
@@ -152,7 +151,9 @@ function renderBackendPlatform(staffData) {
 
 window.addEventListener("DOMContentLoaded", initSystemAuth);
 
-// 共用工具庫維持原樣
+// ==========================================
+// 共用工具庫
+// ==========================================
 window.switchTab = function(tabId, btn) {
     document.querySelectorAll('.form-section').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
     document.querySelectorAll('.tab-btn').forEach(el => { el.classList.remove('active'); });
@@ -172,8 +173,9 @@ window.apiCall = async function(action, payload, successMsg) {
         if (r.status === 'success') { if (successMsg) Swal.fire('成功', successMsg, 'success'); return r; } 
         else { Swal.fire('操作失敗', r.message, 'warning'); return null; }
     } catch(e) {
-        if (e.message === 'TIMEOUT') { Swal.fire('連線逾時', '系統連線逾時 (Timeout 5s)！', 'error'); } 
+        if (e.message === 'TIMEOUT') { Swal.fire('連線逾時', '⚠️ 系統連線逾時 (Timeout 5s)！\n已自動攔截卡死狀態，請檢查網路連線後重試。', 'error'); } 
         else { Swal.fire('網路異常', '系統網路異常，請稍後再試。', 'error'); }
+        console.error(e);
         return null;
     }
 };
