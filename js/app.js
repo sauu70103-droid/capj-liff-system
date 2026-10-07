@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V3.3 實名追蹤與 SSO 接收版：全域實名蓋章與降級防護
+ * V4.0 極簡解耦版：廢除 SSO，全面回歸 LIFF + PIN 獨立驗證與實名追蹤
  * ============================================================================
  */
 
@@ -13,7 +13,6 @@ function el(id) { return document.getElementById(id); }
 function v(id) { return el(id) ? el(id).value : ''; }
 
 const SYSTEM_AUTH_TYPE = "store"; 
-
 const isAllowed = (val) => val === true || val === "允許" || String(val).toLowerCase() === "true";
 
 // 🌟 全域變數：操作員實名綁定
@@ -21,14 +20,6 @@ window.currentOperator = '未登入';
 
 async function initSystemAuth() {
   try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const isSso = urlParams.get('sso_auth') === 'true';
-
-      if (!isSso) {
-          promptExternalPinLogin();
-          return;
-      }
-
       const liffInitPromise = liff.init({ liffId: window.LIFF_ID || "YOUR_LIFF_ID_HERE" });
       const liffTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('LIFF_TIMEOUT')), 5000));
       
@@ -39,32 +30,15 @@ async function initSystemAuth() {
       } else {
           const profile = await liff.getProfile();
           window.userLineUid = profile.userId;
-          ssoFastLogin(window.userLineUid);
-      }
-  } catch (err) {
-      console.warn("啟動異常，降級為密碼模式防護", err);
-      promptExternalPinLogin();
-  }
-}
-
-async function ssoFastLogin(uid) {
-  try {
-      const res = await fetch(API, {
-          method: 'POST',
-          body: JSON.stringify({ action: "ssoFastCheck", lineUid: uid })
-      });
-      const data = await res.json();
-      
-      if (data.status === "success") {
-          checkSystemPermissionAndRender(data.staff);
-      } else {
+          
+          // 隱藏遮罩並強制彈出密碼鎖
           if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
-          Swal.fire('驗證失效', data.message, 'error').then(promptExternalPinLogin);
+          promptExternalPinLogin();
       }
   } catch (err) {
-      console.error("SSO 驗證網路異常", err);
+      console.warn("LIFF 啟動異常，降級為純密碼模式防護", err);
       if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
-      Swal.fire('連線錯誤', '網路異常，無法進行免密核對。', 'error').then(promptExternalPinLogin);
+      promptExternalPinLogin();
   }
 }
 
