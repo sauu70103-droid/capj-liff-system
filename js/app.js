@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V4.0 極簡解耦版：廢除 SSO，全面回歸 LIFF + PIN 獨立驗證與實名追蹤
+ * 穩定版：徹底強拆遮罩死鎖、對接 GAS 雲端 API 與實名追蹤
  * ============================================================================
  */
 
@@ -15,7 +15,6 @@ function v(id) { return el(id) ? el(id).value : ''; }
 const SYSTEM_AUTH_TYPE = "store"; 
 const isAllowed = (val) => val === true || val === "允許" || String(val).toLowerCase() === "true";
 
-// 🌟 全域變數：操作員實名綁定
 window.currentOperator = '未登入';
 
 async function initSystemAuth() {
@@ -30,19 +29,18 @@ async function initSystemAuth() {
       } else {
           const profile = await liff.getProfile();
           window.userLineUid = profile.userId;
-          
-          // 隱藏遮罩並強制彈出密碼鎖
-          if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
-          promptExternalPinLogin();
       }
   } catch (err) {
-      console.warn("LIFF 啟動異常，降級為純密碼模式防護", err);
+      console.warn("LIFF 啟動異常或超時，降級為純密碼模式防護", err);
+  } finally {
+      // 🔴 強制拆除遮罩死鎖：無論 LIFF 狀態如何，絕對隱藏遮罩並推進流程
       if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
       promptExternalPinLogin();
   }
 }
 
 function promptExternalPinLogin() {
+  // 🔴 雙重保險：呼叫密碼鎖前再次作廢遮罩
   if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
 
   Swal.fire({
@@ -60,6 +58,7 @@ function promptExternalPinLogin() {
           return false;
       }
       try {
+          // 對接 GAS 雲端 API (staffLogin)
           const res = await fetch(API, {
               method: 'POST',
               body: JSON.stringify({ action: "staffLogin", lineUid: window.userLineUid || "", pin: pin })
