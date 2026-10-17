@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * 穩定版：徹底強拆遮罩死鎖、對接 GAS 雲端 API 與實名追蹤
+ * V4.3 終極極簡化：UID 白名單極速通行版 (徹底解耦遠端驗證)
  * ============================================================================
  */
 
@@ -15,7 +15,14 @@ function v(id) { return el(id) ? el(id).value : ''; }
 const SYSTEM_AUTH_TYPE = "store"; 
 const isAllowed = (val) => val === true || val === "允許" || String(val).toLowerCase() === "true";
 
+// 🌟 全域變數：操作員實名綁定
 window.currentOperator = '未登入';
+
+// 🌟 V4.3 本地 UID 授權白名單
+const AUTHORIZED_USERS = { 
+    "Udb1efc9c39494178114788d794028649": "陳奎元", 
+    "千芳的LINE_UID請總部後補": "千芳" 
+};
 
 async function initSystemAuth() {
   try {
@@ -29,72 +36,45 @@ async function initSystemAuth() {
       } else {
           const profile = await liff.getProfile();
           window.userLineUid = profile.userId;
+          verifyUidAndRender(window.userLineUid);
       }
   } catch (err) {
-      console.warn("LIFF 啟動異常或超時，降級為純密碼模式防護", err);
+      console.warn("LIFF 啟動異常或超時", err);
+      Swal.fire('系統錯誤', 'LINE 授權載入失敗，請檢查網路後重新整理。', 'error');
   } finally {
-      // 🔴 強制拆除遮罩死鎖：無論 LIFF 狀態如何，絕對隱藏遮罩並推進流程
+      // 🔴 強制拆除遮罩死鎖：無論 LIFF 狀態為何，絕對隱藏遮罩
       if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
-      promptExternalPinLogin();
   }
 }
 
-function promptExternalPinLogin() {
-  // 🔴 雙重保險：呼叫密碼鎖前再次作廢遮罩
-  if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
-
-  Swal.fire({
-    title: '錦葳系統 - 安全鎖',
-    input: 'password',
-    inputPlaceholder: '請輸入您的專屬密碼',
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    confirmButtonText: '解鎖',
-    confirmButtonColor: '#ea580c',
-    showLoaderOnConfirm: true,
-    preConfirm: async (pin) => {
-      if(!pin) {
-          Swal.showValidationMessage('請輸入密碼');
-          return false;
-      }
-      try {
-          // 對接 GAS 雲端 API (staffLogin)
-          const res = await fetch(API, {
-              method: 'POST',
-              body: JSON.stringify({ action: "staffLogin", lineUid: window.userLineUid || "", pin: pin })
-          });
-          return await res.json();
-      } catch (err) {
-          console.error("Login API 呼叫失敗", err);
-          Swal.showValidationMessage('網路連線失敗，請檢查網路狀態');
-          return false;
-      }
+// 🌟 V4.3 極速通行與阻擋邏輯
+function verifyUidAndRender(uid) {
+    const operatorName = AUTHORIZED_USERS[uid];
+    
+    if (operatorName) {
+        // 驗證成功：放行並給予店務與財務權限，轉交主渲染引擎
+        const staffData = {
+            Staff_Name: operatorName,
+            Auth_Store: true,
+            Auth_Finance: true
+        };
+        renderBackendPlatform(staffData);
+    } else {
+        // 驗證失敗：徹底阻擋
+        Swal.fire({
+            title: '拒絕存取',
+            text: '未經授權的操作人員',
+            icon: 'error',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false
+        });
     }
-  }).then((result) => {
-    if (result.isConfirmed && result.value && result.value.status === "success") {
-      checkSystemPermissionAndRender(result.value.staff);
-    } else if (result.isConfirmed) {
-      Swal.fire('錯誤', result.value.message || '驗證失敗', 'error').then(promptExternalPinLogin);
-    }
-  });
-}
-
-function checkSystemPermissionAndRender(staff) {
-  if (SYSTEM_AUTH_TYPE === "store" && !isAllowed(staff.Auth_Store)) {
-    Swal.fire({
-        title: '權限不足', 
-        text: '您無權訪問後台店務系統，即將退回安全鎖。', 
-        icon: 'error',
-        allowOutsideClick: false
-    }).then(promptExternalPinLogin);
-    return;
-  }
-  renderBackendPlatform(staff); 
 }
 
 function renderBackendPlatform(staffData) {
     // 🌟 實名追蹤綁定與 UI 渲染
-    window.currentOperator = staffData.name || staffData.Staff_Name || '未登入操作員';
+    window.currentOperator = staffData.Staff_Name || '未登入操作員';
     localStorage.setItem('Staff_Name', window.currentOperator);
     localStorage.setItem('Auth_Store', isAllowed(staffData.Auth_Store));
     localStorage.setItem('Auth_Finance', isAllowed(staffData.Auth_Finance));
@@ -115,6 +95,7 @@ function renderBackendPlatform(staffData) {
     const appContainer = el('mainAppContainer');
     if(appContainer) appContainer.classList.remove('ui-guard-locked');
     
+    // 雙重保險確保遮罩移除
     if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
 
     const defaultTabBtn = document.getElementById('btnTabBooking');
@@ -150,7 +131,7 @@ window.apiCall = async function(action, payload, successMsg) {
         if (r.status === 'success') { if (successMsg) Swal.fire('成功', successMsg, 'success'); return r; } 
         else { Swal.fire('操作失敗', r.message, 'warning'); return null; }
     } catch(e) {
-        if (e.message === 'TIMEOUT') { Swal.fire('連線逾時', '⚠️ 系統連線逾時 (Timeout 5s)！\n已自動攔截卡死狀態，請檢查網路連線後重試。', 'error'); } 
+        if (e.message === 'TIMEOUT') { Swal.fire('連線逾時', '⚠️ 系統連線逾時 (Timeout 5s)！\n請檢查網路連線後重試。', 'error'); } 
         else { Swal.fire('網路異常', '系統網路異常，請稍後再試。', 'error'); }
         console.error(e);
         return null;
