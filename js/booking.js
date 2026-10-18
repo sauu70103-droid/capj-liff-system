@@ -2,7 +2,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if(el('bkStartTime')) el('bkStartTime').innerHTML = getTimeOptionsHTML();
     if(el('bkEndTime')) el('bkEndTime').innerHTML = getTimeOptionsHTML();
     if(el('fTime')) el('fTime').innerHTML = getTimeOptionsHTML();
-
     const today = new Date();
     const tzOffset = today.getTimezoneOffset() * 60000;
     const localToday = (new Date(today - tzOffset)).toISOString().split('T')[0];
@@ -11,7 +10,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if(el('bkEndDate')) el('bkEndDate').value = localToday;
     if(el('fDate')) el('fDate').value = localToday;
 });
-
 window.toggleMultipleBox = () => {
     const box = el('multipleBox');
     if (box.classList.contains('hidden')) {
@@ -23,12 +21,10 @@ window.toggleMultipleBox = () => {
         window.currentBookingMode = 'single';
     }
 };
-
 window.autoCalcEndTime = () => {
     const startDate = el('bkStartDate').value;
     const startTime = el('bkStartTime').value;
     if (!startDate || !startTime) return;
-
     const course = el('bkCourse').value || "";
     let addMinutes = 60; // 預設 60 分鐘
     
@@ -44,22 +40,18 @@ window.autoCalcEndTime = () => {
     } else if(course.includes("套票") || course.includes("純購")) {
         addMinutes = 15;
     }
-
     const [y, mo, d] = startDate.split('-');
     const [h, m] = startTime.split(':');
     let endObj = new Date(y, mo - 1, d, h, m);
     endObj.setMinutes(endObj.getMinutes() + addMinutes);
-
     const endY = endObj.getFullYear();
     const endMo = String(endObj.getMonth() + 1).padStart(2, '0');
     const endD = String(endObj.getDate()).padStart(2, '0');
     el('bkEndDate').value = `${endY}-${endMo}-${endD}`;
-
     const endH = String(endObj.getHours()).padStart(2, '0');
     const endM = String(endObj.getMinutes()).padStart(2, '0');
     el('bkEndTime').innerHTML = getTimeOptionsHTML(`${endH}:${endM}`);
 };
-
 // 🌟 三維定錨渲染：Order_ID, JW_ID, Client_Name
 window.loadOnlineRequests = async () => {
     const btn = el('btnLoadRequests');
@@ -85,7 +77,6 @@ window.loadOnlineRequests = async () => {
                 const jwStr = i.jwId || i.phone || '無JW';
                 const orderStr = i.orderId || '單號生成中';
                 const displayTitle = `${i.name || '未登錄姓名'} <span style="font-size:13px; color:#666; font-weight:normal;">(${jwStr}) [${orderStr}]</span>`;
-
                 if (isCancel) {
                     let cancelTime = i.times.length > 0 ? `${i.times[0].date} ${i.times[0].time}` : '未知時間';
                     let cancelReason = i.note ? `<br>取消原因：<span style="color:#ef4444;">${i.note}</span>` : '';
@@ -134,7 +125,6 @@ window.loadOnlineRequests = async () => {
                             </button>`;
                         }
                     });
-
                     area.innerHTML += `
                     <div class="result-card" id="req-card-${i.id}" style="border-left-color:var(--primary); background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px;">
                         <strong style="color:var(--text-main); font-size:16px;">${displayTitle}</strong><br>
@@ -157,7 +147,6 @@ window.loadOnlineRequests = async () => {
         alert('讀取失敗，請確認網路連線'); 
     }
 };
-
 window.approveOnlineCancel = async (reqId, phone, timeStr) => {
     if(!confirm('確定要直接取消該客人的此筆排程嗎？系統將同步作廢並寫回紅燈狀態。')) return;
     try {
@@ -171,7 +160,6 @@ window.approveOnlineCancel = async (reqId, phone, timeStr) => {
         alert('取消失敗，請檢查網路連線。'); 
     }
 };
-
 window.rejectRequest = async (reqId) => {
     if(!confirm('確定要拒絕此申請，並標記為「無適合時間」嗎？')) return;
     try {
@@ -184,7 +172,6 @@ window.rejectRequest = async (reqId) => {
         alert('註記失敗，請檢查網路狀態。');
     }
 };
-
 window.approveRequest = (reqId, name, phone, course, date, time) => {
     if(name) el('bkName').value = name;
     if(phone) el('bkPhone').value = phone;
@@ -204,7 +191,6 @@ window.approveRequest = (reqId, name, phone, course, date, time) => {
             '套票': '專案套票/多堂課程 (純購買)',
             '其他': '其他'
         };
-
         const opts = el('bkCourse').options;
         for (let i = 0; i < opts.length; i++) {
             if (opts[i].value === course) {
@@ -228,35 +214,28 @@ window.approveRequest = (reqId, name, phone, course, date, time) => {
             el('bkCourse').value = '其他';
         }
     }
-
     if (date) el('bkStartDate').value = date;
     if (time) {
         el('bkStartTime').innerHTML = getTimeOptionsHTML(time);
         el('bkStartTime').value = time;
     }
-
     window.autoCalcEndTime();
     window.currentOnlineReqId = reqId; 
-
     el('bkName').scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => {
         alert('✅ 已將申請資料完美帶入！\n請確認「會員姓名」、「師傅」與「結束時間」後，點擊下方的【確認建立預約排程】即可。');
     }, 300);
 };
-
 window.submitBookingData = async () => {
     const rawName = v('bkName'); const rawPhone = v('bkPhone');
     const rawStartDate = v('bkStartDate'); const rawStartTime = v('bkStartTime');
     const rawEndDate = v('bkEndDate'); const rawEndTime = v('bkEndTime');
-
     if (!rawName || !rawPhone) return alert('請填寫會員姓名與手機！');
     if (!rawStartDate || !rawStartTime || !rawEndDate || !rawEndTime) return alert('請完整選擇時間！');
-
     const btn = document.querySelector('#bookingTab .btn-submit');
     const originalText = btn.innerText;
     btn.innerText = '排程寫入中...'; 
     btn.disabled = true;
-
     const payload = {
         name: rawName, phone: rawPhone, people: v('bkPeople') || '1',
         course: v('bkCourse') || '其他', hero: v('bkHero') || '奎元',
@@ -266,7 +245,6 @@ window.submitBookingData = async () => {
         repeatCount: Number(v('bkRepeatCount') || 1),
         onlineReqId: window.currentOnlineReqId || ''
     };
-
     await apiCall('createBooking', payload, '✅ 預約已成功寫入系統與行事曆！');
     
     if (window.currentOnlineReqId) {
@@ -280,7 +258,6 @@ window.submitBookingData = async () => {
     btn.innerText = originalText; 
     btn.disabled = false;
 };
-
 window.searchBks = async () => {
     const kw = v('srchKw');
     if(!kw) return alert('請輸入搜尋關鍵字！');
@@ -300,7 +277,6 @@ window.searchBks = async () => {
     }
     btn.innerText = '搜尋當日及未來預約紀錄';
 };
-
 window.renderBks = (data) => {
     const area = el('srchArea'); 
     area.innerHTML = '';
@@ -309,12 +285,10 @@ window.renderBks = (data) => {
         area.innerHTML = '<p style="text-align:center; color:var(--text-light);">查無符合的預約紀錄。</p>';
         return;
     }
-
     data.forEach(i => {
         let sD = '', sT = '', eD = '', eT = '';
         if(i.start && i.start.includes(' ')) { [sD, sT] = i.start.split(' '); }
         if(i.end && i.end.includes(' ')) { [eD, eT] = i.end.split(' '); }
-
         // 🌟 渲染非同步狀態標籤 Badge (對齊 V2.0 狀態機解耦)
         let finBadge = i.finStatus === '[已結帳]' 
             ? `<span style="background:#16a34a; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:6px;">財務已結清</span>` 
@@ -322,7 +296,6 @@ window.renderBks = (data) => {
         let techBadge = i.techStatus === 'TRUE' || i.techStatus === '[已核銷]' 
             ? `<span style="background:#0ea5e9; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:4px;">中台已核銷</span>` 
             : `<span style="background:#94a3b8; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:4px;">中台未處理</span>`;
-
         const jwStr = i.memberId || '無JW';
         const orderStr = i.orderId || '單號遺失';
         
@@ -340,7 +313,6 @@ window.renderBks = (data) => {
                 <button class="btn-small" style="background:var(--primary); color:white;" onclick="toggleBookingEditForm('${i.id}')">修改改期</button>
                 <button class="btn-small" style="background:#ef4444; color:white;" onclick="cancelBooking('${i.id}', '${i.eventId}')">取消預約</button>
             </div>
-
             <div id="editBk-${i.id}" style="display:none; background:#FAFAFA; padding:15px; border-radius:8px; border:1px solid var(--border); margin-top:15px;">
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
                     <div style="flex:1;">
@@ -370,25 +342,21 @@ window.renderBks = (data) => {
         </div>`;
     });
 };
-
 window.toggleBookingEditForm = (id) => {
     const b = el(`editBk-${id}`);
     b.style.display = b.style.display === 'block' ? 'none' : 'block';
 };
-
 window.cancelBooking = async (id, eventId) => {
     if(!confirm('確定要取消這筆預約嗎？系統將同步標記會員表單。')) return;
     await apiCall('cancelBooking', { id: id, eventId: eventId }, '預約已成功取消！');
     searchBks(); 
 };
-
 window.submitBookingUpdate = async (id, eventId) => {
     const sD = v(`ebSDate-${id}`); const sT = v(`ebSTime-${id}`);
     const eD = v(`ebEDate-${id}`); const eT = v(`ebETime-${id}`);
     
     if(!sD || !sT || !eD || !eT) return alert('日期與時間必須完整填寫！');
     if(!confirm('確定要修改此筆預約嗎？系統將進行舊單註記並寫回會員系統綠燈。')) return;
-
     const payload = {
         id: String(id), 
         eventId: String(eventId),
@@ -396,7 +364,6 @@ window.submitBookingUpdate = async (id, eventId) => {
         newEnd: `${eD} ${eT}`,
         newCourse: String(v(`ebCourse-${id}`) || '其他')
     };
-
     await apiCall('updateBooking', payload, '預約排程已成功修改與同步！');
     searchBks();
 };
