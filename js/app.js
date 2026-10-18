@@ -1,21 +1,20 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V4.3 終極極簡化：UID 白名單極速通行版 (徹底解耦遠端驗證)
+ * V4.3 終極極簡化：UID 白名單極速通行版 (徹底解除變數死鎖)
  * ============================================================================
  */
-
 if (typeof API === 'undefined') {
-    window.API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec'; // ⚠️ 請確保中央發布的網址結尾包含 /exec
+    window.API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec'; 
 }
 
+// 全域唯一宣告，徹底解決 Uncaught SyntaxError
 function el(id) { return document.getElementById(id); }
 function v(id) { return el(id) ? el(id).value : ''; }
 
 const SYSTEM_AUTH_TYPE = "store"; 
 const isAllowed = (val) => val === true || val === "允許" || String(val).toLowerCase() === "true";
 
-// 🌟 全域變數：操作員實名綁定
 window.currentOperator = '未登入';
 
 // 🌟 V4.3 本地 UID 授權白名單
@@ -42,46 +41,33 @@ async function initSystemAuth() {
       console.warn("LIFF 啟動異常或超時", err);
       Swal.fire('系統錯誤', 'LINE 授權載入失敗，請檢查網路後重新整理。', 'error');
   } finally {
-      // 🔴 強制拆除遮罩死鎖：無論 LIFF 狀態為何，絕對隱藏遮罩
       if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
   }
 }
 
-// 🌟 V4.3 極速通行與阻擋邏輯
 function verifyUidAndRender(uid) {
     const operatorName = AUTHORIZED_USERS[uid];
     
     if (operatorName) {
-        // 驗證成功：放行並給予店務與財務權限，轉交主渲染引擎
-        const staffData = {
-            Staff_Name: operatorName,
-            Auth_Store: true,
-            Auth_Finance: true
-        };
+        const staffData = { Staff_Name: operatorName, Auth_Store: true, Auth_Finance: true };
         renderBackendPlatform(staffData);
     } else {
-        // 驗證失敗：徹底阻擋
         Swal.fire({
-            title: '拒絕存取',
-            text: '未經授權的操作人員',
-            icon: 'error',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false
+            title: '拒絕存取', text: '未經授權的操作人員', icon: 'error',
+            allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false
         });
     }
 }
 
 function renderBackendPlatform(staffData) {
-    // 🌟 實名追蹤綁定與 UI 渲染
     window.currentOperator = staffData.Staff_Name || '未登入操作員';
     localStorage.setItem('Staff_Name', window.currentOperator);
     localStorage.setItem('Auth_Store', isAllowed(staffData.Auth_Store));
     localStorage.setItem('Auth_Finance', isAllowed(staffData.Auth_Finance));
-
+    
     if(el('fCash')) el('fCash').value = window.currentOperator;
     if(el('staffBadge')) el('staffBadge').innerText = `目前操作員：${window.currentOperator}`;
-
+    
     if (!isAllowed(staffData.Auth_Finance)) {
         if(el('btnTabFinance')) el('btnTabFinance').classList.add('ui-guard-locked');
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.add('ui-guard-locked');
@@ -91,17 +77,13 @@ function renderBackendPlatform(staffData) {
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.remove('ui-guard-locked');
         if(el('btnTabPoints')) el('btnTabPoints').classList.remove('ui-guard-locked');
     }
-
+    
     const appContainer = el('mainAppContainer');
     if(appContainer) appContainer.classList.remove('ui-guard-locked');
-    
-    // 雙重保險確保遮罩移除
     if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
-
+    
     const defaultTabBtn = document.getElementById('btnTabBooking');
-    if (defaultTabBtn) {
-        window.switchTab('bookingTab', defaultTabBtn);
-    }
+    if (defaultTabBtn) window.switchTab('bookingTab', defaultTabBtn);
 }
 
 window.addEventListener("DOMContentLoaded", initSystemAuth);
@@ -118,7 +100,6 @@ window.switchTab = function(tabId, btn) {
 };
 
 window.apiCall = async function(action, payload, successMsg) {
-    // 🌟 強制蓋章：所有的操作自動夾帶全域操作員名稱，落實實名追蹤
     const finalOperator = window.currentOperator !== '未登入' ? window.currentOperator : (localStorage.getItem('Staff_Name') || '系統');
     const finalPayload = { action: action, operator: finalOperator, ...payload };
     
@@ -138,16 +119,36 @@ window.apiCall = async function(action, payload, successMsg) {
     }
 };
 
-window.getTimeOptionsHTML = function(selectedTime = '') {
-    let html = '';
-    for (let h = 9; h <= 22; h++) {
-        for (let m of ['00', '30']) {
-            let timeStr = `${String(h).padStart(2, '0')}:${m}`;
-            let sel = (timeStr === selectedTime) ? 'selected' : '';
-            html += `<option value="${timeStr}" ${sel}>${timeStr}</option>`;
-        }
+// 🌟 整合原 config.js 的高級 24 小時時間選單
+window.getTimeOptionsHTML = function(selectedValue = '') {
+    let options = '<option value="">請選擇時間</option>';
+    let found = false;
+    for(let h=9; h<=23; h++) {
+        ['00','15','30','45'].forEach(m => {
+            let hh = String(h).padStart(2,'0');
+            if (selectedValue === `${hh}:${m}`) found = true;
+        });
     }
-    return html;
+    if (selectedValue && !found) {
+        let [hStr, mStr] = selectedValue.split(':');
+        let h = parseInt(hStr);
+        let ampm = h < 12 ? '上午' : (h < 18 ? '下午' : '晚上');
+        let displayH = h > 12 ? h - 12 : h;
+        if(displayH === 0) displayH = 12;
+        options += `<option value="${selectedValue}" selected>${selectedValue} (${ampm} ${displayH}:${mStr})</option>`;
+    }
+    for(let h=9; h<=23; h++) {
+        ['00','15','30','45'].forEach(m => {
+            let hh = String(h).padStart(2,'0');
+            let ampm = h < 12 ? '上午' : (h < 18 ? '下午' : '晚上');
+            let displayH = h > 12 ? h - 12 : h;
+            if(displayH === 0) displayH = 12;
+            let val = `${hh}:${m}`;
+            let sel = (selectedValue === val) ? 'selected' : '';
+            options += `<option value="${val}" ${sel}>${val} (${ampm} ${displayH}:${m})</option>`;
+        });
+    }
+    return options;
 };
 
 window.showAutocomplete = function(inputId, listId, phoneInputId) {
