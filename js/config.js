@@ -1,7 +1,8 @@
 // ==========================================
 // 錦葳健康美學中心 - 核心設定檔 (config.js)
-// 狀態：純淨版 (已解除 el/v 變數衝突)
+// 狀態：純淨極簡版 (已排除所有可能之隱形字元與衝突)
 // ==========================================
+
 const API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec';
 
 const prices = {
