@@ -1,27 +1,22 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V4.3 終極極簡化：UID 白名單極速通行版 (徹底解除變數死鎖)
+ * V4.5 動態雲端授權版：直接讀取 Google Sheet 權限，雙重防卡死機制
  * ============================================================================
  */
+
 if (typeof API === 'undefined') {
     window.API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec'; 
 }
 
-// 全域唯一宣告，徹底解決 Uncaught SyntaxError
 function el(id) { return document.getElementById(id); }
 function v(id) { return el(id) ? el(id).value : ''; }
 
 const SYSTEM_AUTH_TYPE = "store"; 
 const isAllowed = (val) => val === true || val === "允許" || String(val).toLowerCase() === "true";
 
+// 全域變數：操作員實名綁定
 window.currentOperator = '未登入';
-
-// 🌟 V4.3 本地 UID 授權白名單
-const AUTHORIZED_USERS = { 
-    "Udb1efc9c39494178114788d794028649": "陳奎元", 
-    "U11376dff05337ec6ff7042b204cbff58": "千芳" 
-};
 
 async function initSystemAuth() {
   try {
@@ -35,39 +30,73 @@ async function initSystemAuth() {
       } else {
           const profile = await liff.getProfile();
           window.userLineUid = profile.userId;
-          verifyUidAndRender(window.userLineUid);
+          // 🌟 將 UID 送往 GAS 進行動態權限讀取
+          verifyUidViaGas(window.userLineUid);
       }
   } catch (err) {
       console.warn("LIFF 啟動異常或超時", err);
-      Swal.fire('系統錯誤', 'LINE 授權載入失敗，請檢查網路後重新整理。', 'error');
-  } finally {
       if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
+      Swal.fire('系統錯誤', 'LINE 授權載入失敗，請檢查網路後重新整理。', 'error');
   }
 }
 
-function verifyUidAndRender(uid) {
-    const operatorName = AUTHORIZED_USERS[uid];
-    
-    if (operatorName) {
-        const staffData = { Staff_Name: operatorName, Auth_Store: true, Auth_Finance: true };
-        renderBackendPlatform(staffData);
-    } else {
+// 🌟 動態對接 Google Sheet 驗證
+async function verifyUidViaGas(uid) {
+    try {
+        const fetchPromise = fetch(API, {
+            method: 'POST',
+            body: JSON.stringify({ action: "ssoFastCheck", lineUid: uid })
+        });
+        // 網路連線 5 秒強制 Timeout，杜絕轉圈圈卡死
+        const fetchTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('NETWORK_TIMEOUT')), 5000));
+        
+        const res = await Promise.race([fetchPromise, fetchTimeout]);
+        const data = await res.json();
+        
+        if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
+
+        if (data.status === "success") {
+            // 驗證成功，由 Google Sheet 回傳姓名與權限
+            renderBackendPlatform(data.staff);
+        } else {
+            Swal.fire({
+                title: '存取遭拒',
+                text: data.message || '您沒有權限進入此系統',
+                icon: 'error',
+                allowOutsideClick: false,
+                showConfirmButton: false
+            });
+        }
+    } catch (err) {
+        console.error("權限核對網路異常", err);
+        if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
+        
+        let errorMsg = '與資料庫連線中斷，請檢查網路後重新整理。';
+        if(err.message === 'NETWORK_TIMEOUT') errorMsg = '系統連線逾時，請確認網路環境後重試。';
+        
         Swal.fire({
-            title: '拒絕存取', text: '未經授權的操作人員', icon: 'error',
-            allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false
+            title: '連線錯誤',
+            text: errorMsg,
+            icon: 'error',
+            allowOutsideClick: false,
+            confirmButtonText: '重新整理',
+            confirmButtonColor: '#ea580c'
+        }).then(() => {
+            window.location.reload();
         });
     }
 }
 
 function renderBackendPlatform(staffData) {
+    // 實名追蹤綁定與 UI 渲染
     window.currentOperator = staffData.Staff_Name || '未登入操作員';
     localStorage.setItem('Staff_Name', window.currentOperator);
     localStorage.setItem('Auth_Store', isAllowed(staffData.Auth_Store));
     localStorage.setItem('Auth_Finance', isAllowed(staffData.Auth_Finance));
-    
+
     if(el('fCash')) el('fCash').value = window.currentOperator;
     if(el('staffBadge')) el('staffBadge').innerText = `目前操作員：${window.currentOperator}`;
-    
+
     if (!isAllowed(staffData.Auth_Finance)) {
         if(el('btnTabFinance')) el('btnTabFinance').classList.add('ui-guard-locked');
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.add('ui-guard-locked');
@@ -77,13 +106,14 @@ function renderBackendPlatform(staffData) {
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.remove('ui-guard-locked');
         if(el('btnTabPoints')) el('btnTabPoints').classList.remove('ui-guard-locked');
     }
-    
+
     const appContainer = el('mainAppContainer');
     if(appContainer) appContainer.classList.remove('ui-guard-locked');
-    if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
     
     const defaultTabBtn = document.getElementById('btnTabBooking');
-    if (defaultTabBtn) window.switchTab('bookingTab', defaultTabBtn);
+    if (defaultTabBtn) {
+        window.switchTab('bookingTab', defaultTabBtn);
+    }
 }
 
 window.addEventListener("DOMContentLoaded", initSystemAuth);
@@ -119,7 +149,6 @@ window.apiCall = async function(action, payload, successMsg) {
     }
 };
 
-// 🌟 整合原 config.js 的高級 24 小時時間選單
 window.getTimeOptionsHTML = function(selectedValue = '') {
     let options = '<option value="">請選擇時間</option>';
     let found = false;
