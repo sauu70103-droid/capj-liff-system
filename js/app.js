@@ -6,7 +6,7 @@
  */
 
 if (typeof API === 'undefined') {
-    window.API = 'YOUR_GAS_WEB_APP_URL_HERE'; // ⚠️ 請確保中央發布的網址結尾包含 /exec
+    window.API = 'https://script.google.com/macros/s/AKfycbwvFhB4fX_h3W2BdHadQOXo1VJzUaEzmiO93kxoNlaOLBwJz0tblFWPABB9q18aDIS4/exec'; // ⚠️ 請確保中央發布的網址結尾包含 /exec
 }
 
 function el(id) { return document.getElementById(id); }
@@ -21,7 +21,7 @@ window.currentOperator = '未登入';
 // 🌟 V4.3 本地 UID 授權白名單
 const AUTHORIZED_USERS = { 
     "Udb1efc9c39494178114788d794028649": "陳奎元", 
-    "千芳的LINE_UID請總部後補": "千芳" 
+    "U11376dff05337ec6ff7042b204cbff58": "千芳" 
 };
 
 async function initSystemAuth() {
