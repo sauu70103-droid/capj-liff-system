@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V5.0 極簡本地脫鉤版：拔除 LIFF 驗證，純靜態密碼與下拉實名
+ * V5.1 極簡本地脫鉤版：純靜態密碼與下拉實名 (已隱藏提示密碼)
  * ============================================================================
  */
 
@@ -25,7 +25,7 @@ function promptLocalPinLogin() {
     Swal.fire({
         title: '錦葳店務後台',
         input: 'password',
-        inputPlaceholder: '請輸入通行密碼 (8888)',
+        inputPlaceholder: '請輸入通行密碼',
         allowOutsideClick: false,
         allowEscapeKey: false,
         confirmButtonText: '解鎖',
