@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V4.7 專屬 LIFF 靜默通關令 (雙軌制：LIFF極速通關 + 平滑降級密碼鎖)
+ * V4.9 身分標記擴建版 (維持 LIFF 靜默通關與平滑降級密碼鎖)
  * ============================================================================
  */
 
@@ -14,7 +14,7 @@ function v(id) { return el(id) ? el(id).value : ''; }
 
 window.currentOperator = '未登入';
 
-// 🌟 V4.7 專屬 LIFF ID 與降級密碼
+// 🌟 V4.9 專屬 LIFF ID 與降級密碼
 const LIFF_ID = '2011305352-C27AFX04';
 const FALLBACK_PIN = '89668966';
 
@@ -30,19 +30,16 @@ async function initSystemAuth() {
             window.userLineUid = profile.userId;
             await verifyUidViaGas(window.userLineUid);
         } else {
-            // 未登入則平滑降級
             promptLocalPinLogin();
         }
     } catch (err) {
         console.warn("LIFF 啟動異常或超時，執行平滑降級", err);
         promptLocalPinLogin();
     } finally {
-        // 🚨 終極防護：無論如何強制消滅遮罩
         if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
     }
 }
 
-// 🌟 向 GAS API 請求靜默驗證
 async function verifyUidViaGas(uid) {
     try {
         const fetchPromise = fetch(API, {
@@ -54,12 +51,9 @@ async function verifyUidViaGas(uid) {
         const res = await Promise.race([fetchPromise, fetchTimeout]);
         const data = await res.json();
         
-        // 🎯 精準對標 GAS API 回傳的「後台權限」 (Auth_Store)
         if (data.status === "success" && data.staff && (data.staff.Auth_Store === true || data.staff.Auth_Store === '允許')) {
-            // 靜默通關成功
             renderBackendPlatform(data.staff.Staff_Name, true);
         } else {
-            // 無權限或查無此人 -> 平滑降級
             console.warn("API 驗證失敗或無後台權限，降級至本地密碼鎖");
             promptLocalPinLogin();
         }
@@ -69,9 +63,7 @@ async function verifyUidViaGas(uid) {
     }
 }
 
-// 🌟 平滑降級：本地密碼鎖與實名選擇
 function promptLocalPinLogin() {
-    // 雙重確保沒有遮罩卡死
     if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
 
     Swal.fire({
@@ -104,7 +96,6 @@ function promptLocalPinLogin() {
                 confirmButtonColor: '#ea580c'
             }).then((res) => {
                 if (res.isConfirmed) {
-                    // 密碼解鎖者預設放行所有頁籤
                     renderBackendPlatform(res.value, true);
                 }
             });
@@ -112,16 +103,13 @@ function promptLocalPinLogin() {
     });
 }
 
-// 渲染與解鎖介面
 function renderBackendPlatform(operatorName, hasFinanceAuth = true) {
     window.currentOperator = operatorName;
     localStorage.setItem('Staff_Name', operatorName);
     
-    // UI 實名標示與預設值帶入
     if(el('fCash')) el('fCash').value = operatorName;
     if(el('staffBadge')) el('staffBadge').innerText = `目前操作員：${operatorName}`;
     
-    // 依權限解鎖頁籤
     if (hasFinanceAuth) {
         if(el('btnTabFinance')) el('btnTabFinance').classList.remove('ui-guard-locked');
         if(el('btnTabAdjust')) el('btnTabAdjust').classList.remove('ui-guard-locked');
@@ -139,9 +127,6 @@ function renderBackendPlatform(operatorName, hasFinanceAuth = true) {
 
 window.addEventListener("DOMContentLoaded", initSystemAuth);
 
-// ==========================================
-// 共用工具庫 (維持完整功能)
-// ==========================================
 window.switchTab = function(tabId, btn) {
     document.querySelectorAll('.form-section').forEach(el => { el.classList.remove('active'); el.style.display = 'none'; });
     document.querySelectorAll('.tab-btn').forEach(el => { el.classList.remove('active'); });
@@ -150,7 +135,6 @@ window.switchTab = function(tabId, btn) {
     if (btn) btn.classList.add('active');
 };
 
-// 呼叫 API 時自動夾帶全域操作員名稱 (實名蓋章)
 window.apiCall = async function(action, payload, successMsg) {
     const finalOperator = window.currentOperator !== '未登入' ? window.currentOperator : (localStorage.getItem('Staff_Name') || '系統');
     const finalPayload = { action: action, operator: finalOperator, ...payload };
