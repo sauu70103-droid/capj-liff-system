@@ -10,6 +10,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if(el('bkEndDate')) el('bkEndDate').value = localToday;
     if(el('fDate')) el('fDate').value = localToday;
 });
+
 window.toggleMultipleBox = () => {
     const box = el('multipleBox');
     if (box.classList.contains('hidden')) {
@@ -21,14 +22,14 @@ window.toggleMultipleBox = () => {
         window.currentBookingMode = 'single';
     }
 };
+
 window.autoCalcEndTime = () => {
     const startDate = el('bkStartDate').value;
     const startTime = el('bkStartTime').value;
     if (!startDate || !startTime) return;
     const course = el('bkCourse').value || "";
-    let addMinutes = 60; // 預設 60 分鐘
+    let addMinutes = 60; 
     
-    // 🌟 中央規範：精準排程時長映射 (對標 V2.0)
     if(course.includes("單部位舒緩修復")) {
         addMinutes = 15;
     } else if(course.includes("無痛滑罐放鬆")) {
@@ -52,7 +53,7 @@ window.autoCalcEndTime = () => {
     const endM = String(endObj.getMinutes()).padStart(2, '0');
     el('bkEndTime').innerHTML = getTimeOptionsHTML(`${endH}:${endM}`);
 };
-// 🌟 三維定錨渲染：Order_ID, JW_ID, Client_Name
+
 window.loadOnlineRequests = async () => {
     const btn = el('btnLoadRequests');
     const area = el('onlineRequestsArea');
@@ -73,7 +74,6 @@ window.loadOnlineRequests = async () => {
                 const isCancel = i.status.includes('要求取消') || i.status.includes('取消申請');
                 const isReschedule = i.status.includes('要求改期');
                 
-                // 🌟 產生三維標題： 姓名 (JW_ID) [Order_ID]
                 const jwStr = i.jwId || i.phone || '無JW';
                 const orderStr = i.orderId || '單號生成中';
                 const displayTitle = `${i.name || '未登錄姓名'} <span style="font-size:13px; color:#666; font-weight:normal;">(${jwStr}) [${orderStr}]</span>`;
@@ -147,6 +147,7 @@ window.loadOnlineRequests = async () => {
         alert('讀取失敗，請確認網路連線'); 
     }
 };
+
 window.approveOnlineCancel = async (reqId, phone, timeStr) => {
     if(!confirm('確定要直接取消該客人的此筆排程嗎？系統將同步作廢並寫回紅燈狀態。')) return;
     try {
@@ -160,6 +161,7 @@ window.approveOnlineCancel = async (reqId, phone, timeStr) => {
         alert('取消失敗，請檢查網路連線。'); 
     }
 };
+
 window.rejectRequest = async (reqId) => {
     if(!confirm('確定要拒絕此申請，並標記為「無適合時間」嗎？')) return;
     try {
@@ -172,13 +174,13 @@ window.rejectRequest = async (reqId) => {
         alert('註記失敗，請檢查網路狀態。');
     }
 };
+
 window.approveRequest = (reqId, name, phone, course, date, time) => {
     if(name) el('bkName').value = name;
     if(phone) el('bkPhone').value = phone;
     
     if (course) {
         let matched = false;
-        // 🌟 智慧關鍵字對齊最新 4 大核心方案
         const keywordMap = {
             '無痛滑罐': '無痛滑罐放鬆 (快速修復)',
             '快速修復': '無痛滑罐放鬆 (快速修復)',
@@ -226,25 +228,40 @@ window.approveRequest = (reqId, name, phone, course, date, time) => {
         alert('✅ 已將申請資料完美帶入！\n請確認「會員姓名」、「師傅」與「結束時間」後，點擊下方的【確認建立預約排程】即可。');
     }, 300);
 };
+
+// 🌟 V4.9 預約排程寫入引擎
 window.submitBookingData = async () => {
-    const rawName = v('bkName'); const rawPhone = v('bkPhone');
-    const rawStartDate = v('bkStartDate'); const rawStartTime = v('bkStartTime');
-    const rawEndDate = v('bkEndDate'); const rawEndTime = v('bkEndTime');
+    const rawName = v('bkName'); 
+    const rawPhone = v('bkPhone');
+    const rawStartDate = v('bkStartDate'); 
+    const rawStartTime = v('bkStartTime');
+    const rawEndDate = v('bkEndDate'); 
+    const rawEndTime = v('bkEndTime');
+    const rawCustomerType = v('bkCustomerType') || '會員'; // 🌟 新增：讀取客戶屬性標記
+
     if (!rawName || !rawPhone) return alert('請填寫會員姓名與手機！');
     if (!rawStartDate || !rawStartTime || !rawEndDate || !rawEndTime) return alert('請完整選擇時間！');
+    
     const btn = document.querySelector('#bookingTab .btn-submit');
     const originalText = btn.innerText;
     btn.innerText = '排程寫入中...'; 
     btn.disabled = true;
+    
     const payload = {
-        name: rawName, phone: rawPhone, people: v('bkPeople') || '1',
-        course: v('bkCourse') || '其他', hero: v('bkHero') || '奎元',
+        name: rawName, 
+        phone: rawPhone, 
+        people: v('bkPeople') || '1',
+        customerType: rawCustomerType, // 🌟 新增：將客戶屬性標記夾帶送至後端 GAS
+        course: v('bkCourse') || '其他', 
+        hero: v('bkHero') || '奎元',
         startDateTime: `${rawStartDate} ${rawStartTime}`, 
         endDateTime: `${rawEndDate} ${rawEndTime}`,
-        note: v('bkNote') || '', mode: window.currentBookingMode || 'single',
+        note: v('bkNote') || '', 
+        mode: window.currentBookingMode || 'single',
         repeatCount: Number(v('bkRepeatCount') || 1),
         onlineReqId: window.currentOnlineReqId || ''
     };
+    
     await apiCall('createBooking', payload, '✅ 預約已成功寫入系統與行事曆！');
     
     if (window.currentOnlineReqId) {
@@ -255,9 +272,12 @@ window.submitBookingData = async () => {
     }
     
     window.currentOnlineReqId = ''; 
+    if(el('bkCustomerType')) el('bkCustomerType').value = '會員'; // 發送後預設切回會員
+    
     btn.innerText = originalText; 
     btn.disabled = false;
 };
+
 window.searchBks = async () => {
     const kw = v('srchKw');
     if(!kw) return alert('請輸入搜尋關鍵字！');
@@ -277,6 +297,7 @@ window.searchBks = async () => {
     }
     btn.innerText = '搜尋當日及未來預約紀錄';
 };
+
 window.renderBks = (data) => {
     const area = el('srchArea'); 
     area.innerHTML = '';
@@ -289,7 +310,7 @@ window.renderBks = (data) => {
         let sD = '', sT = '', eD = '', eT = '';
         if(i.start && i.start.includes(' ')) { [sD, sT] = i.start.split(' '); }
         if(i.end && i.end.includes(' ')) { [eD, eT] = i.end.split(' '); }
-        // 🌟 渲染非同步狀態標籤 Badge (對齊 V2.0 狀態機解耦)
+        
         let finBadge = i.finStatus === '[已結帳]' 
             ? `<span style="background:#16a34a; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:6px;">財務已結清</span>` 
             : `<span style="background:#eab308; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:6px;">財務未結算</span>`;
@@ -342,15 +363,18 @@ window.renderBks = (data) => {
         </div>`;
     });
 };
+
 window.toggleBookingEditForm = (id) => {
     const b = el(`editBk-${id}`);
     b.style.display = b.style.display === 'block' ? 'none' : 'block';
 };
+
 window.cancelBooking = async (id, eventId) => {
     if(!confirm('確定要取消這筆預約嗎？系統將同步標記會員表單。')) return;
     await apiCall('cancelBooking', { id: id, eventId: eventId }, '預約已成功取消！');
     searchBks(); 
 };
+
 window.submitBookingUpdate = async (id, eventId) => {
     const sD = v(`ebSDate-${id}`); const sT = v(`ebSTime-${id}`);
     const eD = v(`ebEDate-${id}`); const eT = v(`ebETime-${id}`);
