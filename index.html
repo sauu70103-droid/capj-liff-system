@@ -2,369 +2,322 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>錦葳健康美學中心 - 師傅調理系統</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>錦葳健康美學中心 - 店務與財務系統</title>
+    
+    <!-- 🚨 全域崩潰捕捉器：防止語法或未定義變數造成的靜默白畫面 -->
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            alert("🛑 系統嚴重崩潰！\n錯誤: " + message + "\n行數: " + lineno);
+            var overlay = document.getElementById('loadingOverlay');
+            if(overlay) overlay.style.display = 'none'; 
+        };
+        window.addEventListener("unhandledrejection", function(e) {
+            alert("🛑 網路/非同步崩潰！\n原因: " + (e.reason && e.reason.message ? e.reason.message : e.reason));
+            var overlay = document.getElementById('loadingOverlay');
+            if(overlay) overlay.style.display = 'none';
+        });
+    </script>
+
+    <!-- 核心外部套件 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <style>
-        body { background-color: #F9F6F0; font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang TC', '微軟正黑體', sans-serif; }
-        .text-earth { color: #5C4A3D; } 
-        .bg-earth { background-color: #D2B48C; } 
-        .border-soft { border-color: #E8DFD8; }
-        .hidden { display: none !important; }
-        
-        /* V4.8 輸入框視覺優化 */
-        input, select, textarea { 
-            font-size: 16px !important; 
-            border: 1px solid #E8DFD8 !important; 
-            border-radius: 6px !important; 
-            transition: all 0.3s ease !important; 
-            background-color: #FFFFFF;
-        }
-        input:focus, select:focus, textarea:focus { 
-            outline: none !important; 
-            border-color: #C09F80 !important; 
-            box-shadow: 0 0 0 3px rgba(192, 159, 128, 0.25) !important; 
-        }
-    </style>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
 </head>
-<body class="text-gray-800 pb-20">
+<body>
 
-    <header class="bg-earth text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
-        <h1 class="text-lg font-bold tracking-wider"><i class="fa-solid fa-leaf mr-2 text-[#F9F6F0]"></i>錦葳健康美學中心</h1>
-        <div class="text-sm font-medium bg-[#B8997D] px-3 py-1 rounded-full shadow-inner flex items-center">
-            <i class="fa-solid fa-user-check mr-1.5 text-emerald-200"></i> 
-            <span class="tracking-wide">目前操作員：<span id="operatorDisplay" class="font-bold">驗證中...</span></span>
-            <input type="hidden" id="operatorName" value="">
-        </div>
-    </header>
+<!-- 🛡️ 系統載入保護層：確保在驗證完成前，畫面不會出現破碎 UI -->
+<div id="loadingOverlay">
+    <div style="text-align:center;">
+        <div style="font-size: 24px; margin-bottom:10px;">🛡️</div>
+        系統安全鎖護航中...
+    </div>
+</div>
 
-    <main id="mainApp" class="p-4 max-w-lg mx-auto hidden">
+<!-- 📦 主應用框架 (預設鎖定，由 app.js 驗證後解鎖) -->
+<div class="container ui-guard-locked" id="mainAppContainer">
+    
+    <img src="./logo.png" alt="錦葳健康美學中心 Logo" style="width: 160px; display: block; margin: 0 auto 15px; object-fit: contain;">
+    
+    <h2 style="margin-bottom: 5px;">店務與財務系統</h2>
+    <p style="text-align: center; color: var(--primary); font-size: 13px; font-weight: bold; margin-top: 0; margin-bottom: 25px;" id="staffBadge">目前操作員：未登入</p>
+    
+    <div class="tabs">
+        <button class="tab-btn active" id="btnTabBooking" onclick="switchTab('bookingTab', this)">店務<br>預約</button>
+        <button class="tab-btn" id="btnTabFinance" onclick="switchTab('financeTab', this)">財務<br>結帳</button>
+        <button class="tab-btn" id="btnTabAdjust" onclick="switchTab('adjustTab', this)">財務<br>異動</button>
+        <button class="tab-btn" id="btnTabPoints" onclick="switchTab('pointsTab', this)">點數<br>銀行</button>
+    </div>
+
+    <!-- 頁籤一：店務預約系統 -->
+    <div id="bookingTab" class="form-section active">
         
-        <div class="flex bg-gray-200 p-1 rounded-lg mb-4">
-            <button id="toggle-member" onclick="setGuestMode(false)" class="flex-1 py-2 text-sm font-bold rounded bg-white text-[#B8997D] shadow-sm transition">會員調理</button>
-            <button id="toggle-guest" onclick="setGuestMode(true)" class="flex-1 py-2 text-sm font-bold rounded text-gray-500 hover:text-gray-700 transition">訪客體驗</button>
+        <div style="background: rgba(243, 112, 33, 0.05); border: 1px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+            <label style="color: var(--primary); font-weight: bold; margin-bottom:10px; display:block;">🔔 前端會員線上預約申請 (三維狀態機監控)</label>
+            <button type="button" id="btnLoadRequests" class="btn-search" style="background: var(--secondary); color: var(--text-main);" onclick="loadOnlineRequests()">📥 載入最新預約申請</button>
+            <div id="onlineRequestsArea" style="margin-top: 15px;"></div>
         </div>
 
-        <section class="bg-white p-4 rounded-xl shadow-sm border border-soft mb-4">
-            <div id="member-search-area">
-                <div class="flex justify-between items-center mb-3 border-b border-gray-100 pb-2">
-                    <label class="font-bold text-earth text-sm"><i class="fa-solid fa-magnifying-glass text-[#B8997D]"></i> 會員智慧檢索與調閱</label>
-                    <button type="button" id="loadBtn" onclick="fetchTodayRecord()" class="bg-[#F9F6F0] text-earth px-3 py-1.5 rounded text-xs font-bold shadow-sm active:scale-95 transition border border-[#E8DFD8]">
-                        <i class="fa-solid fa-list-check"></i> 今日名單
-                    </button>
-                </div>
-                <div class="flex gap-2 mb-2 relative">
-                    <input type="text" id="clientName" list="memberList" placeholder="輸入姓名或手機 (09自動補JW)..." class="flex-1 p-2.5">
-                    <datalist id="memberList"></datalist>
-                    <button type="button" onclick="autoLoadOnNameChange()" class="bg-[#D2B48C] text-white px-4 rounded-lg font-bold shadow-sm hover:bg-[#B8997D] active:scale-95 transition">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                    </button>
-                </div>
-                <div id="name-profile-alert" class="hidden"></div>
-                <div id="blue-profile-alert" class="hidden"></div>
-                <div id="safety-alert-banner" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
-                    <div id="alert-memberId" class="text-xs text-gray-500 mb-1 font-mono"></div>
-                    <div class="font-bold text-red-700 mb-1 flex items-center gap-1"><i class="fa-solid fa-heart-pulse"></i> 歷史高風險病史警示</div>
-                    <div id="alert-details" class="text-xs text-red-900 leading-relaxed font-medium space-y-1"></div>
-                    <div id="alert-map" class="mt-2 hidden">
-                        <div class="text-[11px] font-bold text-gray-500 mb-1"><i class="fa-solid fa-images"></i> 歷史全景對比圖：</div>
-                        <div class="flex gap-2">
-                            <div id="bodyMapContainer" class="hidden relative w-16 h-16 border border-gray-300 rounded bg-gray-100 overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition">
-                                <img id="latestBodyMapImg" src="" class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition text-white text-[10px] font-bold">全身</div>
-                            </div>
-                            <div id="handFootMapContainer" class="hidden relative w-16 h-16 border border-gray-300 rounded bg-gray-100 overflow-hidden cursor-pointer shadow-sm hover:shadow-md transition">
-                                <img id="latestHandFootMapImg" src="" class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition text-white text-[10px] font-bold">手足</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="master-profile-info" class="hidden mt-3 p-3 bg-[#FFFFFF] border border-[#F9F6F0] rounded-lg text-xs shadow-sm">
-                    <div class="flex flex-wrap gap-x-4 gap-y-2 text-earth">
-                        <div><span class="text-gray-400">性別:</span> <span id="master-gender" class="font-bold"></span></div>
-                        <div><span class="text-gray-400">年齡:</span> <span id="master-age" class="font-bold"></span></div>
-                        <div><span class="text-gray-400">生日:</span> <span id="master-birthday" class="font-bold font-mono"></span></div>
-                        <div class="w-full"><span class="text-gray-400">職業:</span> <span id="master-jobCat" class="font-bold"></span> - <span id="master-job" class="font-bold"></span></div>
-                    </div>
-                    <div id="master-pre-consult-summary"></div>
-                </div>
-            </div>
-
-            <div id="guest-input-area" class="hidden">
-                <div class="font-bold text-earth text-sm mb-3 pb-2 border-b border-gray-100"><i class="fa-solid fa-user-tag text-[#B8997D]"></i> 訪客快速建檔</div>
-                <div class="mb-3">
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">訪客姓名 <span class="text-red-500">*</span></label>
-                    <input type="text" id="guestName" placeholder="請輸入訪客稱呼..." class="w-full p-2.5">
-                </div>
-                <div class="mb-2">
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">聯絡電話 (選填)</label>
-                    <input type="tel" id="guestPhone" placeholder="09..." class="w-full p-2.5">
-                </div>
-            </div>
-        </section>
-
-        <div class="flex mb-4 bg-white rounded-xl shadow-sm border border-soft p-1" id="mode-tabs-container">
-            <button id="tab-profile" onclick="switchMode('profile')" class="flex-1 py-2 text-sm font-bold rounded-lg text-white bg-earth transition-all">櫃檯初訪建檔</button>
-            <button id="tab-record" onclick="switchMode('record')" class="flex-1 py-2 text-sm font-bold rounded-lg text-[#B8997D] bg-transparent transition-all">師傅專業調理</button>
+        <div class="form-group autocomplete-container">
+            <label>會員姓名 (支援自動帶入與記憶)</label>
+            <input type="text" id="bkName" placeholder="輸入關鍵字自動搜尋舊會員" autocomplete="off" onkeyup="showAutocomplete('bkName', 'bkNameList', 'bkPhone')" onfocus="showAutocomplete('bkName', 'bkNameList', 'bkPhone')">
+            <div id="bkNameList" class="autocomplete-list"></div>
         </div>
 
-        <section id="section-record-view" class="hidden">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-soft mb-4">
-                <div class="font-bold text-earth text-sm mb-3 pb-2 border-b border-gray-100 flex items-center justify-between">
-                    <span><i class="fa-solid fa-clipboard-user text-[#B8997D] mr-1"></i> 調理基礎資訊</span>
-                    <span id="auto-save-indicator" class="text-[10px] text-gray-400 opacity-0 transition-opacity flex items-center gap-1 font-normal bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200"></span>
-                </div>
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 mb-1">調理日期</label>
-                        <input type="date" id="recordDate" class="w-full p-2">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 mb-1">方案</label>
-                        <select id="treatmentItem" class="w-full p-2 text-blue-700 font-bold"></select>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">客製化加強部位 (外帳顯示用)</label>
-                    <input type="text" id="customerFocusArea" placeholder="例如：肩頸加強、腰部舒緩..." class="w-full p-2">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">協助/見習助理 (選填)</label>
-                    <input type="text" id="assistantName" placeholder="填寫助理姓名..." class="w-full p-2">
-                </div>
-            </div>
-
-            <div class="flex justify-between items-center mb-2 px-1" id="symptoms-header">
-                <div class="font-bold text-earth text-sm"><i class="fa-solid fa-bed-pulse text-[#B8997D]"></i> 調理點位追蹤紀錄</div>
-                <button type="button" onclick="fetchHistory('recent')" class="text-[11px] font-bold text-white bg-[#B8997D] px-3 py-1.5 rounded-lg shadow-sm hover:bg-[#A68A6D] transition">
-                    <i class="fa-solid fa-clock-rotate-left"></i> 溯源病史
-                </button>
-            </div>
-
-            <div id="symptoms-container"></div>
-
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-soft mb-4">
-                <div class="font-bold text-earth text-sm mb-3 pb-2 border-b border-gray-100 flex items-center gap-1">
-                    <i class="fa-solid fa-file-medical text-[#B8997D]"></i> 綜合評估與全景照片
-                </div>
-                
-                <div class="mb-3" id="recent-status-container">
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">顧客本次回饋 / 近期狀態史 (會置頂堆疊)</label>
-                    <textarea id="recentStatus" rows="2" placeholder="紀錄客人的主觀感受或生活改變..." class="w-full p-2.5 bg-blue-50/50"></textarea>
-                </div>
-                
-                <div class="mb-3" id="global-photos-wrapper">
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">追加全景對比照片 (選填, 最多4張)</label>
-                    <div class="flex gap-2" id="global-photos-container" data-urls="[]"></div>
-                </div>
-
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">本次調理整體備註 (內部查閱用)</label>
-                    <textarea id="globalNote" rows="4" placeholder="總結本次調理邏輯、發現的深層問題或特殊注意事項..." class="w-full p-2.5"></textarea>
-                </div>
-            </div>
-
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-soft mb-6" id="handoff-container">
-                <div class="font-bold text-earth text-sm mb-3 pb-2 border-b border-gray-100"><i class="fa-solid fa-calendar-plus text-[#B8997D] mr-1"></i> 後續追蹤與下次回診安排</div>
-                
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-700 mb-2">課程後續交接狀態 <span class="text-red-500">*</span></label>
-                    <input type="hidden" id="handoffStatus" value="">
-                    <div class="flex gap-2">
-                        <button type="button" id="ho-draft" onclick="setHandoff('🔵進度暫存，尚未結帳')" class="flex-1 py-2.5 text-[11px] font-bold border-2 border-blue-300 text-blue-700 rounded-lg bg-white transition-all shadow-sm">🔵 暫存 (未結)</button>
-                        <button type="button" id="ho-escalate" onclick="setHandoff('🟠需上級支援，尚未結帳')" class="flex-1 py-2.5 text-[11px] font-bold border-2 border-orange-300 text-orange-700 rounded-lg bg-white transition-all shadow-sm">🟠 支援 (未結)</button>
-                        <button type="button" id="ho-checkout" onclick="setHandoff('🟢調理完畢，等待結帳')" class="flex-1 py-2.5 text-[11px] font-bold border-2 border-green-400 text-green-700 rounded-lg bg-white transition-all shadow-sm">🟢 完畢 (交結帳)</button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 mb-1">下次建議調理日期</label>
-                        <input type="date" id="nextCourseDate" class="w-full p-2">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 mb-1">預計時間</label>
-                        <input type="time" id="nextCourseTime" class="w-full p-2">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">指定師傅 (選填)</label>
-                    <input type="text" id="nextOperator" placeholder="若客人有指定師傅請填寫..." class="w-full p-2">
-                </div>
-            </div>
-        </section>
-
-        <section id="section-profile-view" class="bg-white p-4 rounded-xl shadow-sm border border-soft mb-6">
-            <div class="font-bold text-earth text-sm mb-3 pb-2 border-b border-gray-100 flex items-center justify-between">
-                <span><i class="fa-solid fa-address-card text-[#B8997D] mr-1"></i> 櫃檯基本資料建檔</span>
-                <span class="text-[10px] text-red-500 font-normal">* 為必填欄位</span>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <div class="col-span-2">
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">手機號碼 (10碼數字) <span class="text-red-500">*</span></label>
-                    <input type="tel" id="prof-phone" placeholder="0912345678" class="w-full p-2 font-mono">
-                    <div class="text-[9px] text-gray-400 mt-1">系統將以此號碼建立全域唯一識別碼，並自動查核舊庫</div>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">生理性別 <span class="text-red-500">*</span></label>
-                    <select id="prof-gender" class="w-full p-2">
-                        <option value="">-- 請選擇 --</option>
-                        <option value="男性">男性</option>
-                        <option value="女性">女性</option>
-                        <option value="其他">其他</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">生日 (自動推算年齡)</label>
-                    <input type="date" id="prof-birthday" class="w-full p-2">
-                    <input type="hidden" id="prof-age">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">了解我們的途徑 <span class="text-red-500">*</span></label>
-                    <select id="prof-source" class="w-full p-2">
-                        <option value="">-- 請選擇 --</option>
-                        <option value="親友介紹">親友介紹</option>
-                        <option value="Google 地圖">Google 地圖</option>
-                        <option value="FB/IG 粉專">FB/IG 粉專</option>
-                        <option value="路過">路過</option>
-                        <option value="其他">其他</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">初次來店原因 <span class="text-red-500">*</span></label>
-                    <select id="prof-reason" class="w-full p-2">
-                        <option value="">-- 請選擇 --</option>
-                        <option value="身體緊繃痠痛">身體緊繃痠痛</option>
-                        <option value="結構保養調整">結構保養調整</option>
-                        <option value="睡眠品質不佳">睡眠品質不佳</option>
-                        <option value="頭痛">頭痛</option>
-                        <option value="手痛">手痛</option>
-                        <option value="腳痛">腳痛</option>
-                        <option value="坐骨神經痛">坐骨神經痛</option>
-                        <option value="骨盆前傾">骨盆前傾</option>
-                        <option value="脊椎側彎">脊椎側彎</option>
-                        <option value="圓肩駝背">圓肩駝背</option>
-                        <option value="其他...">其他...</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div id="prof-reason-other-container" class="mb-3">
-                <input type="text" id="prof-reason-other" placeholder="請概略描述問題狀況..." class="w-full p-2">
-            </div>
-
-            <div class="mb-3">
-                <label class="block text-[10px] font-bold text-gray-500 mb-1">方案 <span class="text-red-500">*</span></label>
-                <select id="prof-treatmentItem" class="w-full p-2 text-blue-700 font-bold"></select>
-            </div>
-
-            <div class="bg-red-50/50 p-3 rounded-lg border border-red-100 mb-3">
-                <div class="font-bold text-red-700 text-xs mb-2"><i class="fa-solid fa-notes-medical"></i> 重大病史調查 (若無請填「無」) <span class="text-red-500">*</span></div>
-                <div class="space-y-2">
-                    <input type="text" id="prof-surgery" placeholder="開刀史..." class="w-full p-2 border-red-200 focus:border-red-400">
-                    <input type="text" id="prof-chronic" placeholder="慢性病史 (高血壓、糖尿病等)..." class="w-full p-2 border-red-200 focus:border-red-400">
-                    <input type="text" id="prof-fracture" placeholder="骨折意外史..." class="w-full p-2 border-red-200 focus:border-red-400">
-                    <input type="text" id="prof-special" placeholder="特殊疾病 (癌症、心血管、蟹足腫等)..." class="w-full p-2 border-red-200 focus:border-red-400">
-                </div>
-            </div>
-
-            <div class="font-bold text-earth text-sm mb-3 mt-4 pb-2 border-b border-gray-100">
-                <i class="fa-solid fa-clipboard-question text-[#B8997D] mr-1"></i> 櫃檯初步詢問重點
-            </div>
-            <div id="pre-slots-container" class="mb-3"></div>
-            
-            <div class="space-y-3">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 mb-1">工作類型</label>
-                        <select id="prof-jobCategory" class="w-full p-2">
-                            <option value="">-- 選擇 --</option>
-                            <option value="久坐辦公">久坐辦公</option>
-                            <option value="久站勞動">久站勞動</option>
-                            <option value="體力搬重">體力搬重</option>
-                            <option value="頻繁走動">頻繁走動</option>
-                            <option value="家管/無業">家管/無業</option>
-                            <option value="學生">學生</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 mb-1">現職工作名稱</label>
-                        <input type="text" id="prof-currentJob" placeholder="例如：軟體工程師..." class="w-full p-2">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">特殊生活習慣</label>
-                    <input type="text" id="prof-lifestyle" placeholder="例如：慣用右手、長期熬夜、喜歡翹腳..." class="w-full p-2">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">相關檢驗資訊 (X光/MRI等報告備註)</label>
-                    <input type="text" id="prof-inspection" placeholder="客人自述之醫學檢驗結果..." class="w-full p-2">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 mb-1">內部永久特殊備註</label>
-                    <input type="text" id="prof-permNote" placeholder="例如：極度怕痛、禁止按壓頭部..." class="w-full p-2">
-                </div>
-            </div>
-        </section>
-
-        <div class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-3 flex gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
-            <button id="submitBtn" onclick="handleSubmit()" class="flex-1 bg-[#D2B48C] text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-[#B8997D] active:scale-[0.98] transition-all flex justify-center items-center gap-2">
-                <i class="fa-solid fa-cloud-arrow-up"></i> 確定同步歸檔
-            </button>
-            <button type="button" onclick="fetchBillingDashboard()" class="bg-[#F9F6F0] text-[#B8997D] px-4 py-3 rounded-xl font-bold text-sm border border-[#E8DFD8] hover:bg-[#F5F0E6] active:scale-[0.98] transition-all">
-                <i class="fa-solid fa-cash-register"></i>
-            </button>
+        <div class="form-group">
+            <label>手機號碼 (JW_ID 映射鍵)</label>
+            <input type="tel" id="bkPhone" placeholder="09xxxxxxxx">
         </div>
-    </main>
+        
+        <div class="form-group">
+            <label>人數</label>
+            <input type="number" id="bkPeople" value="1" min="1">
+        </div>
+        
+        <div class="form-group">
+            <label>消費項目 (選取後自動推算結束時間)</label>
+            <select id="bkCourse" onchange="autoCalcEndTime()">
+                <option value="無痛滑罐放鬆 (快速修復)">無痛滑罐放鬆 (快速修復) - 30分</option>
+                <option value="單部位舒緩修復 (精準調理)">單部位舒緩修復 (精準調理) - 15分</option>
+                <option value="重點平衡調理 (半身放鬆+全身傳統整復)">重點平衡調理 (半身放鬆+全身傳統整復) - 60分</option>
+                <option value="全身深度重整 (全身放鬆+全身傳統整復)">全身深度重整 (全身放鬆+全身傳統整復) - 120分</option>
+                <option value="專案套票/多堂課程 (純購買)">專案套票/多堂課程 (純購買)</option>
+                <option value="其他">其他</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>指定調理師傅</label>
+            <select id="bkHero">
+                <option value="奎元">奎元</option>
+                <option value="千芳">千芳</option>
+            </select>
+        </div>
+        
+        <button type="button" class="btn-calendar" onclick="window.open('https://calendar.google.com/calendar/r/week', '_blank')">
+            📅 點此開啟 Google 行事曆查看空檔
+        </button>
 
-    <div id="historyModal" class="fixed inset-0 bg-black/60 hidden z-[60] flex items-end sm:items-center justify-center backdrop-blur-sm transition-opacity">
-        <div class="bg-[#F9F6F0] w-full sm:w-11/12 max-w-md h-[85vh] sm:h-auto sm:max-h-[85vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div class="bg-white px-5 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 z-10 shadow-sm">
-                <div>
-                    <h3 id="modalTitle" class="font-bold text-lg text-earth"></h3>
-                    <p id="modalSubtitle" class="text-[10px] text-gray-500 mt-0.5 font-medium"></p>
-                </div>
-                <button onclick="document.getElementById('historyModal').classList.add('hidden')" class="bg-gray-100 text-gray-500 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-200 transition">
-                    <i class="fa-solid fa-times"></i>
-                </button>
-            </div>
-            <div class="p-4 overflow-y-auto flex-1 bg-[#FFFFFF]" id="historyContent"></div>
-            <div class="bg-white p-3 border-t border-gray-200 flex gap-2">
-                <button onclick="fetchHistory('recent')" class="flex-1 py-2 bg-blue-50 text-blue-700 text-xs font-bold rounded border border-blue-200 hover:bg-blue-100 transition">五筆(圖文)</button>
-                <button onclick="fetchHistory('week')" class="flex-1 py-2 bg-gray-50 text-gray-600 text-xs font-bold rounded border border-gray-200 hover:bg-gray-100 transition">本週(縮略)</button>
-                <button onclick="fetchHistory('month')" class="flex-1 py-2 bg-gray-50 text-gray-600 text-xs font-bold rounded border border-gray-200 hover:bg-gray-100 transition">本月(縮略)</button>
+        <div class="form-group">
+            <label>開始時間 (日期 / 24小時制時間)</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="date" id="bkStartDate" style="flex: 1;" onchange="autoCalcEndTime()">
+                <select id="bkStartTime" style="flex: 1;" onchange="autoCalcEndTime()"></select>
             </div>
         </div>
+        
+        <div class="form-group">
+            <label>結束時間 (可手動微調)</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="date" id="bkEndDate" style="flex: 1;">
+                <select id="bkEndTime" style="flex: 1;"></select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>預約備註細節 (選填，若課程選「其他」請務必填寫)</label>
+            <input type="text" id="bkNote" placeholder="例如：特別加強肩頸...">
+        </div>
+
+        <button type="button" class="btn-search" style="margin-bottom: 15px; font-size:14px; background: transparent; border: 1px dashed var(--primary); color: var(--primary);" onclick="toggleMultipleBox()">➕ 展開多次連續預約設定 (常客週調)</button>
+        
+        <div id="multipleBox" class="hidden" style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); margin-bottom: 18px;">
+            <label style="font-size: 13px;">安排調理總次數 (最多 10 次)</label>
+            <input type="number" id="bkRepeatCount" value="1" min="1" max="10" style="padding: 8px;">
+            <p style="font-size: 12px; color: var(--text-light); margin-top: 6px; margin-bottom: 0;">填寫 >1 將自動每隔 7 天寫入店務排程。</p>
+        </div>
+        
+        <button class="btn-submit" onclick="submitBookingData()">確認建立預約排程</button>
+        
+        <div style="height: 1px; background: var(--border); margin: 30px 0;"></div>
+        
+        <h3 style="color: var(--text-main); font-size: 16px;">🔍 查詢、改期與取消預約</h3>
+        <div class="form-group autocomplete-container">
+            <input type="text" id="srchKw" placeholder="請輸入會員姓名或手機" autocomplete="off" onkeyup="showAutocomplete('srchKw', 'srchKwList', null)" onfocus="showAutocomplete('srchKw', 'srchKwList', null)">
+            <div id="srchKwList" class="autocomplete-list"></div>
+        </div>
+        <button class="btn-search" id="btnSearch" onclick="searchBks()">搜尋當日及未來預約紀錄</button>
+        <div id="srchArea" style="margin-top:15px;"></div>
     </div>
 
-    <div id="successModal" class="fixed inset-0 bg-black/50 hidden z-[70] flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white w-10/12 max-w-sm rounded-2xl p-6 text-center shadow-2xl transform transition-all scale-100">
-            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-check text-3xl text-green-500"></i>
-            </div>
-            <h3 class="font-bold text-lg text-gray-800 mb-2">處理完成</h3>
-            <p id="successMessage" class="text-sm text-gray-500 mb-6 leading-relaxed"></p>
-            <div class="flex flex-col gap-2">
-                <button onclick="document.getElementById('successModal').classList.add('hidden'); clearAllForms(); document.getElementById('clientName').value='';" class="w-full bg-[#D2B48C] text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-[#B8997D] active:scale-95 transition">
-                    接待下一位顧客
-                </button>
+    <!-- 頁籤二：財務結帳系統 -->
+    <div id="financeTab" class="form-section">
+        <div id="summaryDashboard" class="hidden" style="background: #FAFAFA; border: 1px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <button class="btn-cancel-action" style="color: var(--primary); border-color: var(--primary);" onclick="fetchSum()">📊 載入高階營收數據</button>
+            <div class="summary-grid hidden" id="sumData">
+                <div class="summary-item">本日<span class="summary-val" id="vD">$0</span></div>
+                <div class="summary-item">本週<span class="summary-val" id="vW">$0</span></div>
+                <div class="summary-item">本月<span class="summary-val" id="vM">$0</span></div>
             </div>
         </div>
+        
+        <div class="pending-box">
+            <button class="btn-search" style="background: var(--secondary); color: var(--text-main);" id="btnFetchPending" onclick="loadPend()">📥 載入中台待結帳清單</button>
+            <div id="pendArea" style="margin-top: 15px;"></div>
+        </div>
+        
+        <div class="cart-box">
+            <div class="cart-title">
+                <span>🛒 結帳核對卡片 (支援多選與合併結帳)</span>
+                <span id="cSum">$0</span>
+            </div>
+            <div id="cBody"></div>
+        </div>
+        
+        <div class="form-group">
+            <label>結帳方式 💰 (支援分流支付)</label>
+            <select id="fPay" onchange="toggleRem()">
+                <option value="現金">現金 (實體支付)</option>
+                <option value="轉帳/匯款">轉帳/匯款 (實體支付)</option>
+                <option value="點數扣抵_實體">點數錢包扣抵 (店務代扣)</option>
+                <option value="點數代付_遠端">數位支付 (發送遠端代付Token)</option>
+            </select>
+        </div>
+        
+        <div id="packageBox" class="hidden" style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid #E8B48F; margin-bottom: 18px;">
+            <label style="color: var(--text-main); font-weight: bold; margin-bottom: 10px;">📖 會員扣堂數位存摺狀態</label>
+            <button type="button" class="btn-search" style="background: transparent; border: 1px solid #E8B48F; color: #E8B48F; padding: 8px; margin-bottom: 10px;" onclick="checkPackageAssets()">
+                🔍 讀取購物車會員存摺餘額
+            </button>
+            <div id="packageStatusArea" style="font-size: 14px; color: var(--text-main); line-height: 1.6;"></div>
+        </div>
+
+        <div id="transferBox" class="hidden">
+            <div class="form-group" style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary);">
+                <label>我方收款帳戶</label>
+                <select id="fRecAcc" style="margin-bottom: 15px;">
+                    <option value="Line pay轉帳">Line pay轉帳</option>
+                    <option value="ipass money">ipass money</option>
+                    <option value="中信末碼06505">中信末碼06505</option>
+                    <option value="國泰末碼88265">國泰末碼88265</option>
+                </select>
+                <label>顧客匯款備註資料</label>
+                <input type="text" id="fRem" placeholder="請輸入後五碼或匯款日期">
+            </div>
+        </div>
+
+        <div id="remotePayBox" class="hidden" style="background: #e0f2fe; padding: 15px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin-bottom: 18px;">
+            <p style="font-size: 13px; color: #0284c7; margin-top: 0; font-weight: bold;">📲 遠端代付模式</p>
+            <p style="font-size: 12px; color: #0369a1;">系統將合併 Order_ID，並產生授權連結推播給代付者。等待對方簽名授權後，系統將自動扣除其錢包點數並核銷此單。</p>
+            <input type="text" id="fRemotePayerPhone" placeholder="請輸入代付者(付款人)手機號碼" style="margin-top:8px;">
+        </div>
+        
+        <div class="form-group">
+            <label>結帳時間 🕒 (預設為現在，補帳可手動修改)</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="date" id="fDate" style="flex: 1;">
+                <select id="fTime" style="flex: 1;"></select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>經手人員 👤</label>
+            <input type="text" id="fCash" readonly>
+        </div>
+        
+        <div class="form-group">
+            <label>整體結帳備註 (會永久記錄於表單並呈現在明細上)</label>
+            <textarea id="fGenNote" placeholder="例如：開立統編、購課細節、特殊交代項目..." style="resize: vertical; height: 80px;"></textarea>
+        </div>
+        
+        <button id="btnCheckout" class="btn-submit" onclick="processCart()">執行結帳動作</button>
     </div>
 
-    <script src="js/data_map.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/ui_utils.js"></script>
-    <script src="js/api.js"></script>
+    <!-- 頁籤三：財務異動系統 -->
+    <div id="adjustTab" class="form-section">
+        <h3 style="color: #ef4444;">⚠️ 財務帳務異動調整</h3>
+        <p style="font-size: 14px; color: var(--text-light);">預設顯示近 48 小時入帳明細，若需調閱更早資料請手動搜尋。</p>
+        
+        <div class="form-group autocomplete-container">
+            <input type="text" id="adjKw" placeholder="請輸入會員姓名或手機" autocomplete="off" onkeyup="showAutocomplete('adjKw', 'adjKwList', null)" onfocus="showAutocomplete('adjKw', 'adjKwList', null)">
+            <div id="adjKwList" class="autocomplete-list"></div>
+        </div>
+        
+        <button class="btn-search" id="btnSearchFinance" style="border-color: #ef4444; color: #ef4444;" onclick="searchFin()">手動搜尋歷史財務紀錄</button>
+        <div id="adjArea" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- 頁籤四：點數銀行 (Point Bank) -->
+    <div id="pointsTab" class="form-section">
+        <h3 style="color: var(--primary);">🏦 點數銀行：發行與退費管理</h3>
+        
+        <div style="background: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 4px solid #4ade80; margin-bottom: 20px;">
+            <h4 style="margin-top:0; color:#16a34a;">➕ 點數發行 (點數儲值 / 活動贈點)</h4>
+            <div class="form-group autocomplete-container">
+                <label>發行對象 (手機號碼 / JW_ID)</label>
+                <input type="text" id="ptIssuePhone" placeholder="輸入關鍵字自動搜尋舊會員" autocomplete="off" onkeyup="showAutocomplete('ptIssuePhone', 'ptIssueList', null)" onfocus="showAutocomplete('ptIssuePhone', 'ptIssueList', null)">
+                <div id="ptIssueList" class="autocomplete-list"></div>
+            </div>
+            <div class="form-group">
+                <label>儲值本金 (A類 - 1:1新台幣，無期限)</label>
+                <input type="number" id="ptIssueA" placeholder="例如：5000">
+            </div>
+            <div class="form-group">
+                <label>解鎖贈點 (B類 - 綁定本金批次，A類耗盡方啟用)</label>
+                <input type="number" id="ptIssueB" placeholder="例如：500">
+            </div>
+            <div class="form-group">
+                <label>短效贈點 (C類 - 分享/活動無償贈點，優先扣抵)</label>
+                <input type="number" id="ptIssueC" placeholder="例如：0">
+            </div>
+            <div class="form-group">
+                <label>發行備註/核准代碼</label>
+                <input type="text" id="ptIssueNote" placeholder="例如：週年慶儲值優惠">
+            </div>
+            <button class="btn-submit" style="background:#16a34a;" onclick="issuePoints()">確認發行並寫入點數錢包</button>
+        </div>
+
+        <div style="background: #fff5f5; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+            <h4 style="margin-top:0; color:#ef4444;">⛔ 點數退費與強制校正作廢</h4>
+            <div class="form-group autocomplete-container">
+                <label>退費對象 (手機號碼 / JW_ID)</label>
+                <input type="text" id="ptRefundPhone" placeholder="輸入關鍵字自動搜尋會員" autocomplete="off" onkeyup="showAutocomplete('ptRefundPhone', 'ptRefundList', null)" onfocus="showAutocomplete('ptRefundPhone', 'ptRefundList', null)">
+                <div id="ptRefundList" class="autocomplete-list"></div>
+            </div>
+            <button class="btn-search" style="border-color:#ef4444; color:#ef4444;" onclick="fetchWalletForRefund()">查詢可退費本金與關聯贈點</button>
+            <div id="ptRefundArea" style="margin-top:15px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 🧾 收據截圖區域 -->
+<div id="receiptSaveModal">
+    <h3 style="color: #ffffff; margin-top: 0; margin-bottom: 10px;">✅ 結帳成功與線上存檔完畢！</h3>
+    <p style="color: #EAD8C0; font-size: 14px; margin-top: 0; margin-bottom: 20px; text-align: center;">💡 提示：請直接對著下方收據<b>「長按螢幕」</b>即可儲存存檔。<br></p>
+    <img id="finalReceiptImage" src="" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+    <button onclick="closeReceiptModal()" style="margin-top: 25px; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 16px; cursor: pointer;">關閉並返回系統</button>
+</div>
+
+<div id="receiptCaptureArea">
+    <div class="receipt-header">
+        <img id="receiptLogoImg" src="./logo.jpg" crossorigin="anonymous" style="max-width: 200px; max-height: 80px; display: block; margin: 0 auto 10px; object-fit: contain;">
+        <h3 class="receipt-title">錦葳健康美學中心 🌿</h3>
+        <p class="receipt-subtitle">專業調理 · 結構修復 · 美學中心</p>
+    </div>
+    <div class="receipt-info-group">
+        <div class="receipt-row"><span>交易單號：</span><span id="rId"></span></div>
+        <div class="receipt-row"><span>結帳時間：</span><span id="rTm"></span></div>
+        <div class="receipt-row"><span>結帳方式 💰：</span><span id="rMth"></span></div>
+        <div class="receipt-row"><span>經手人員 👤：</span><span id="rCsh"></span></div>
+        <div class="receipt-row" id="rRemRow" style="display: none; font-weight: bold;">
+            <span>匯款/代付資料：</span><span><span id="rRemNote"></span></span>
+        </div>
+    </div>
+    <table class="receipt-table">
+        <thead><tr><th style="width: 50%;">消費項目 / 會員</th><th style="width: 15%; text-align: center;">數量</th><th style="width: 35%; text-align: right;">金額 (師傅)</th></tr></thead>
+        <tbody id="rItems"></tbody>
+    </table>
+    <div class="receipt-total-section"><span class="receipt-total-label">總計金額：</span><span class="receipt-total-val" id="rSum"></span></div>
+    <div id="rGenNoteBox" style="display: none; font-size: 14px; border-top: 1px dashed #000; margin-top: 15px; padding-top: 10px;"><strong>結帳備註：</strong><br><span id="rGenNote"></span></div>
+    <div class="receipt-footer-msg">🧖 調理完畢後會有兩到三天的恢復期，<br>💧 請多喝開水，避免劇烈運動，<br>✨ 若有任何情況歡迎隨時官方賴詢問。<br><br>-- 感謝您的蒞臨與信任 --</div>
+</div>
+
+<!-- 📦 強制快取破解：確保每次載入最新腳本 -->
+<script src="./js/config.js?v=v47"></script>
+<script src="./js/app.js?v=v47"></script>
+<script src="./js/booking.js?v=v47"></script>
+<script src="./js/finance.js?v=v47"></script>
+
 </body>
 </html>
