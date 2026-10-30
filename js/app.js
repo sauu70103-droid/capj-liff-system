@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * 錦葳健康美學中心 - 後台店務系統 (app.js)
- * V5.1 極簡本地脫鉤版：純靜態密碼與下拉實名 (已隱藏提示密碼)
+ * V4.7 專屬 LIFF 靜默通關令 (雙軌制：LIFF極速通關 + 平滑降級密碼鎖)
  * ============================================================================
  */
 
@@ -14,14 +14,66 @@ function v(id) { return el(id) ? el(id).value : ''; }
 
 window.currentOperator = '未登入';
 
-// 系統初始化：直接拆除遮罩，呼叫本地密碼鎖
-function initSystemAuth() {
-    if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
-    promptLocalPinLogin();
+// 🌟 V4.7 專屬 LIFF ID 與降級密碼
+const LIFF_ID = '2011305352-C27AFX04';
+const FALLBACK_PIN = '89668966';
+
+async function initSystemAuth() {
+    try {
+        const liffInitPromise = liff.init({ liffId: LIFF_ID });
+        const liffTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('LIFF_TIMEOUT')), 5000));
+        
+        await Promise.race([liffInitPromise, liffTimeout]);
+        
+        if (liff.isLoggedIn()) {
+            const profile = await liff.getProfile();
+            window.userLineUid = profile.userId;
+            await verifyUidViaGas(window.userLineUid);
+        } else {
+            // 未登入則平滑降級
+            promptLocalPinLogin();
+        }
+    } catch (err) {
+        console.warn("LIFF 啟動異常或超時，執行平滑降級", err);
+        promptLocalPinLogin();
+    } finally {
+        // 🚨 終極防護：無論如何強制消滅遮罩
+        if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
+    }
 }
 
-// 極簡本地密碼與操作員選擇
+// 🌟 向 GAS API 請求靜默驗證
+async function verifyUidViaGas(uid) {
+    try {
+        const fetchPromise = fetch(API, {
+            method: 'POST',
+            body: JSON.stringify({ action: "ssoFastCheck", lineUid: uid })
+        });
+        const fetchTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('NETWORK_TIMEOUT')), 5000));
+        
+        const res = await Promise.race([fetchPromise, fetchTimeout]);
+        const data = await res.json();
+        
+        // 🎯 精準對標 GAS API 回傳的「後台權限」 (Auth_Store)
+        if (data.status === "success" && data.staff && (data.staff.Auth_Store === true || data.staff.Auth_Store === '允許')) {
+            // 靜默通關成功
+            renderBackendPlatform(data.staff.Staff_Name, true);
+        } else {
+            // 無權限或查無此人 -> 平滑降級
+            console.warn("API 驗證失敗或無後台權限，降級至本地密碼鎖");
+            promptLocalPinLogin();
+        }
+    } catch (err) {
+        console.error("權限核對網路異常，降級至本地密碼鎖", err);
+        promptLocalPinLogin();
+    }
+}
+
+// 🌟 平滑降級：本地密碼鎖與實名選擇
 function promptLocalPinLogin() {
+    // 雙重確保沒有遮罩卡死
+    if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
+
     Swal.fire({
         title: '錦葳店務後台',
         input: 'password',
@@ -31,7 +83,7 @@ function promptLocalPinLogin() {
         confirmButtonText: '解鎖',
         confirmButtonColor: '#ea580c',
         preConfirm: (pin) => {
-            if (pin !== '8888') {
+            if (pin !== FALLBACK_PIN) {
                 Swal.showValidationMessage('密碼錯誤，請重新輸入');
                 return false;
             }
@@ -39,7 +91,6 @@ function promptLocalPinLogin() {
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            // 密碼正確後，直接選擇操作員以利實名追蹤
             Swal.fire({
                 title: '請選擇操作人員',
                 input: 'select',
@@ -53,7 +104,8 @@ function promptLocalPinLogin() {
                 confirmButtonColor: '#ea580c'
             }).then((res) => {
                 if (res.isConfirmed) {
-                    renderBackendPlatform(res.value);
+                    // 密碼解鎖者預設放行所有頁籤
+                    renderBackendPlatform(res.value, true);
                 }
             });
         }
@@ -61,7 +113,7 @@ function promptLocalPinLogin() {
 }
 
 // 渲染與解鎖介面
-function renderBackendPlatform(operatorName) {
+function renderBackendPlatform(operatorName, hasFinanceAuth = true) {
     window.currentOperator = operatorName;
     localStorage.setItem('Staff_Name', operatorName);
     
@@ -69,14 +121,18 @@ function renderBackendPlatform(operatorName) {
     if(el('fCash')) el('fCash').value = operatorName;
     if(el('staffBadge')) el('staffBadge').innerText = `目前操作員：${operatorName}`;
     
-    // 全面解鎖所有頁籤 (廢除動態權限鎖)
-    if(el('btnTabFinance')) el('btnTabFinance').classList.remove('ui-guard-locked');
-    if(el('btnTabAdjust')) el('btnTabAdjust').classList.remove('ui-guard-locked');
-    if(el('btnTabPoints')) el('btnTabPoints').classList.remove('ui-guard-locked');
+    // 依權限解鎖頁籤
+    if (hasFinanceAuth) {
+        if(el('btnTabFinance')) el('btnTabFinance').classList.remove('ui-guard-locked');
+        if(el('btnTabAdjust')) el('btnTabAdjust').classList.remove('ui-guard-locked');
+        if(el('btnTabPoints')) el('btnTabPoints').classList.remove('ui-guard-locked');
+    }
     
     const appContainer = el('mainAppContainer');
     if(appContainer) appContainer.classList.remove('ui-guard-locked');
     
+    if(el('loadingOverlay')) el('loadingOverlay').style.display = 'none';
+
     const defaultTabBtn = document.getElementById('btnTabBooking');
     if (defaultTabBtn) window.switchTab('bookingTab', defaultTabBtn);
 }
@@ -100,7 +156,7 @@ window.apiCall = async function(action, payload, successMsg) {
     const finalPayload = { action: action, operator: finalOperator, ...payload };
     
     const fetchPromise = fetch(API, { method: 'POST', body: JSON.stringify(finalPayload) });
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000)); // 放寬至 8 秒
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000));
     
     try {
         const response = await Promise.race([fetchPromise, timeoutPromise]);
@@ -158,7 +214,6 @@ window.showAutocomplete = function(inputId, listId, phoneInputId) {
     const input = el(inputId); const list = el(listId);
     if (!input || !list) return;
     
-    // 確保留存的 memberDatabase (由 config 宣告，或於 fetchMembers 寫入) 可用
     const dataSrc = window.membersData || window.memberDatabase || [];
     
     if (dataSrc && dataSrc.length > 0) {
